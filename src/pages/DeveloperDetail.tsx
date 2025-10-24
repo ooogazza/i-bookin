@@ -131,13 +131,18 @@ const DeveloperDetail = () => {
 
   return (
     <div className="min-h-screen bg-secondary/30">
-      <Header 
-        showBackButton 
-        developerLogo={logo}
-        developerName={developer.name}
-      />
+      <Header showBackButton />
       
       <main className="container py-8">
+        {logo && (
+          <div className="mb-6">
+            <img 
+              src={logo} 
+              alt={developer.name}
+              className="h-16 w-auto object-contain"
+            />
+          </div>
+        )}
         <div className="mb-8">
           <p className="text-muted-foreground">Sites for this developer</p>
         </div>
