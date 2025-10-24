@@ -88,7 +88,8 @@ const LIFT_LABELS = {
   lift_5: "Lift 5",
   lift_6: "Lift 6",
   cut_ups: "Cut Ups",
-  snag: "Snag/Patch D.O.D",
+  snag_patch: "Snag/Patch",
+  dod: "D.O.D",
 };
 
 const SiteDetail = () => {
