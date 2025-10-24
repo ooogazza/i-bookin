@@ -130,6 +130,7 @@ const SiteDetail = () => {
   const [memberName, setMemberName] = useState("");
   const [memberType, setMemberType] = useState("bricklayer");
   const [memberAmount, setMemberAmount] = useState(0);
+  const [invoiceNotes, setInvoiceNotes] = useState("");
 
   useEffect(() => {
     if (id) {
@@ -487,7 +488,8 @@ const SiteDetail = () => {
             percentage: item.percentage,
             booked_value: item.bookedValue,
             invoice_number: invoiceNumber,
-            status: "confirmed"
+            status: "confirmed",
+            notes: invoiceNotes
           })
           .select()
           .single();
@@ -508,13 +510,14 @@ const SiteDetail = () => {
         if (gangError) throw gangError;
       }
 
-      toast.success("Invoice confirmed and sent");
+      toast.success("Invoice sent to admin successfully");
       setInvoiceItems([]);
       setGangMembers([]);
+      setInvoiceNotes("");
       setInvoiceDialogOpen(false);
       fetchSiteData();
     } catch (error: any) {
-      toast.error("Failed to confirm invoice");
+      toast.error("Failed to send invoice");
       console.error("Error:", error);
     }
   };
@@ -525,8 +528,13 @@ const SiteDetail = () => {
     doc.setFontSize(18);
     doc.text("Invoice", 20, 20);
     
+    if (site) {
+      doc.setFontSize(12);
+      doc.text(`Site: ${site.name}`, 20, 30);
+    }
+    
     doc.setFontSize(12);
-    let y = 40;
+    let y = 45;
     
     doc.text("Invoice Items:", 20, y);
     y += 10;
@@ -544,7 +552,17 @@ const SiteDetail = () => {
     doc.text(`Total Value: £${totalInvoiceValue.toFixed(2)}`, 20, y);
     y += 15;
     
+    if (invoiceNotes) {
+      doc.text("Notes:", 20, y);
+      y += 8;
+      doc.setFontSize(10);
+      const splitNotes = doc.splitTextToSize(invoiceNotes, 170);
+      doc.text(splitNotes, 25, y);
+      y += (splitNotes.length * 6) + 10;
+    }
+    
     if (gangMembers.length > 0) {
+      doc.setFontSize(12);
       doc.text("Gang Division:", 20, y);
       y += 10;
       
@@ -640,22 +658,24 @@ const SiteDetail = () => {
           )}
         </div>
 
-        <div className="mb-6 flex gap-4 justify-between">
-          {isAdmin && (
-            <div className="flex gap-4">
-              <Button onClick={() => openHouseTypeDialog()}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add House Type
-              </Button>
-              <Button onClick={() => setInviteUserDialogOpen(true)} variant="outline">
-                <Users className="mr-2 h-4 w-4" />
-                Invite Users
-              </Button>
-            </div>
-          )}
+        <div className="mb-6 flex gap-4 justify-between items-center">
+          <div className="flex gap-4">
+            {isAdmin && (
+              <>
+                <Button onClick={() => openHouseTypeDialog()}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add House Type
+                </Button>
+                <Button onClick={() => setInviteUserDialogOpen(true)} variant="outline">
+                  <Users className="mr-2 h-4 w-4" />
+                  Invite Users
+                </Button>
+              </>
+            )}
+          </div>
           
           {!isAdmin && invoiceItems.length > 0 && (
-            <Button onClick={() => setInvoiceDialogOpen(true)} className="ml-auto">
+            <Button onClick={() => setInvoiceDialogOpen(true)}>
               <ShoppingCart className="mr-2 h-4 w-4" />
               View Invoice ({invoiceItems.length})
             </Button>
@@ -962,7 +982,7 @@ const SiteDetail = () => {
 
         {/* Invoice Dialog */}
         <Dialog open={invoiceDialogOpen} onOpenChange={setInvoiceDialogOpen}>
-          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
@@ -1015,12 +1035,33 @@ const SiteDetail = () => {
                 </CardContent>
               </Card>
 
+              {/* Notes Section */}
+              {invoiceItems.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Notes</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <textarea
+                      className="w-full min-h-[100px] p-3 rounded-md border border-input bg-background resize-y focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                      placeholder="Add any notes or comments about this invoice..."
+                      value={invoiceNotes}
+                      onChange={(e) => setInvoiceNotes(e.target.value)}
+                      maxLength={500}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {invoiceNotes.length}/500 characters
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Gang Division */}
               {invoiceItems.length > 0 && (
                 <Card>
                   <CardHeader>
                     <div className="flex justify-between items-center">
-                      <CardTitle>Gang Division</CardTitle>
+                      <CardTitle>Gang Division - Who Gets Paid</CardTitle>
                       <Button onClick={() => setGangDialogOpen(true)} size="sm">
                         <Plus className="mr-2 h-4 w-4" />
                         Add Member
@@ -1030,7 +1071,7 @@ const SiteDetail = () => {
                   <CardContent>
                     {gangMembers.length === 0 ? (
                       <p className="text-center text-muted-foreground py-4">
-                        No gang members added yet
+                        No gang members added yet - add members to allocate payment
                       </p>
                     ) : (
                       <div className="space-y-2">
@@ -1091,7 +1132,7 @@ const SiteDetail = () => {
                     className="flex-1"
                     disabled={gangMembers.length === 0 || Math.abs(remainingToAllocate) > 0.01}
                   >
-                    Confirm Invoice
+                    Send to Admin
                   </Button>
                 </div>
               )}
