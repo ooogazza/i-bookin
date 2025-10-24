@@ -9,6 +9,7 @@ import { signIn, signUp } from "@/lib/supabase";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect } from "react";
+import { authSchema } from "@/lib/validations";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -32,13 +33,27 @@ const Auth = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    const { error } = await signIn(loginEmail, loginPassword);
-    
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success("Logged in successfully");
-      navigate("/dashboard");
+    try {
+      // Validate input
+      authSchema.parse({
+        email: loginEmail,
+        password: loginPassword,
+      });
+
+      const { error } = await signIn(loginEmail.trim(), loginPassword);
+      
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Logged in successfully");
+        navigate("/dashboard");
+      }
+    } catch (error: any) {
+      if (error.errors?.[0]?.message) {
+        toast.error(error.errors[0].message);
+      } else {
+        toast.error("Invalid input");
+      }
     }
     
     setIsLoading(false);
@@ -48,13 +63,28 @@ const Auth = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    const { error } = await signUp(signupEmail, signupPassword, signupFullName);
-    
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success("Account created successfully");
-      navigate("/dashboard");
+    try {
+      // Validate input
+      authSchema.parse({
+        email: signupEmail,
+        password: signupPassword,
+        fullName: signupFullName,
+      });
+
+      const { error } = await signUp(signupEmail.trim(), signupPassword, signupFullName.trim());
+      
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Account created successfully");
+        navigate("/dashboard");
+      }
+    } catch (error: any) {
+      if (error.errors?.[0]?.message) {
+        toast.error(error.errors[0].message);
+      } else {
+        toast.error("Invalid input");
+      }
     }
     
     setIsLoading(false);

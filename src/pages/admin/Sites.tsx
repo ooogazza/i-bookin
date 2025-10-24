@@ -18,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { siteSchema } from "@/lib/validations";
 
 interface Site {
   id: string;
@@ -52,7 +53,9 @@ const Sites = () => {
       setSites(data || []);
     } catch (error: any) {
       toast.error("Failed to load sites");
-      console.error("Error:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error:", error);
+      }
     }
   };
 
@@ -81,12 +84,20 @@ const Sites = () => {
     setLoading(true);
 
     try {
+      // Validate input
+      siteSchema.parse({
+        name,
+        description,
+        numberOfPlots,
+        numberOfHouseTypes,
+      });
+
       if (editingSite) {
         const { error } = await supabase
           .from("sites")
           .update({ 
-            name, 
-            description,
+            name: name.trim(), 
+            description: description?.trim() || null,
             number_of_plots: numberOfPlots,
             number_of_house_types: numberOfHouseTypes
           })
@@ -98,8 +109,8 @@ const Sites = () => {
         const { data: site, error } = await supabase
           .from("sites")
           .insert({ 
-            name, 
-            description, 
+            name: name.trim(), 
+            description: description?.trim() || null, 
             created_by: user.id,
             number_of_plots: numberOfPlots,
             number_of_house_types: numberOfHouseTypes
@@ -129,8 +140,14 @@ const Sites = () => {
       setDialogOpen(false);
       fetchSites();
     } catch (error: any) {
-      toast.error("Failed to save site");
-      console.error("Error:", error);
+      if (error.errors?.[0]?.message) {
+        toast.error(error.errors[0].message);
+      } else {
+        toast.error("Failed to save site");
+      }
+      if (import.meta.env.DEV) {
+        console.error("Error:", error);
+      }
     } finally {
       setLoading(false);
     }
@@ -147,7 +164,9 @@ const Sites = () => {
       fetchSites();
     } catch (error: any) {
       toast.error("Failed to delete site");
-      console.error("Error:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error:", error);
+      }
     }
   };
 

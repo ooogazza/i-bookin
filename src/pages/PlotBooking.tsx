@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { FileText, Plus, X } from "lucide-react";
+import { gangMemberSchema, bookingSchema } from "@/lib/validations";
 
 interface Plot {
   id: string;
@@ -106,7 +107,9 @@ const PlotBooking = () => {
       setBookings(bookingsData || []);
     } catch (error: any) {
       toast.error("Failed to load plot data");
-      console.error("Error:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error:", error);
+      }
     } finally {
       setLoading(false);
     }
@@ -140,20 +143,30 @@ const PlotBooking = () => {
   };
 
   const handleAddMember = () => {
-    if (!memberName || memberAmount <= 0) {
-      toast.error("Please fill in all fields");
-      return;
+    try {
+      // Validate input
+      gangMemberSchema.parse({
+        name: memberName,
+        type: memberType,
+        amount: memberAmount,
+      });
+
+      setGangMembers([...gangMembers, {
+        name: memberName.trim(),
+        type: memberType,
+        amount: memberAmount
+      }]);
+      
+      setMemberName("");
+      setMemberAmount(0);
+      setDialogOpen(false);
+    } catch (error: any) {
+      if (error.errors?.[0]?.message) {
+        toast.error(error.errors[0].message);
+      } else {
+        toast.error("Invalid input. Please check all fields.");
+      }
     }
-    
-    setGangMembers([...gangMembers, {
-      name: memberName,
-      type: memberType,
-      amount: memberAmount
-    }]);
-    
-    setMemberName("");
-    setMemberAmount(0);
-    setDialogOpen(false);
   };
 
   const handleRemoveMember = (index: number) => {
@@ -191,6 +204,13 @@ const PlotBooking = () => {
     }
 
     try {
+      // Validate booking data
+      bookingSchema.parse({
+        percentage,
+        invoiceNumber: null,
+        notes: null,
+      });
+
       const invoiceNumber = `INV-${Date.now()}`;
       
       const { data: booking, error: bookingError } = await supabase
@@ -225,8 +245,14 @@ const PlotBooking = () => {
       toast.success("Booking created successfully");
       navigate("/booking-in");
     } catch (error: any) {
-      toast.error("Failed to create booking");
-      console.error("Error:", error);
+      if (error.errors?.[0]?.message) {
+        toast.error(error.errors[0].message);
+      } else {
+        toast.error("Failed to create booking");
+      }
+      if (import.meta.env.DEV) {
+        console.error("Error:", error);
+      }
     }
   };
 
