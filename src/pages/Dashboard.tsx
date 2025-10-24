@@ -36,7 +36,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (user) fetchSites();
-  }, [user]);
+  }, [user, isAdmin]);
 
   const fetchSites = async () => {
     if (!user) return;
