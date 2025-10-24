@@ -79,10 +79,11 @@ const Dashboard = () => {
         return acc;
       }, {});
 
+      // Only show developers that have at least one site
       const developersWithCounts = allDevs?.map(dev => ({
         ...dev,
         site_count: siteCounts?.[dev.id] || 0
-      })) || [];
+      })).filter(dev => dev.site_count > 0) || [];
 
       setDevelopers(developersWithCounts);
     } catch (error: any) {
