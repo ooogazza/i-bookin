@@ -385,15 +385,7 @@ const SiteDetail = () => {
       return;
     }
 
-    if (isAdmin) {
-      // Admins manage plot assignments
-      setSelectedPlot(plot);
-      setSelectedHouseTypeId(plot.house_type_id || "");
-      setPlotDialogOpen(true);
-      return;
-    }
-
-    // Non-admin users open booking dialog
+    // Open booking dialog for all users
     setSelectedBookingPlot(plot);
     setSelectedBookingLiftType(liftType);
     const remaining = 100 - totalBooked;
@@ -727,8 +719,8 @@ const SiteDetail = () => {
                       <tr key={plot.id} className="border-b">
                         <td className="p-2 font-medium">{plot.plot_number}</td>
                         <td 
-                          className="p-2 cursor-pointer hover:bg-primary/10"
-                          onClick={() => handlePlotClick(plot)}
+                          className={`p-2 ${isAdmin ? 'cursor-pointer hover:bg-primary/10' : ''}`}
+                          onClick={() => isAdmin && handlePlotClick(plot)}
                         >
                           {plot.house_types?.name || "-"}
                         </td>
