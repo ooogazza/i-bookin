@@ -358,19 +358,26 @@ const SiteDetail = () => {
     const liftValue = plot.house_types.lift_values.find(lv => lv.lift_type === liftType);
     if (!liftValue) return 0;
 
+    // Count confirmed bookings
     const liftBookings = bookings.filter(b => 
       b.plot_id === plot.id && b.lift_value_id === liftValue.id
     );
+    const confirmedTotal = liftBookings.reduce((sum, b) => sum + b.percentage, 0);
 
-    return liftBookings.reduce((sum, b) => sum + b.percentage, 0);
+    // Count pending invoice items
+    const pendingTotal = invoiceItems
+      .filter(item => item.plot.id === plot.id && item.liftType === liftType)
+      .reduce((sum, item) => sum + item.percentage, 0);
+
+    return confirmedTotal + pendingTotal;
   };
 
   const getCellColor = (totalBooked: number): string => {
-    if (totalBooked === 0) return "bg-background hover:bg-muted/50 cursor-pointer";
-    if (totalBooked <= 33) return "bg-green-100 hover:bg-green-200 dark:bg-green-900/20 dark:hover:bg-green-900/30 cursor-pointer";
+    if (totalBooked === 0) return "bg-red-100 hover:bg-red-200 dark:bg-red-900/20 dark:hover:bg-red-900/30 cursor-pointer";
+    if (totalBooked <= 33) return "bg-orange-100 hover:bg-orange-200 dark:bg-orange-900/20 dark:hover:bg-orange-900/30 cursor-pointer";
     if (totalBooked <= 66) return "bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/20 dark:hover:bg-yellow-900/30 cursor-pointer";
-    if (totalBooked < 100) return "bg-orange-100 hover:bg-orange-200 dark:bg-orange-900/20 dark:hover:bg-orange-900/30 cursor-pointer";
-    return "bg-red-100 hover:bg-red-200 dark:bg-red-900/20 dark:hover:bg-red-900/30 cursor-not-allowed";
+    if (totalBooked < 100) return "bg-green-100 hover:bg-green-200 dark:bg-green-900/20 dark:hover:bg-green-900/30 cursor-pointer";
+    return "bg-green-100 hover:bg-green-200 dark:bg-green-900/20 dark:hover:bg-green-900/30 cursor-not-allowed";
   };
 
   const handleLiftCellClick = (plot: Plot, liftType: string) => {
@@ -396,6 +403,14 @@ const SiteDetail = () => {
   const handleAddToInvoice = () => {
     if (!selectedBookingPlot || !selectedBookingLiftType) return;
 
+    const totalBooked = getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
+    const remaining = 100 - totalBooked;
+
+    if (bookingPercentage > remaining) {
+      toast.error(`Only ${remaining}% remaining for this lift`);
+      return;
+    }
+
     const liftValue = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType);
     const liftValueId = selectedBookingPlot.house_types!.lift_values.find(
       lv => lv.lift_type === selectedBookingLiftType
@@ -414,7 +429,7 @@ const SiteDetail = () => {
 
     setInvoiceItems([...invoiceItems, newItem]);
     setBookingDialogOpen(false);
-    toast.success("Added to invoice");
+    toast.success("Added to invoice - cell updated");
   };
 
   const handleRemoveFromInvoice = (index: number) => {
