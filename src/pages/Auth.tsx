@@ -24,7 +24,7 @@ const Auth = () => {
 
   useEffect(() => {
     if (!loading && user) {
-      navigate("/dashboard");
+      navigate("/brickwork/dashboard");
     }
   }, [user, loading, navigate]);
 
@@ -38,7 +38,7 @@ const Auth = () => {
       toast.error(error.message);
     } else {
       toast.success("Logged in successfully");
-      navigate("/dashboard");
+      navigate("/brickwork/dashboard");
     }
     
     setIsLoading(false);
@@ -54,7 +54,7 @@ const Auth = () => {
       toast.error(error.message);
     } else {
       toast.success("Account created successfully");
-      navigate("/dashboard");
+      navigate("/brickwork/dashboard");
     }
     
     setIsLoading(false);

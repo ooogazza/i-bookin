@@ -20,7 +20,7 @@ export const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRout
   }
 
   if (!user) {
-    return <Navigate to="/auth" replace />;
+    return <Navigate to="/brickwork/auth" replace />;
   }
 
   if (requireAdmin && !isAdmin) {

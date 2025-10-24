@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import SiteDetail from "./pages/SiteDetail";
@@ -12,6 +13,7 @@ import PlotBooking from "./pages/PlotBooking";
 import BookingIn from "./pages/BookingIn";
 import Admin from "./pages/Admin";
 import Sites from "./pages/admin/Sites";
+import ProgressTrackerPlaceholder from "./pages/ProgressTrackerPlaceholder";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,10 +26,13 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/auth" element={<Auth />} />
+            {/* Landing Page */}
+            <Route path="/" element={<Landing />} />
+            
+            {/* Brickwork Manager Routes */}
+            <Route path="/brickwork/auth" element={<Auth />} />
             <Route
-              path="/dashboard"
+              path="/brickwork/dashboard"
               element={
                 <ProtectedRoute>
                   <Dashboard />
@@ -35,7 +40,7 @@ const App = () => (
               }
             />
             <Route
-              path="/site/:id"
+              path="/brickwork/site/:id"
               element={
                 <ProtectedRoute>
                   <SiteDetail />
@@ -43,7 +48,7 @@ const App = () => (
               }
             />
             <Route
-              path="/plot/:id/booking"
+              path="/brickwork/plot/:id/booking"
               element={
                 <ProtectedRoute>
                   <PlotBooking />
@@ -51,7 +56,7 @@ const App = () => (
               }
             />
             <Route
-              path="/booking-in"
+              path="/brickwork/booking-in"
               element={
                 <ProtectedRoute>
                   <BookingIn />
@@ -59,7 +64,7 @@ const App = () => (
               }
             />
             <Route
-              path="/admin"
+              path="/brickwork/admin"
               element={
                 <ProtectedRoute requireAdmin>
                   <Admin />
@@ -67,13 +72,18 @@ const App = () => (
               }
             />
             <Route
-              path="/admin/sites"
+              path="/brickwork/admin/sites"
               element={
                 <ProtectedRoute requireAdmin>
                   <Sites />
                 </ProtectedRoute>
               }
             />
+            
+            {/* Progress Tracker Routes */}
+            <Route path="/progress-tracker" element={<ProgressTrackerPlaceholder />} />
+            
+            {/* Fallback */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
