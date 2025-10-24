@@ -134,6 +134,9 @@ const SiteDetail = () => {
   const [notesAmount, setNotesAmount] = useState(0);
   const [editingMemberIndex, setEditingMemberIndex] = useState<number | null>(null);
   const [tempAmount, setTempAmount] = useState("");
+  
+  const [plotSummaryDialogOpen, setPlotSummaryDialogOpen] = useState(false);
+  const [selectedPlotForSummary, setSelectedPlotForSummary] = useState<Plot | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -485,6 +488,11 @@ const SiteDetail = () => {
     setTempAmount("");
   };
 
+  const handlePlotNumberClick = (plot: Plot) => {
+    setSelectedPlotForSummary(plot);
+    setPlotSummaryDialogOpen(true);
+  };
+
   const handleStartEditing = (index: number, currentAmount: number) => {
     setEditingMemberIndex(index);
     setTempAmount(currentAmount.toFixed(2));
@@ -793,7 +801,12 @@ const SiteDetail = () => {
                   <tbody>
                     {plots.map(plot => (
                       <tr key={plot.id} className="border-b">
-                        <td className="p-2 font-medium">{plot.plot_number}</td>
+                        <td 
+                          className="p-2 font-medium cursor-pointer hover:bg-primary/10"
+                          onClick={() => handlePlotNumberClick(plot)}
+                        >
+                          {plot.plot_number}
+                        </td>
                         <td 
                           className={`p-2 ${isAdmin ? 'cursor-pointer hover:bg-primary/10' : ''}`}
                           onClick={() => isAdmin && handlePlotClick(plot)}
@@ -1257,6 +1270,52 @@ const SiteDetail = () => {
                 Add Member
               </Button>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Plot Summary Dialog */}
+        <Dialog open={plotSummaryDialogOpen} onOpenChange={setPlotSummaryDialogOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Plot {selectedPlotForSummary?.plot_number} Summary</DialogTitle>
+            </DialogHeader>
+            {selectedPlotForSummary && (
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">House Type</p>
+                  <p className="font-semibold text-lg">
+                    {selectedPlotForSummary.house_types?.name || "Not assigned"}
+                  </p>
+                </div>
+
+                {selectedPlotForSummary.house_types && (
+                  <>
+                    <div className="border-t pt-4">
+                      <p className="font-semibold mb-3">Lift Values</p>
+                      <div className="space-y-2">
+                        {selectedPlotForSummary.house_types.lift_values.map((lift) => (
+                          <div key={lift.id} className="flex justify-between items-center p-2 bg-muted rounded">
+                            <span className="text-sm">
+                              {LIFT_LABELS[lift.lift_type as keyof typeof LIFT_LABELS]}
+                            </span>
+                            <span className="font-medium">£{lift.value.toFixed(2)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="border-t pt-4">
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold text-lg">Total Value:</span>
+                        <span className="font-bold text-2xl text-primary">
+                          £{selectedPlotForSummary.house_types.total_value.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </main>
