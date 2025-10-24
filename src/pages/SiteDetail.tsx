@@ -730,15 +730,11 @@ const SiteDetail = () => {
                           return (
                             <td 
                               key={liftType} 
-                              className={`p-2 text-center text-sm transition-colors ${getCellColor(totalBooked)}`}
+                              className={`p-4 text-center transition-colors ${getCellColor(totalBooked)}`}
                               onClick={() => handleLiftCellClick(plot, liftType)}
                             >
-                              <div className="flex flex-col items-center justify-center min-h-[60px]">
-                                {totalBooked > 0 ? (
-                                  <span className="text-lg font-bold">{totalBooked}%</span>
-                                ) : (
-                                  <span className="text-muted-foreground">-</span>
-                                )}
+                              <div className="flex items-center justify-center min-h-[50px]">
+                                <span className="text-xl font-bold text-foreground">{totalBooked}%</span>
                               </div>
                             </td>
                           );
