@@ -19,7 +19,7 @@ export const Header = ({ showBackButton = false }: HeaderProps) => {
       toast.error("Error logging out");
     } else {
       toast.success("Logged out successfully");
-      navigate("/brickwork/auth");
+      navigate("/auth");
     }
   };
 
@@ -37,17 +37,14 @@ export const Header = ({ showBackButton = false }: HeaderProps) => {
         </div>
         
         <nav className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => navigate("/")}>
-            Home
-          </Button>
-          <Button variant="ghost" onClick={() => navigate("/brickwork/dashboard")}>
+          <Button variant="ghost" onClick={() => navigate("/dashboard")}>
             Sites
           </Button>
-          <Button variant="ghost" onClick={() => navigate("/brickwork/booking-in")}>
+          <Button variant="ghost" onClick={() => navigate("/booking-in")}>
             Booking In
           </Button>
           {isAdmin && (
-            <Button variant="ghost" onClick={() => navigate("/brickwork/admin")}>
+            <Button variant="ghost" onClick={() => navigate("/admin")}>
               <Settings className="mr-2 h-4 w-4" />
               Admin
             </Button>

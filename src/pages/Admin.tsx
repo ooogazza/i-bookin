@@ -20,7 +20,7 @@ const Admin = () => {
         </div>
 
         <div className="max-w-md">
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate("/brickwork/admin/sites")}>
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate("/admin/sites")}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Building2 className="h-5 w-5 text-primary" />

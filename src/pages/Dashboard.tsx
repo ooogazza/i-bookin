@@ -134,7 +134,7 @@ const Dashboard = () => {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 mb-8">
-          <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate("/brickwork/booking-in")}>
+          <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate("/booking-in")}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-6 w-6 text-primary" />
@@ -152,7 +152,7 @@ const Dashboard = () => {
           </Card>
 
           {isAdmin && (
-            <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate("/brickwork/admin")}>
+            <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate("/admin")}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Building2 className="h-6 w-6 text-primary" />
@@ -211,7 +211,7 @@ const Dashboard = () => {
               <Card
                 key={site.id}
                 className="cursor-pointer hover:shadow-lg transition-shadow"
-                onClick={() => navigate(`/brickwork/site/${site.id}`)}
+                onClick={() => navigate(`/site/${site.id}`)}
               >
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">

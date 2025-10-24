@@ -223,7 +223,7 @@ const PlotBooking = () => {
       if (gangError) throw gangError;
 
       toast.success("Booking created successfully");
-      navigate("/brickwork/booking-in");
+      navigate("/booking-in");
     } catch (error: any) {
       toast.error("Failed to create booking");
       console.error("Error:", error);
