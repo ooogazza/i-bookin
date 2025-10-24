@@ -381,7 +381,7 @@ const SiteDetail = () => {
     if (totalBooked <= 33) return "bg-orange-100 hover:bg-orange-200 dark:bg-orange-900/20 dark:hover:bg-orange-900/30 cursor-pointer";
     if (totalBooked <= 66) return "bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/20 dark:hover:bg-yellow-900/30 cursor-pointer";
     if (totalBooked < 100) return "bg-green-100 hover:bg-green-200 dark:bg-green-900/20 dark:hover:bg-green-900/30 cursor-pointer";
-    return "bg-green-100 hover:bg-green-200 dark:bg-green-900/20 dark:hover:bg-green-900/30 cursor-not-allowed";
+    return "bg-green-100 hover:bg-green-200 dark:bg-green-900/20 dark:hover:bg-green-900/30 cursor-pointer";
   };
 
   const handleLiftCellClick = (plot: Plot, liftType: string) => {
@@ -391,10 +391,6 @@ const SiteDetail = () => {
     }
 
     const totalBooked = getTotalBooked(plot, liftType);
-    if (totalBooked >= 100) {
-      toast.error("This lift is fully booked");
-      return;
-    }
 
     // Open booking dialog for all users
     setSelectedBookingPlot(plot);
