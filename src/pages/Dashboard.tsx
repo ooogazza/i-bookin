@@ -36,6 +36,7 @@ const Dashboard = () => {
   const { isAdmin, user } = useAuth();
   const [developers, setDevelopers] = useState<Developer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [unviewedInvoicesCount, setUnviewedInvoicesCount] = useState(0);
   
   const [createSiteDialogOpen, setCreateSiteDialogOpen] = useState(false);
   const [siteName, setSiteName] = useState("");
@@ -49,6 +50,9 @@ const Dashboard = () => {
     if (user) {
       fetchDevelopers();
       fetchAllDevelopers();
+      if (isAdmin) {
+        fetchUnviewedInvoicesCount();
+      }
     }
   }, [user, isAdmin]);
 
@@ -105,6 +109,38 @@ const Dashboard = () => {
       setAllDevelopers(data || []);
     } catch (error: any) {
       console.error("Error fetching all developers:", error);
+    }
+  };
+
+  const fetchUnviewedInvoicesCount = async () => {
+    if (!user || !isAdmin) return;
+
+    try {
+      // Get all confirmed bookings
+      const { data: bookings, error: bookingsError } = await supabase
+        .from("bookings")
+        .select("invoice_number")
+        .eq("status", "confirmed");
+
+      if (bookingsError) throw bookingsError;
+
+      // Get unique invoice numbers
+      const uniqueInvoices = [...new Set(bookings?.map(b => b.invoice_number) || [])];
+
+      // Get viewed invoices for this admin
+      const { data: viewedData, error: viewedError } = await supabase
+        .from("invoice_views")
+        .select("invoice_number")
+        .eq("viewed_by", user.id);
+
+      if (viewedError) throw viewedError;
+
+      const viewedInvoices = new Set(viewedData?.map(v => v.invoice_number) || []);
+      const unviewedCount = uniqueInvoices.filter(inv => !viewedInvoices.has(inv)).length;
+
+      setUnviewedInvoicesCount(unviewedCount);
+    } catch (error: any) {
+      console.error("Error fetching unviewed invoices count:", error);
     }
   };
 
@@ -166,38 +202,40 @@ const Dashboard = () => {
       <Header />
       
       <main className="container py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-          <p className="text-muted-foreground">
-            {isAdmin ? "Manage all developers and sites" : "View your assigned developers and sites"}
-          </p>
-        </div>
-
-        {isAdmin && (
-          <div className="mb-6">
+        <div className="mb-8 flex items-start justify-between">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+            <p className="text-muted-foreground">
+              {isAdmin ? "Manage all developers and sites" : "View your assigned developers and sites"}
+            </p>
+          </div>
+          {isAdmin && (
             <Button onClick={() => setCreateSiteDialogOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               New Site
             </Button>
-          </div>
-        )}
+          )}
+        </div>
 
         <div className="grid gap-6 md:grid-cols-2 mb-8">
-          <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate("/booking-in")}>
+          <Card className="cursor-pointer hover:bg-muted/50 transition-colors relative" onClick={() => navigate("/booking-in")}>
+            {isAdmin && unviewedInvoicesCount > 0 && (
+              <div className="absolute top-4 right-4 h-3 w-3 rounded-full bg-primary animate-pulse" />
+            )}
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-6 w-6 text-primary" />
                 Booking In
+                {isAdmin && unviewedInvoicesCount > 0 && (
+                  <span className="ml-auto text-sm font-normal text-primary">
+                    {unviewedInvoicesCount} new
+                  </span>
+                )}
               </CardTitle>
               <CardDescription>
                 {isAdmin ? "View all invoices and bookings" : "View your invoices and bookings"}
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Button variant="outline" className="w-full">
-                View Bookings
-              </Button>
-            </CardContent>
           </Card>
         </div>
 
@@ -244,11 +282,6 @@ const Dashboard = () => {
                       {developer.site_count || 0} site{developer.site_count !== 1 ? 's' : ''}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <Button variant="outline" className="w-full">
-                      View Sites
-                    </Button>
-                  </CardContent>
                 </Card>
               );
             })}

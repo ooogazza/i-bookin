@@ -58,6 +58,7 @@ interface GroupedInvoice {
   items: BookingData[];
   total_value: number;
   notes: string | null;
+  is_viewed?: boolean;
 }
 
 const LIFT_LABELS = {
@@ -78,10 +79,11 @@ const BookingIn = () => {
   const [loading, setLoading] = useState(true);
   const [selectedInvoice, setSelectedInvoice] = useState<GroupedInvoice | null>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [unviewedCount, setUnviewedCount] = useState(0);
 
   useEffect(() => {
     fetchBookings();
-  }, []);
+  }, [user, isAdmin]);
 
   const fetchBookings = async () => {
     if (!user) return;
@@ -144,7 +146,25 @@ const BookingIn = () => {
         return acc;
       }, {});
       
-      setGroupedInvoices(Object.values(grouped));
+      const invoices = Object.values(grouped) as GroupedInvoice[];
+      
+      // Fetch viewed status for admin
+      if (isAdmin) {
+        const { data: viewData, error: viewError } = await supabase
+          .from("invoice_views")
+          .select("invoice_number")
+          .eq("viewed_by", user.id);
+        
+        if (!viewError) {
+          const viewedInvoices = new Set(viewData?.map(v => v.invoice_number) || []);
+          invoices.forEach((invoice: GroupedInvoice) => {
+            invoice.is_viewed = viewedInvoices.has(invoice.invoice_number);
+          });
+          setUnviewedCount(invoices.filter((inv: GroupedInvoice) => !inv.is_viewed).length);
+        }
+      }
+      
+      setGroupedInvoices(invoices);
     } catch (error: any) {
       toast.error("Failed to load bookings");
       console.error("Error:", error);
@@ -153,9 +173,33 @@ const BookingIn = () => {
     }
   };
 
-  const handleViewDetails = (invoice: GroupedInvoice) => {
+  const handleViewDetails = async (invoice: GroupedInvoice) => {
     setSelectedInvoice(invoice);
     setDetailsDialogOpen(true);
+    
+    // Mark as viewed for admins
+    if (isAdmin && !invoice.is_viewed) {
+      try {
+        await supabase
+          .from("invoice_views")
+          .insert({
+            invoice_number: invoice.invoice_number,
+            viewed_by: user!.id
+          });
+        
+        // Update local state
+        setGroupedInvoices((prev: GroupedInvoice[]) => 
+          prev.map((inv: GroupedInvoice) => 
+            inv.invoice_number === invoice.invoice_number 
+              ? { ...inv, is_viewed: true } as GroupedInvoice
+              : inv
+          )
+        );
+        setUnviewedCount(prev => Math.max(0, prev - 1));
+      } catch (error: any) {
+        console.error("Error marking invoice as viewed:", error);
+      }
+    }
   };
 
   const handleExportInvoice = (invoice: GroupedInvoice) => {
@@ -248,8 +292,19 @@ Total Allocated: £${gangDivisions.reduce((sum, m) => sum + m.amount, 0).toFixed
                   </TableHeader>
                   <TableBody>
                     {groupedInvoices.map((invoice) => (
-                      <TableRow key={invoice.invoice_number}>
-                        <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
+                      <TableRow 
+                        key={invoice.invoice_number}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => handleViewDetails(invoice)}
+                      >
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            {isAdmin && !invoice.is_viewed && (
+                              <div className="h-2 w-2 rounded-full bg-primary" />
+                            )}
+                            {invoice.invoice_number}
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <div>
                             <p className="font-medium">{invoice.booked_by.full_name}</p>
@@ -275,18 +330,14 @@ Total Allocated: £${gangDivisions.reduce((sum, m) => sum + m.amount, 0).toFixed
                         <TableCell>
                           {new Date(invoice.created_at).toLocaleDateString()}
                         </TableCell>
-                        <TableCell className="text-right space-x-2">
+                        <TableCell className="text-right">
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleViewDetails(invoice)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleExportInvoice(invoice)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleExportInvoice(invoice);
+                            }}
                           >
                             <Printer className="h-4 w-4" />
                           </Button>

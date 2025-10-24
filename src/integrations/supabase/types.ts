@@ -207,6 +207,27 @@ export type Database = {
           },
         ]
       }
+      invoice_views: {
+        Row: {
+          id: string
+          invoice_number: string
+          viewed_at: string
+          viewed_by: string
+        }
+        Insert: {
+          id?: string
+          invoice_number: string
+          viewed_at?: string
+          viewed_by: string
+        }
+        Update: {
+          id?: string
+          invoice_number?: string
+          viewed_at?: string
+          viewed_by?: string
+        }
+        Relationships: []
+      }
       lift_values: {
         Row: {
           created_at: string

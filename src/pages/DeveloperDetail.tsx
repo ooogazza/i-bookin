@@ -180,19 +180,14 @@ const DeveloperDetail = () => {
                     )}
                   </div>
                   {site.location && (
-                    <CardDescription className="flex items-center gap-1">
-                      📍 {site.location}
+                    <CardDescription className="flex items-center gap-1 text-primary">
+                      📌 {site.location}
                     </CardDescription>
                   )}
                   {site.description && (
                     <CardDescription>{site.description}</CardDescription>
                   )}
                 </CardHeader>
-                <CardContent>
-                  <Button variant="outline" className="w-full">
-                    View Site
-                  </Button>
-                </CardContent>
               </Card>
             ))}
           </div>
