@@ -732,6 +732,26 @@ const SiteDetail = () => {
 
   return (
     <div className="min-h-screen bg-secondary/30">
+      {/* Sticky Header */}
+      {showStickyHeader && site && (
+        <div className="fixed top-16 left-0 right-0 z-40 bg-background/95 backdrop-blur border-b shadow-md">
+          <div className="container py-3 flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-lg">{site.name}</h3>
+              <p className="text-sm text-muted-foreground">
+                {site.number_of_plots} plots • {site.number_of_house_types} house types
+              </p>
+            </div>
+            {invoiceItems.length > 0 && (
+              <Button onClick={() => setInvoiceDialogOpen(true)} variant="default">
+                <FileText className="mr-2 h-4 w-4" />
+                View Invoice ({invoiceItems.length})
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+      
       <Header 
         showBackButton
         actions={
@@ -845,7 +865,7 @@ const SiteDetail = () => {
                       <th className="p-2 text-left font-medium">Plot</th>
                       <th className="p-2 text-left font-medium">House Type</th>
                       {Object.values(LIFT_LABELS).map(label => (
-                        <th key={label} className="p-2 text-right font-medium whitespace-nowrap text-sm">{label}</th>
+                        <th key={label} className="p-2 text-center font-medium whitespace-nowrap text-sm">{label}</th>
                       ))}
                       {isAdmin && <th className="p-2 text-center font-medium">Actions</th>}
                     </tr>
