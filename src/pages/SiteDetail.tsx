@@ -618,44 +618,33 @@ const SiteDetail = () => {
   };
 
   const handleInviteUser = async () => {
-    if (!site || !inviteEmail.trim()) return;
+    if (!site || !inviteEmail.trim() || !user) return;
 
     try {
-      // Check if user exists with this email
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("email", inviteEmail.trim())
-        .single();
+      // Create an invitation record
+      const { error } = await supabase
+        .from("invitations")
+        .insert({
+          email: inviteEmail.trim().toLowerCase(),
+          site_id: site.id,
+          invited_by: user.id
+        });
 
-      if (profile) {
-        // User exists, add them to site
-        const { error } = await supabase
-          .from("user_site_assignments")
-          .insert({
-            user_id: profile.id,
-            site_id: site.id
-          });
-
-        if (error) {
-          if (error.code === '23505') {
-            toast.error("User is already invited to this site");
-          } else {
-            throw error;
-          }
+      if (error) {
+        if (error.code === '23505') {
+          toast.error("This user has already been invited to this site");
         } else {
-          toast.success("User added to site");
+          throw error;
         }
       } else {
-        // User doesn't exist yet
-        toast.info("User not found. They need to sign up first at your app URL, then you can invite them.");
+        toast.success("Invitation sent! User can now sign up and will automatically get access to this site.");
       }
 
       setInviteUserDialogOpen(false);
       setInviteEmail("");
       fetchSiteData();
     } catch (error: any) {
-      toast.error(error.message || "Failed to invite user");
+      toast.error(error.message || "Failed to send invitation");
       console.error("Error:", error);
     }
   };
