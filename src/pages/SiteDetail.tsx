@@ -912,10 +912,9 @@ const SiteDetail = () => {
                 <Label htmlFor="searchPhase">Phase (Optional)</Label>
                 <Select value={searchPhase} onValueChange={setSearchPhase}>
                   <SelectTrigger id="searchPhase">
-                    <SelectValue placeholder="Select phase" />
+                    <SelectValue placeholder="All Phases" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Phases</SelectItem>
                     {Object.entries(LIFT_LABELS).map(([key, label]) => (
                       <SelectItem key={key} value={key}>{label}</SelectItem>
                     ))}
