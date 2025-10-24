@@ -467,8 +467,12 @@ const SiteDetail = () => {
   const remainingToAllocate = totalInvoiceValue - totalGangAllocated;
   
   const handleUpdateMemberAmount = (index: number, amount: number) => {
+    const otherMembersTotal = gangMembers.reduce((sum, m, i) => i !== index ? sum + m.amount : sum, 0);
+    const maxAllowed = totalInvoiceValue - otherMembersTotal;
+    const cappedAmount = Math.min(amount, maxAllowed);
+    
     const updated = [...gangMembers];
-    updated[index] = { ...updated[index], amount };
+    updated[index] = { ...updated[index], amount: cappedAmount };
     setGangMembers(updated);
   };
 
@@ -1127,7 +1131,7 @@ const SiteDetail = () => {
                                 value={[member.amount]}
                                 onValueChange={(value) => handleUpdateMemberAmount(index, value[0])}
                                 min={0}
-                                max={totalInvoiceValue}
+                                max={totalInvoiceValue - gangMembers.reduce((sum, m, i) => i !== index ? sum + m.amount : sum, 0)}
                                 step={10}
                               />
                             </div>
