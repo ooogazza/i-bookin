@@ -116,7 +116,7 @@ const SiteDetail = () => {
   const [selectedUserId, setSelectedUserId] = useState("");
 
   const [inviteUserDialogOpen, setInviteUserDialogOpen] = useState(false);
-  const [selectedInviteUserId, setSelectedInviteUserId] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
 
   const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
   const [selectedBookingPlot, setSelectedBookingPlot] = useState<Plot | null>(null);
@@ -618,24 +618,44 @@ const SiteDetail = () => {
   };
 
   const handleInviteUser = async () => {
-    if (!site || !selectedInviteUserId) return;
+    if (!site || !inviteEmail.trim()) return;
 
     try {
-      const { error } = await supabase
-        .from("user_site_assignments")
-        .insert({
-          user_id: selectedInviteUserId,
-          site_id: site.id
-        });
+      // Check if user exists with this email
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("email", inviteEmail.trim())
+        .single();
 
-      if (error) throw error;
+      if (profile) {
+        // User exists, add them to site
+        const { error } = await supabase
+          .from("user_site_assignments")
+          .insert({
+            user_id: profile.id,
+            site_id: site.id
+          });
 
-      toast.success("User invited to site");
+        if (error) {
+          if (error.code === '23505') {
+            toast.error("User is already invited to this site");
+          } else {
+            throw error;
+          }
+        } else {
+          toast.success("User added to site");
+        }
+      } else {
+        // User doesn't exist yet
+        toast.info("User not found. They need to sign up first at your app URL, then you can invite them.");
+      }
+
       setInviteUserDialogOpen(false);
-      setSelectedInviteUserId("");
+      setInviteEmail("");
       fetchSiteData();
     } catch (error: any) {
-      toast.error("Failed to invite user");
+      toast.error(error.message || "Failed to invite user");
       console.error("Error:", error);
     }
   };
@@ -715,7 +735,7 @@ const SiteDetail = () => {
               onClick={() => setInvoiceDialogOpen(true)}
               variant="default"
             >
-              <ShoppingCart className="mr-2 h-4 w-4" />
+              <FileText className="mr-2 h-4 w-4" />
               View Invoice ({invoiceItems.length})
             </Button>
           )}
@@ -939,24 +959,16 @@ const SiteDetail = () => {
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>User</Label>
-                <Select value={selectedInviteUserId} onValueChange={setSelectedInviteUserId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select user" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableUsers
-                      .filter(u => !users.some(su => su.user_id === u.id))
-                      .map(u => (
-                        <SelectItem key={u.id} value={u.id}>
-                          {u.full_name} ({u.email})
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
+                <Label>Email Address</Label>
+                <Input
+                  type="email"
+                  placeholder="user@example.com"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                />
               </div>
-              <Button onClick={handleInviteUser} className="w-full" disabled={!selectedInviteUserId}>
-                Invite User
+              <Button onClick={handleInviteUser} className="w-full" disabled={!inviteEmail.trim()}>
+                Send Invitation
               </Button>
             </div>
           </DialogContent>
