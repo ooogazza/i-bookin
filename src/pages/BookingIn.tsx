@@ -24,6 +24,7 @@ interface BookingData {
   invoice_number: string;
   status: string;
   created_at: string;
+  notes: string | null;
   profiles: {
     full_name: string;
     email: string;
@@ -47,6 +48,18 @@ interface BookingData {
   }[];
 }
 
+interface GroupedInvoice {
+  invoice_number: string;
+  created_at: string;
+  booked_by: {
+    full_name: string;
+    email: string;
+  };
+  items: BookingData[];
+  total_value: number;
+  notes: string | null;
+}
+
 const LIFT_LABELS = {
   lift_1: "Lift 1",
   lift_2: "Lift 2",
@@ -61,8 +74,9 @@ const LIFT_LABELS = {
 const BookingIn = () => {
   const { user, isAdmin } = useAuth();
   const [bookings, setBookings] = useState<BookingData[]>([]);
+  const [groupedInvoices, setGroupedInvoices] = useState<GroupedInvoice[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedBooking, setSelectedBooking] = useState<BookingData | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<GroupedInvoice | null>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -77,6 +91,7 @@ const BookingIn = () => {
         .from("bookings")
         .select(`
           *,
+          notes,
           profiles!bookings_booked_by_fkey (
             full_name,
             email
@@ -111,6 +126,25 @@ const BookingIn = () => {
 
       if (error) throw error;
       setBookings(data as any || []);
+      
+      // Group bookings by invoice number
+      const grouped = (data as any || []).reduce((acc: { [key: string]: GroupedInvoice }, booking: BookingData) => {
+        if (!acc[booking.invoice_number]) {
+          acc[booking.invoice_number] = {
+            invoice_number: booking.invoice_number,
+            created_at: booking.created_at,
+            booked_by: booking.profiles,
+            items: [],
+            total_value: 0,
+            notes: booking.notes
+          };
+        }
+        acc[booking.invoice_number].items.push(booking);
+        acc[booking.invoice_number].total_value += booking.booked_value;
+        return acc;
+      }, {});
+      
+      setGroupedInvoices(Object.values(grouped));
     } catch (error: any) {
       toast.error("Failed to load bookings");
       console.error("Error:", error);
@@ -119,44 +153,47 @@ const BookingIn = () => {
     }
   };
 
-  const handleViewDetails = (booking: BookingData) => {
-    setSelectedBooking(booking);
+  const handleViewDetails = (invoice: GroupedInvoice) => {
+    setSelectedInvoice(invoice);
     setDetailsDialogOpen(true);
   };
 
-  const handleExportInvoice = (booking: BookingData) => {
+  const handleExportInvoice = (invoice: GroupedInvoice) => {
+    const itemsList = invoice.items.map(item => 
+      `Plot ${item.plots.plot_number} - ${LIFT_LABELS[item.lift_values.lift_type as keyof typeof LIFT_LABELS]}: ${item.percentage}% = £${item.booked_value.toFixed(2)}`
+    ).join('\n');
+    
+    const gangDivisions = invoice.items[0]?.gang_divisions || [];
+    
     const invoiceContent = `
-INVOICE: ${booking.invoice_number}
-Date: ${new Date(booking.created_at).toLocaleDateString()}
+INVOICE: ${invoice.invoice_number}
+Date: ${new Date(invoice.created_at).toLocaleDateString()}
 
-Booked By: ${booking.profiles.full_name}
-Email: ${booking.profiles.email}
+Booked By: ${invoice.booked_by.full_name}
+Email: ${invoice.booked_by.email}
 
-Site: ${booking.plots.house_types.sites.name}
-Plot: ${booking.plots.plot_number}
-House Type: ${booking.plots.house_types.name}
-Lift: ${LIFT_LABELS[booking.lift_values.lift_type as keyof typeof LIFT_LABELS]}
+ITEMS:
+${itemsList}
 
-Percentage: ${booking.percentage}%
-Total Value: £${booking.booked_value.toFixed(2)}
+${invoice.notes ? `NOTES:\n${invoice.notes}\n\n` : ''}Total Value: £${invoice.total_value.toFixed(2)}
 
 GANG DIVISION:
-${booking.gang_divisions.map(m => `${m.member_name} (${m.member_type}): £${m.amount.toFixed(2)}`).join('\n')}
+${gangDivisions.map(m => `${m.member_name} (${m.member_type}): £${m.amount.toFixed(2)}`).join('\n')}
 
-Total Allocated: £${booking.gang_divisions.reduce((sum, m) => sum + m.amount, 0).toFixed(2)}
+Total Allocated: £${gangDivisions.reduce((sum, m) => sum + m.amount, 0).toFixed(2)}
     `.trim();
 
     const blob = new Blob([invoiceContent], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${booking.invoice_number}.txt`;
+    a.download = `${invoice.invoice_number}.txt`;
     a.click();
     URL.revokeObjectURL(url);
     toast.success("Invoice exported");
   };
 
-  const totalValue = bookings.reduce((sum, booking) => sum + booking.booked_value, 0);
+  const totalValue = groupedInvoices.reduce((sum, invoice) => sum + invoice.total_value, 0);
 
   const handlePrint = () => {
     window.print();
@@ -193,7 +230,7 @@ Total Allocated: £${booking.gang_divisions.reduce((sum, m) => sum + m.amount, 0
               <CardTitle>Work Completed</CardTitle>
             </CardHeader>
             <CardContent>
-              {bookings.length === 0 ? (
+              {groupedInvoices.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-muted-foreground">No bookings yet</p>
                 </div>
@@ -203,46 +240,53 @@ Total Allocated: £${booking.gang_divisions.reduce((sum, m) => sum + m.amount, 0
                     <TableRow>
                       <TableHead>Invoice #</TableHead>
                       <TableHead>Booked By</TableHead>
-                      <TableHead>Site</TableHead>
-                      <TableHead>Plot</TableHead>
-                      <TableHead>House Type</TableHead>
-                      <TableHead>Lift</TableHead>
-                      <TableHead className="text-right">Percentage</TableHead>
-                      <TableHead className="text-right">Value</TableHead>
+                      <TableHead>Items</TableHead>
+                      <TableHead className="text-right">Total Value</TableHead>
                       <TableHead>Date</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {bookings.map((booking) => (
-                      <TableRow key={booking.id}>
-                        <TableCell className="font-medium">{booking.invoice_number}</TableCell>
-                        <TableCell>{booking.profiles.full_name}</TableCell>
-                        <TableCell>{booking.plots.house_types.sites.name}</TableCell>
-                        <TableCell>Plot {booking.plots.plot_number}</TableCell>
-                        <TableCell>{booking.plots.house_types.name}</TableCell>
+                    {groupedInvoices.map((invoice) => (
+                      <TableRow key={invoice.invoice_number}>
+                        <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
                         <TableCell>
-                          {LIFT_LABELS[booking.lift_values.lift_type as keyof typeof LIFT_LABELS]}
-                        </TableCell>
-                        <TableCell className="text-right">{booking.percentage}%</TableCell>
-                        <TableCell className="text-right font-medium">
-                          £{booking.booked_value.toFixed(2)}
+                          <div>
+                            <p className="font-medium">{invoice.booked_by.full_name}</p>
+                            <p className="text-sm text-muted-foreground">{invoice.booked_by.email}</p>
+                          </div>
                         </TableCell>
                         <TableCell>
-                          {new Date(booking.created_at).toLocaleDateString()}
+                          <div className="space-y-1">
+                            {invoice.items.map((item, idx) => (
+                              <div key={idx} className="text-sm">
+                                <span className="font-medium">Plot {item.plots.plot_number}</span>
+                                {' - '}
+                                <span>{LIFT_LABELS[item.lift_values.lift_type as keyof typeof LIFT_LABELS]}</span>
+                                {' '}
+                                <span className="text-muted-foreground">({item.percentage}%)</span>
+                              </div>
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right font-bold text-primary">
+                          £{invoice.total_value.toFixed(2)}
+                        </TableCell>
+                        <TableCell>
+                          {new Date(invoice.created_at).toLocaleDateString()}
                         </TableCell>
                         <TableCell className="text-right space-x-2">
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleViewDetails(booking)}
+                            onClick={() => handleViewDetails(invoice)}
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleExportInvoice(booking)}
+                            onClick={() => handleExportInvoice(invoice)}
                           >
                             <Printer className="h-4 w-4" />
                           </Button>
@@ -252,7 +296,7 @@ Total Allocated: £${booking.gang_divisions.reduce((sum, m) => sum + m.amount, 0
                   </TableBody>
                   <TableFooter>
                     <TableRow>
-                      <TableCell colSpan={7} className="text-right font-bold">
+                      <TableCell colSpan={3} className="text-right font-bold">
                         Total
                       </TableCell>
                       <TableCell className="text-right font-bold text-lg">
@@ -269,55 +313,71 @@ Total Allocated: £${booking.gang_divisions.reduce((sum, m) => sum + m.amount, 0
 
         {/* Invoice Details Dialog */}
         <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Invoice Details</DialogTitle>
             </DialogHeader>
-            {selectedBooking && (
+            {selectedInvoice && (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-muted-foreground">Invoice Number</p>
-                    <p className="font-semibold">{selectedBooking.invoice_number}</p>
+                    <p className="font-semibold">{selectedInvoice.invoice_number}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Date</p>
-                    <p className="font-semibold">{new Date(selectedBooking.created_at).toLocaleDateString()}</p>
+                    <p className="font-semibold">{new Date(selectedInvoice.created_at).toLocaleDateString()}</p>
                   </div>
-                  <div>
+                  <div className="col-span-2">
                     <p className="text-sm text-muted-foreground">Booked By</p>
-                    <p className="font-semibold">{selectedBooking.profiles.full_name}</p>
-                    <p className="text-sm text-muted-foreground">{selectedBooking.profiles.email}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Site & Plot</p>
-                    <p className="font-semibold">{selectedBooking.plots.house_types.sites.name}</p>
-                    <p className="text-sm">Plot {selectedBooking.plots.plot_number}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">House Type</p>
-                    <p className="font-semibold">{selectedBooking.plots.house_types.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Lift</p>
-                    <p className="font-semibold">
-                      {LIFT_LABELS[selectedBooking.lift_values.lift_type as keyof typeof LIFT_LABELS]}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Percentage</p>
-                    <p className="font-semibold">{selectedBooking.percentage}%</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Value</p>
-                    <p className="font-semibold text-primary">£{selectedBooking.booked_value.toFixed(2)}</p>
+                    <p className="font-semibold">{selectedInvoice.booked_by.full_name}</p>
+                    <p className="text-sm text-muted-foreground">{selectedInvoice.booked_by.email}</p>
                   </div>
                 </div>
 
                 <div className="border-t pt-4">
+                  <h4 className="font-semibold mb-3">Invoice Items</h4>
+                  <div className="space-y-2">
+                    {selectedInvoice.items.map((item, index) => (
+                      <div key={index} className="p-3 bg-muted rounded-lg">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <p className="font-medium">
+                              Plot {item.plots.plot_number} - {item.plots.house_types.name}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {item.plots.house_types.sites.name}
+                            </p>
+                          </div>
+                          <p className="font-bold text-primary">£{item.booked_value.toFixed(2)}</p>
+                        </div>
+                        <div className="text-sm">
+                          <span className="font-medium">
+                            {LIFT_LABELS[item.lift_values.lift_type as keyof typeof LIFT_LABELS]}
+                          </span>
+                          {' - '}
+                          <span className="text-muted-foreground">{item.percentage}%</span>
+                        </div>
+                      </div>
+                    ))}
+                    <div className="flex justify-between items-center pt-2 border-t font-bold text-lg">
+                      <span>Invoice Total:</span>
+                      <span className="text-primary">£{selectedInvoice.total_value.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {selectedInvoice.notes && (
+                  <div className="border-t pt-4">
+                    <h4 className="font-semibold mb-2">Notes</h4>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedInvoice.notes}</p>
+                  </div>
+                )}
+
+                <div className="border-t pt-4">
                   <h4 className="font-semibold mb-3">Gang Division</h4>
                   <div className="space-y-2">
-                    {selectedBooking.gang_divisions.map((member, index) => (
+                    {selectedInvoice.items[0]?.gang_divisions.map((member, index) => (
                       <div key={index} className="flex justify-between items-center p-2 bg-muted rounded">
                         <div>
                           <p className="font-medium">{member.member_name}</p>
@@ -328,13 +388,13 @@ Total Allocated: £${booking.gang_divisions.reduce((sum, m) => sum + m.amount, 0
                     ))}
                     <div className="flex justify-between items-center pt-2 border-t font-bold">
                       <span>Total Allocated</span>
-                      <span>£{selectedBooking.gang_divisions.reduce((sum, m) => sum + m.amount, 0).toFixed(2)}</span>
+                      <span>£{selectedInvoice.items[0]?.gang_divisions.reduce((sum, m) => sum + m.amount, 0).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
 
                 <Button 
-                  onClick={() => handleExportInvoice(selectedBooking)} 
+                  onClick={() => handleExportInvoice(selectedInvoice)} 
                   className="w-full"
                 >
                   <Printer className="mr-2 h-4 w-4" />
