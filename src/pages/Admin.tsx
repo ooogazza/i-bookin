@@ -9,7 +9,7 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-secondary/30">
-      <Header />
+      <Header showBackButton />
       
       <main className="container py-8">
         <div className="mb-8">

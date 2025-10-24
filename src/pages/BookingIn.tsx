@@ -164,7 +164,7 @@ Total Allocated: £${booking.gang_divisions.reduce((sum, m) => sum + m.amount, 0
 
   return (
     <div className="min-h-screen bg-secondary/30">
-      <Header />
+      <Header showBackButton />
       
       <main className="container py-8">
         <div className="flex items-center justify-between mb-8">
