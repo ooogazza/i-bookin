@@ -3,7 +3,7 @@ import { signOut } from "@/lib/supabase";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { LogOut, Settings, ArrowLeft } from "lucide-react";
+import { LogOut, ArrowLeft } from "lucide-react";
 import logo from "@/assets/logo.png";
 
 interface HeaderProps {
@@ -29,7 +29,7 @@ export const Header = ({ showBackButton = false }: HeaderProps) => {
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-3">
           {showBackButton && (
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
           )}
@@ -47,12 +47,6 @@ export const Header = ({ showBackButton = false }: HeaderProps) => {
           <Button variant="ghost" onClick={() => navigate("/booking-in")}>
             Booking In
           </Button>
-          {isAdmin && (
-            <Button variant="ghost" onClick={() => navigate("/admin")}>
-              <Settings className="mr-2 h-4 w-4" />
-              Admin
-            </Button>
-          )}
           <Button variant="outline" onClick={handleLogout}>
             <LogOut className="mr-2 h-4 w-4" />
             Logout

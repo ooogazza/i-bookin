@@ -137,10 +137,7 @@ const DeveloperDetail = () => {
             {logo && (
               <img src={logo} alt={developer.name} className="h-16 w-auto object-contain" />
             )}
-            <div>
-              <h2 className="text-3xl font-bold tracking-tight">{developer.name}</h2>
-              <p className="text-muted-foreground">Sites for this developer</p>
-            </div>
+            <p className="text-muted-foreground">Sites for this developer</p>
           </div>
         </div>
 
