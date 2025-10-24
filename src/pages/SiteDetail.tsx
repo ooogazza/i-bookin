@@ -466,10 +466,11 @@ const SiteDetail = () => {
   const totalGangAllocated = gangMembers.reduce((sum, m) => sum + m.amount, 0);
   const remainingToAllocate = totalInvoiceValue - totalGangAllocated;
   
-  const handleUpdateMemberAmount = (index: number, amount: number) => {
+  const handleUpdateMemberAmount = (index: number, percentage: number) => {
+    const calculatedAmount = (totalInvoiceValue * percentage) / 100;
     const otherMembersTotal = gangMembers.reduce((sum, m, i) => i !== index ? sum + m.amount : sum, 0);
     const maxAllowed = totalInvoiceValue - otherMembersTotal;
-    const cappedAmount = Math.min(amount, maxAllowed);
+    const cappedAmount = Math.min(calculatedAmount, maxAllowed);
     
     const updated = [...gangMembers];
     updated[index] = { ...updated[index], amount: cappedAmount };
@@ -1128,11 +1129,11 @@ const SiteDetail = () => {
                                 <Label className="text-sm">Amount: £{member.amount.toFixed(2)}</Label>
                               </div>
                               <Slider
-                                value={[member.amount]}
+                                value={[(member.amount / totalInvoiceValue) * 100]}
                                 onValueChange={(value) => handleUpdateMemberAmount(index, value[0])}
                                 min={0}
-                                max={totalInvoiceValue - gangMembers.reduce((sum, m, i) => i !== index ? sum + m.amount : sum, 0)}
-                                step={10}
+                                max={100}
+                                step={1}
                               />
                             </div>
                           </div>
