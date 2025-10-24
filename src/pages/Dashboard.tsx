@@ -4,13 +4,14 @@ import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Plus, Building2, FileText } from "lucide-react";
+import { Plus, Building2, FileText, Trash2 } from "lucide-react";
 
 interface Site {
   id: string;
@@ -30,6 +31,8 @@ const Dashboard = () => {
   const [siteDescription, setSiteDescription] = useState("");
   const [numberOfPlots, setNumberOfPlots] = useState(1);
   const [creating, setCreating] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [siteToDelete, setSiteToDelete] = useState<Site | null>(null);
 
   useEffect(() => {
     if (user) fetchSites();
@@ -118,6 +121,34 @@ const Dashboard = () => {
       console.error("Error:", error);
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, site: Site) => {
+    e.stopPropagation();
+    setSiteToDelete(site);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!siteToDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from("sites")
+        .delete()
+        .eq("id", siteToDelete.id);
+
+      if (error) throw error;
+
+      toast.success("Site deleted successfully");
+      fetchSites();
+    } catch (error: any) {
+      toast.error("Failed to delete site");
+      console.error("Error:", error);
+    } finally {
+      setDeleteDialogOpen(false);
+      setSiteToDelete(null);
     }
   };
 
@@ -214,10 +245,22 @@ const Dashboard = () => {
                 onClick={() => navigate(`/site/${site.id}`)}
               >
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Building2 className="h-5 w-5 text-primary" />
-                    {site.name}
-                  </CardTitle>
+                  <div className="flex items-start justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <Building2 className="h-5 w-5 text-primary" />
+                      {site.name}
+                    </CardTitle>
+                    {isAdmin && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={(e) => handleDeleteClick(e, site)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                   {site.description && (
                     <CardDescription>{site.description}</CardDescription>
                   )}
@@ -282,6 +325,24 @@ const Dashboard = () => {
             </form>
           </DialogContent>
         </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Site</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete "{siteToDelete?.name}"? This action cannot be undone and will remove all associated plots and data.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
     </div>
   );
