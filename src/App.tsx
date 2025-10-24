@@ -12,7 +12,6 @@ import PlotBooking from "./pages/PlotBooking";
 import BookingIn from "./pages/BookingIn";
 import Admin from "./pages/Admin";
 import Sites from "./pages/admin/Sites";
-import HouseTypes from "./pages/admin/HouseTypes";
 import Users from "./pages/admin/Users";
 import NotFound from "./pages/NotFound";
 
@@ -73,14 +72,6 @@ const App = () => (
               element={
                 <ProtectedRoute requireAdmin>
                   <Sites />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/house-types"
-              element={
-                <ProtectedRoute requireAdmin>
-                  <HouseTypes />
                 </ProtectedRoute>
               }
             />
