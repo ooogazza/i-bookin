@@ -3,6 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -20,6 +24,12 @@ const Dashboard = () => {
   const { isAdmin, user } = useAuth();
   const [sites, setSites] = useState<Site[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  const [createSiteDialogOpen, setCreateSiteDialogOpen] = useState(false);
+  const [siteName, setSiteName] = useState("");
+  const [siteDescription, setSiteDescription] = useState("");
+  const [numberOfPlots, setNumberOfPlots] = useState(1);
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     if (user) fetchSites();
@@ -58,6 +68,56 @@ const Dashboard = () => {
       console.error("Error fetching sites:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCreateSite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !siteName.trim()) return;
+
+    setCreating(true);
+
+    try {
+      // Create the site
+      const { data: site, error: siteError } = await supabase
+        .from("sites")
+        .insert({
+          name: siteName.trim(),
+          description: siteDescription.trim() || null,
+          created_by: user.id,
+          number_of_plots: numberOfPlots,
+          number_of_house_types: 0
+        })
+        .select()
+        .single();
+
+      if (siteError) throw siteError;
+
+      // Create plots for the site
+      if (numberOfPlots > 0) {
+        const plots = Array.from({ length: numberOfPlots }, (_, i) => ({
+          site_id: site.id,
+          plot_number: i + 1
+        }));
+
+        const { error: plotsError } = await supabase
+          .from("plots")
+          .insert(plots);
+
+        if (plotsError) throw plotsError;
+      }
+
+      toast.success("Site created successfully");
+      setCreateSiteDialogOpen(false);
+      setSiteName("");
+      setSiteDescription("");
+      setNumberOfPlots(1);
+      fetchSites();
+    } catch (error: any) {
+      toast.error("Failed to create site");
+      console.error("Error:", error);
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -115,7 +175,7 @@ const Dashboard = () => {
               {isAdmin ? "All Sites" : "Your Sites"}
             </h3>
             {isAdmin && (
-              <Button onClick={() => navigate("/admin/sites")}>
+              <Button onClick={() => setCreateSiteDialogOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" />
                 New Site
               </Button>
@@ -138,7 +198,7 @@ const Dashboard = () => {
                   : "No sites have been assigned to you yet"}
               </p>
               {isAdmin && (
-                <Button onClick={() => navigate("/admin/sites")}>
+                <Button onClick={() => setCreateSiteDialogOpen(true)}>
                   <Plus className="mr-2 h-4 w-4" />
                   Create Site
                 </Button>
@@ -171,6 +231,57 @@ const Dashboard = () => {
             ))}
           </div>
         )}
+
+        {/* Create Site Dialog */}
+        <Dialog open={createSiteDialogOpen} onOpenChange={setCreateSiteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create New Site</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleCreateSite} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="siteName">Site Name *</Label>
+                <Input
+                  id="siteName"
+                  value={siteName}
+                  onChange={(e) => setSiteName(e.target.value)}
+                  placeholder="e.g., Oak Ridge Development"
+                  required
+                  maxLength={100}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="siteDescription">Description</Label>
+                <Textarea
+                  id="siteDescription"
+                  value={siteDescription}
+                  onChange={(e) => setSiteDescription(e.target.value)}
+                  placeholder="Optional description"
+                  rows={3}
+                  maxLength={500}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="numberOfPlots">Number of Plots *</Label>
+                <Input
+                  id="numberOfPlots"
+                  type="number"
+                  min="1"
+                  max="1000"
+                  value={numberOfPlots}
+                  onChange={(e) => setNumberOfPlots(parseInt(e.target.value) || 1)}
+                  required
+                />
+                <p className="text-sm text-muted-foreground">
+                  This will create {numberOfPlots} plot{numberOfPlots !== 1 ? 's' : ''} automatically
+                </p>
+              </div>
+              <Button type="submit" className="w-full" disabled={creating}>
+                {creating ? "Creating..." : "Create Site"}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
