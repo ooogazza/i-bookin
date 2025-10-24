@@ -1436,6 +1436,30 @@ const SiteDetail = () => {
                   </p>
                 </div>
 
+                {isAdmin && (
+                  <div className="border-t pt-4">
+                    <p className="text-sm text-muted-foreground mb-1">Assigned User</p>
+                    {selectedPlotForSummary.assigned_to ? (
+                      <div className="bg-muted p-3 rounded-lg">
+                        {users.find(u => u.user_id === selectedPlotForSummary.assigned_to) ? (
+                          <>
+                            <p className="font-semibold">
+                              {users.find(u => u.user_id === selectedPlotForSummary.assigned_to)?.profiles.full_name}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {users.find(u => u.user_id === selectedPlotForSummary.assigned_to)?.profiles.email}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">User details not available</p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No user assigned</p>
+                    )}
+                  </div>
+                )}
+
                 {selectedPlotForSummary.house_types && (
                   <>
                     <div className="border-t pt-4">
