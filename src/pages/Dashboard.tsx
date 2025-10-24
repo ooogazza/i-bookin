@@ -98,7 +98,7 @@ const Dashboard = () => {
                   <Building2 className="h-6 w-6 text-primary" />
                   Admin Panel
                 </CardTitle>
-                <CardDescription>Manage sites, house types, and users</CardDescription>
+                <CardDescription>Manage construction sites</CardDescription>
               </CardHeader>
               <CardContent>
                 <Button variant="outline" className="w-full">

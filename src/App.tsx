@@ -12,7 +12,6 @@ import PlotBooking from "./pages/PlotBooking";
 import BookingIn from "./pages/BookingIn";
 import Admin from "./pages/Admin";
 import Sites from "./pages/admin/Sites";
-import Users from "./pages/admin/Users";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -72,14 +71,6 @@ const App = () => (
               element={
                 <ProtectedRoute requireAdmin>
                   <Sites />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/users"
-              element={
-                <ProtectedRoute requireAdmin>
-                  <Users />
                 </ProtectedRoute>
               }
             />

@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Settings, Plus } from "lucide-react";
+import { Settings, Plus, Users, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface Site {
   id: string;
@@ -49,6 +50,12 @@ interface User {
   };
 }
 
+interface AvailableUser {
+  id: string;
+  full_name: string;
+  email: string;
+}
+
 const LIFT_LABELS = {
   lift_1: "Lift 1",
   lift_2: "Lift 2",
@@ -68,6 +75,7 @@ const SiteDetail = () => {
   const [houseTypes, setHouseTypes] = useState<HouseType[]>([]);
   const [plots, setPlots] = useState<Plot[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [availableUsers, setAvailableUsers] = useState<AvailableUser[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [houseTypeDialogOpen, setHouseTypeDialogOpen] = useState(false);
@@ -82,9 +90,15 @@ const SiteDetail = () => {
   const [userAssignDialogOpen, setUserAssignDialogOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState("");
 
+  const [inviteUserDialogOpen, setInviteUserDialogOpen] = useState(false);
+  const [selectedInviteUserId, setSelectedInviteUserId] = useState("");
+
   useEffect(() => {
-    if (id) fetchSiteData();
-  }, [id]);
+    if (id) {
+      fetchSiteData();
+      if (isAdmin) fetchAvailableUsers();
+    }
+  }, [id, isAdmin]);
 
   const fetchSiteData = async () => {
     try {
@@ -151,6 +165,20 @@ const SiteDetail = () => {
       console.error("Error:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAvailableUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .order("full_name");
+
+      if (error) throw error;
+      setAvailableUsers(data || []);
+    } catch (error: any) {
+      console.error("Error fetching users:", error);
     }
   };
 
@@ -281,6 +309,49 @@ const SiteDetail = () => {
     return lift ? lift.value : 0;
   };
 
+  const handleInviteUser = async () => {
+    if (!site || !selectedInviteUserId) return;
+
+    try {
+      const { error } = await supabase
+        .from("user_site_assignments")
+        .insert({
+          user_id: selectedInviteUserId,
+          site_id: site.id
+        });
+
+      if (error) throw error;
+
+      toast.success("User invited to site");
+      setInviteUserDialogOpen(false);
+      setSelectedInviteUserId("");
+      fetchSiteData();
+    } catch (error: any) {
+      toast.error("Failed to invite user");
+      console.error("Error:", error);
+    }
+  };
+
+  const handleRemoveUser = async (userId: string) => {
+    if (!site || !confirm("Remove this user from the site?")) return;
+
+    try {
+      const { error } = await supabase
+        .from("user_site_assignments")
+        .delete()
+        .eq("user_id", userId)
+        .eq("site_id", site.id);
+
+      if (error) throw error;
+
+      toast.success("User removed from site");
+      fetchSiteData();
+    } catch (error: any) {
+      toast.error("Failed to remove user");
+      console.error("Error:", error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-secondary/30">
@@ -321,6 +392,10 @@ const SiteDetail = () => {
               <Plus className="mr-2 h-4 w-4" />
               Add House Type
             </Button>
+            <Button onClick={() => setInviteUserDialogOpen(true)} variant="outline">
+              <Users className="mr-2 h-4 w-4" />
+              Invite Users
+            </Button>
           </div>
         )}
 
@@ -340,6 +415,33 @@ const SiteDetail = () => {
               ))}
             </div>
           </div>
+        )}
+
+        {isAdmin && users.length > 0 && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Invited Users</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {users.map((u) => (
+                  <div key={u.user_id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div>
+                      <p className="font-medium">{u.profiles.full_name}</p>
+                      <p className="text-sm text-muted-foreground">{u.profiles.email}</p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemoveUser(u.user_id)}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         <Card>
@@ -492,6 +594,37 @@ const SiteDetail = () => {
               </div>
               <Button onClick={handleAssignUserToPlot} className="w-full">
                 Assign User
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Invite User Dialog */}
+        <Dialog open={inviteUserDialogOpen} onOpenChange={setInviteUserDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Invite User to Site</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>User</Label>
+                <Select value={selectedInviteUserId} onValueChange={setSelectedInviteUserId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select user" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableUsers
+                      .filter(u => !users.some(su => su.user_id === u.id))
+                      .map(u => (
+                        <SelectItem key={u.id} value={u.id}>
+                          {u.full_name} ({u.email})
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={handleInviteUser} className="w-full" disabled={!selectedInviteUserId}>
+                Invite User
               </Button>
             </div>
           </DialogContent>
