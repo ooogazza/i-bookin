@@ -37,6 +37,12 @@ interface GangMember {
   amount: number;
 }
 
+interface Booking {
+  id: string;
+  lift_value_id: string;
+  percentage: number;
+}
+
 const LIFT_LABELS = {
   lift_1: "Lift 1",
   lift_2: "Lift 2",
@@ -53,6 +59,7 @@ const PlotBooking = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [plot, setPlot] = useState<Plot | null>(null);
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [selectedLiftId, setSelectedLiftId] = useState("");
@@ -88,6 +95,15 @@ const PlotBooking = () => {
 
       if (error) throw error;
       setPlot(data as any);
+
+      // Fetch existing bookings for this plot
+      const { data: bookingsData, error: bookingsError } = await supabase
+        .from("bookings")
+        .select("id, lift_value_id, percentage")
+        .eq("plot_id", id);
+
+      if (bookingsError) throw bookingsError;
+      setBookings(bookingsData || []);
     } catch (error: any) {
       toast.error("Failed to load plot data");
       console.error("Error:", error);
@@ -106,6 +122,21 @@ const PlotBooking = () => {
     if (!plot) return "";
     const lift = plot.house_types.lift_values.find(lv => lv.lift_type === liftType);
     return lift ? lift.id : "";
+  };
+
+  const getTotalBooked = (liftValueId: string): number => {
+    return bookings
+      .filter(b => b.lift_value_id === liftValueId)
+      .reduce((sum, b) => sum + b.percentage, 0);
+  };
+
+  const getRemainingPercentage = (liftValueId: string): number => {
+    return 100 - getTotalBooked(liftValueId);
+  };
+
+  const getAvailableLifts = () => {
+    if (!plot) return [];
+    return plot.house_types.lift_values.filter(lv => getRemainingPercentage(lv.id) > 0);
   };
 
   const handleAddMember = () => {
@@ -133,8 +164,18 @@ const PlotBooking = () => {
   const selectedLiftValue = selectedLiftId ? 
     plot?.house_types.lift_values.find(lv => lv.id === selectedLiftId)?.value || 0 
     : 0;
-  const bookingValue = (selectedLiftValue * percentage) / 100;
+  const remainingPercentageForLift = selectedLiftId ? getRemainingPercentage(selectedLiftId) : 100;
+  const maxBookingPercentage = Math.min(percentage, remainingPercentageForLift);
+  const bookingValue = (selectedLiftValue * maxBookingPercentage) / 100;
   const remainingToAllocate = bookingValue - totalAllocated;
+
+  useEffect(() => {
+    // Reset percentage when selecting a new lift
+    if (selectedLiftId) {
+      const remaining = getRemainingPercentage(selectedLiftId);
+      setPercentage(Math.min(100, remaining));
+    }
+  }, [selectedLiftId]);
 
   const handleCreateBooking = async () => {
     if (!user || !plot || !selectedLiftId) return;
@@ -240,24 +281,39 @@ const PlotBooking = () => {
                       <SelectValue placeholder="Select lift" />
                     </SelectTrigger>
                     <SelectContent>
-                      {plot.house_types.lift_values.map(lv => (
-                        <SelectItem key={lv.id} value={lv.id}>
-                          {LIFT_LABELS[lv.lift_type as keyof typeof LIFT_LABELS]} - £{lv.value.toFixed(2)}
-                        </SelectItem>
-                      ))}
+                      {getAvailableLifts().map(lv => {
+                        const totalBooked = getTotalBooked(lv.id);
+                        const remaining = getRemainingPercentage(lv.id);
+                        return (
+                          <SelectItem key={lv.id} value={lv.id}>
+                            {LIFT_LABELS[lv.lift_type as keyof typeof LIFT_LABELS]} - £{lv.value.toFixed(2)} ({remaining}% available)
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                 </div>
 
                 {selectedLiftId && (
                   <>
+                    <div className="p-4 bg-muted rounded-lg mb-4">
+                      <div className="flex justify-between mb-2">
+                        <span className="text-muted-foreground">Already Booked:</span>
+                        <span className="font-semibold">{getTotalBooked(selectedLiftId)}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Remaining Available:</span>
+                        <span className="font-semibold text-primary">{remainingPercentageForLift}%</span>
+                      </div>
+                    </div>
+
                     <div className="space-y-2">
                       <Label>Percentage: {percentage}%</Label>
                       <Slider
                         value={[percentage]}
                         onValueChange={(value) => setPercentage(value[0])}
                         min={1}
-                        max={100}
+                        max={remainingPercentageForLift}
                         step={1}
                       />
                     </div>

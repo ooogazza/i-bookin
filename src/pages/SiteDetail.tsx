@@ -42,6 +42,13 @@ interface Plot {
   house_types: HouseType | null;
 }
 
+interface Booking {
+  id: string;
+  lift_value_id: string;
+  plot_id: string;
+  percentage: number;
+}
+
 interface User {
   user_id: string;
   profiles: {
@@ -74,6 +81,7 @@ const SiteDetail = () => {
   const [site, setSite] = useState<Site | null>(null);
   const [houseTypes, setHouseTypes] = useState<HouseType[]>([]);
   const [plots, setPlots] = useState<Plot[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [availableUsers, setAvailableUsers] = useState<AvailableUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -144,6 +152,15 @@ const SiteDetail = () => {
         filteredPlots = plotsData?.filter(p => p.assigned_to === user.id) || [];
       }
       setPlots(filteredPlots as any);
+
+      // Fetch bookings for the site
+      const { data: bookingsData, error: bookingsError } = await supabase
+        .from("bookings")
+        .select("id, lift_value_id, plot_id, percentage")
+        .in("plot_id", (plotsData || []).map(p => p.id));
+
+      if (bookingsError) throw bookingsError;
+      setBookings(bookingsData || []);
 
       if (isAdmin) {
         const { data: usersData, error: usersError } = await supabase
@@ -255,11 +272,7 @@ const SiteDetail = () => {
   };
 
   const handlePlotClick = (plot: Plot) => {
-    if (!isAdmin) {
-      // Non-admin users navigate to booking page
-      navigate(`/plot/${plot.id}/booking`);
-      return;
-    }
+    if (!isAdmin) return;
     
     setSelectedPlot(plot);
     setSelectedHouseTypeId(plot.house_type_id || "");
@@ -307,6 +320,45 @@ const SiteDetail = () => {
     if (!houseType) return 0;
     const lift = houseType.lift_values.find(lv => lv.lift_type === liftType);
     return lift ? lift.value : 0;
+  };
+
+  const getTotalBooked = (plot: Plot, liftType: string): number => {
+    if (!plot.house_types) return 0;
+    
+    const liftValue = plot.house_types.lift_values.find(lv => lv.lift_type === liftType);
+    if (!liftValue) return 0;
+
+    const liftBookings = bookings.filter(b => 
+      b.plot_id === plot.id && b.lift_value_id === liftValue.id
+    );
+
+    return liftBookings.reduce((sum, b) => sum + b.percentage, 0);
+  };
+
+  const getCellColor = (totalBooked: number): string => {
+    if (totalBooked === 0) return "bg-background hover:bg-muted/50";
+    if (totalBooked <= 33) return "bg-green-100 hover:bg-green-200 dark:bg-green-900/20 dark:hover:bg-green-900/30";
+    if (totalBooked <= 66) return "bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/20 dark:hover:bg-yellow-900/30";
+    if (totalBooked < 100) return "bg-orange-100 hover:bg-orange-200 dark:bg-orange-900/20 dark:hover:bg-orange-900/30";
+    return "bg-red-100 hover:bg-red-200 dark:bg-red-900/20 dark:hover:bg-red-900/30";
+  };
+
+  const handleLiftCellClick = (plot: Plot, liftType: string) => {
+    if (!plot.house_types) {
+      toast.error("Please assign a house type to this plot first");
+      return;
+    }
+
+    if (!isAdmin) {
+      // Non-admin users navigate to booking page
+      navigate(`/plot/${plot.id}/booking`);
+      return;
+    }
+
+    // Admins manage plot assignments
+    setSelectedPlot(plot);
+    setSelectedHouseTypeId(plot.house_type_id || "");
+    setPlotDialogOpen(true);
   };
 
   const handleInviteUser = async () => {
@@ -468,7 +520,7 @@ const SiteDetail = () => {
                   </thead>
                   <tbody>
                     {plots.map(plot => (
-                      <tr key={plot.id} className="border-b hover:bg-muted/50">
+                      <tr key={plot.id} className="border-b">
                         <td className="p-2 font-medium">{plot.plot_number}</td>
                         <td 
                           className="p-2 cursor-pointer hover:bg-primary/10"
@@ -476,17 +528,32 @@ const SiteDetail = () => {
                         >
                           {plot.house_types?.name || "-"}
                         </td>
-                        {Object.keys(LIFT_LABELS).map(liftType => (
-                          <td key={liftType} className="p-2 text-right text-sm">
-                            £{getLiftValue(plot.house_types, liftType).toFixed(2)}
-                          </td>
-                        ))}
+                        {Object.keys(LIFT_LABELS).map(liftType => {
+                          const totalBooked = getTotalBooked(plot, liftType);
+                          const value = getLiftValue(plot.house_types, liftType);
+                          
+                          return (
+                            <td 
+                              key={liftType} 
+                              className={`p-2 text-center text-sm cursor-pointer transition-colors ${getCellColor(totalBooked)}`}
+                              onClick={() => handleLiftCellClick(plot, liftType)}
+                            >
+                              <div className="flex flex-col">
+                                <span className="font-medium">£{value.toFixed(2)}</span>
+                                {totalBooked > 0 && (
+                                  <span className="text-xs font-semibold">{totalBooked}%</span>
+                                )}
+                              </div>
+                            </td>
+                          );
+                        })}
                         {isAdmin && (
                           <td className="p-2 text-center">
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 setSelectedPlot(plot);
                                 setUserAssignDialogOpen(true);
                               }}
