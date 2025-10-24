@@ -143,6 +143,9 @@ const SiteDetail = () => {
   const [selectedPlotForSummary, setSelectedPlotForSummary] = useState<Plot | null>(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [showStickyHeader, setShowStickyHeader] = useState(false);
+  
+  const [searchPlotNumber, setSearchPlotNumber] = useState("");
+  const [searchPhase, setSearchPhase] = useState("");
 
   useEffect(() => {
     const handleScroll = () => {
@@ -496,6 +499,43 @@ const SiteDetail = () => {
   const totalGangAllocated = gangMembers.reduce((sum, m) => sum + m.amount, 0);
   const remainingToAllocate = totalInvoiceValue - totalGangAllocated;
   
+  const handleSearchPlot = () => {
+    if (!searchPlotNumber) {
+      toast.error("Please enter a plot number");
+      return;
+    }
+
+    const plotNumber = parseInt(searchPlotNumber);
+    const plotElement = document.querySelector(`[data-plot-number="${plotNumber}"]`);
+    
+    if (!plotElement) {
+      toast.error(`Plot ${plotNumber} not found`);
+      return;
+    }
+
+    // Scroll to the plot with offset for sticky header
+    const yOffset = -180;
+    const y = plotElement.getBoundingClientRect().top + window.pageYOffset + yOffset;
+    window.scrollTo({ top: y, behavior: 'smooth' });
+
+    // Highlight the row briefly
+    plotElement.classList.add('bg-primary/20');
+    setTimeout(() => {
+      plotElement.classList.remove('bg-primary/20');
+    }, 2000);
+
+    // If phase is selected, highlight that specific cell
+    if (searchPhase) {
+      const cellElement = plotElement.querySelector(`[data-lift-type="${searchPhase}"]`);
+      if (cellElement) {
+        cellElement.classList.add('ring-4', 'ring-primary');
+        setTimeout(() => {
+          cellElement.classList.remove('ring-4', 'ring-primary');
+        }, 2000);
+      }
+    }
+  };
+  
   const handleUpdateMemberAmount = (index: number, percentage: number) => {
     const calculatedAmount = (totalInvoiceValue * percentage) / 100;
     const otherMembersTotal = gangMembers.reduce((sum, m, i) => i !== index ? sum + m.amount : sum, 0);
@@ -732,22 +772,24 @@ const SiteDetail = () => {
 
   return (
     <div className="min-h-screen bg-secondary/30">
-      {/* Sticky Header */}
+      {/* Sticky Header with Column Titles */}
       {showStickyHeader && site && (
         <div className="fixed top-16 left-0 right-0 z-40 bg-background/95 backdrop-blur border-b shadow-md">
-          <div className="container py-3 flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold text-lg">{site.name}</h3>
-              <p className="text-sm text-muted-foreground">
-                {site.number_of_plots} plots • {site.number_of_house_types} house types
-              </p>
+          <div className="container py-2">
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b">
+                    <th className="p-2 text-left font-medium text-sm">Plot</th>
+                    <th className="p-2 text-left font-medium text-sm">House Type</th>
+                    {Object.values(LIFT_LABELS).map(label => (
+                      <th key={label} className="p-2 text-center font-medium whitespace-nowrap text-sm">{label}</th>
+                    ))}
+                    {isAdmin && <th className="p-2 text-center font-medium text-sm">Actions</th>}
+                  </tr>
+                </thead>
+              </table>
             </div>
-            {invoiceItems.length > 0 && (
-              <Button onClick={() => setInvoiceDialogOpen(true)} variant="default">
-                <FileText className="mr-2 h-4 w-4" />
-                View Invoice ({invoiceItems.length})
-              </Button>
-            )}
           </div>
         </div>
       )}
@@ -853,6 +895,36 @@ const SiteDetail = () => {
             <CardTitle>Plot Grid</CardTitle>
           </CardHeader>
           <CardContent>
+            {/* Search Box */}
+            <div className="mb-4 flex gap-3 items-end flex-wrap">
+              <div className="flex-1 min-w-[200px]">
+                <Label htmlFor="searchPlot">Plot Number</Label>
+                <Input
+                  id="searchPlot"
+                  type="number"
+                  placeholder="Enter plot number"
+                  value={searchPlotNumber}
+                  onChange={(e) => setSearchPlotNumber(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSearchPlot()}
+                />
+              </div>
+              <div className="flex-1 min-w-[200px]">
+                <Label htmlFor="searchPhase">Phase (Optional)</Label>
+                <Select value={searchPhase} onValueChange={setSearchPhase}>
+                  <SelectTrigger id="searchPhase">
+                    <SelectValue placeholder="Select phase" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All Phases</SelectItem>
+                    {Object.entries(LIFT_LABELS).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={handleSearchPlot}>Search</Button>
+            </div>
+
             {plots.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">
                 {isAdmin ? "No plots created yet" : "No plots assigned to you"}
@@ -872,7 +944,7 @@ const SiteDetail = () => {
                   </thead>
                   <tbody>
                     {plots.map(plot => (
-                      <tr key={plot.id} className="border-b">
+                      <tr key={plot.id} className="border-b transition-colors" data-plot-number={plot.plot_number}>
                         <td 
                           className="p-2 font-medium cursor-pointer hover:bg-primary/10"
                           onClick={() => handlePlotNumberClick(plot)}
@@ -890,8 +962,9 @@ const SiteDetail = () => {
                           
                           return (
                             <td 
-                              key={liftType} 
-                              className={`p-4 text-center transition-colors ${getCellColor(totalBooked)}`}
+                              key={liftType}
+                              data-lift-type={liftType}
+                              className={`p-4 text-center transition-all ${getCellColor(totalBooked)}`}
                               onClick={() => handleLiftCellClick(plot, liftType)}
                             >
                               <div className="flex items-center justify-center min-h-[50px]">
