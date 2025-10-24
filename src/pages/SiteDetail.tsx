@@ -890,13 +890,10 @@ const SiteDetail = () => {
           </Card>
         )}
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Plot Grid</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {/* Search Box */}
-            <div className="mb-4 flex gap-3 items-end flex-wrap">
+        {/* Search Box */}
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="flex gap-3 items-end flex-wrap">
               <div className="flex-1 min-w-[200px]">
                 <Label htmlFor="searchPlot">Plot Number</Label>
                 <Input
@@ -923,7 +920,14 @@ const SiteDetail = () => {
               </div>
               <Button onClick={handleSearchPlot}>Search</Button>
             </div>
+          </CardContent>
+        </Card>
 
+        <Card>
+          <CardHeader>
+            <CardTitle>Plot Grid</CardTitle>
+          </CardHeader>
+          <CardContent>
             {plots.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">
                 {isAdmin ? "No plots created yet" : "No plots assigned to you"}
