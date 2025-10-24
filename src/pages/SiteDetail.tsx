@@ -434,9 +434,6 @@ const SiteDetail = () => {
     setInvoiceItems([...invoiceItems, newItem]);
     setBookingDialogOpen(false);
     toast.success("Added to invoice");
-    
-    // Automatically open invoice dialog after adding item
-    setTimeout(() => setInvoiceDialogOpen(true), 100);
   };
 
   const handleRemoveFromInvoice = (index: number) => {
@@ -725,7 +722,7 @@ const SiteDetail = () => {
               variant="default"
             >
               <FileText className="mr-2 h-4 w-4" />
-              View Invoice ({invoiceItems.length})
+              View Invoice
             </Button>
           )}
         </div>
