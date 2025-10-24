@@ -11,7 +11,7 @@ import { Slider } from "@/components/ui/slider";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Settings, Plus, Users, Trash2, ShoppingCart, FileText, X } from "lucide-react";
+import { Settings, Plus, Users, Trash2, ShoppingCart, FileText, X, ArrowUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import jsPDF from "jspdf";
 
@@ -138,6 +138,18 @@ const SiteDetail = () => {
   
   const [plotSummaryDialogOpen, setPlotSummaryDialogOpen] = useState(false);
   const [selectedPlotForSummary, setSelectedPlotForSummary] = useState<Plot | null>(null);
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const [showStickyHeader, setShowStickyHeader] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowBackToTop(window.scrollY > 400);
+      setShowStickyHeader(window.scrollY > 200);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     if (id) {
@@ -495,6 +507,10 @@ const SiteDetail = () => {
   const handlePlotNumberClick = (plot: Plot) => {
     setSelectedPlotForSummary(plot);
     setPlotSummaryDialogOpen(true);
+  };
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleStartEditing = (index: number, currentAmount: number) => {
@@ -1322,6 +1338,17 @@ const SiteDetail = () => {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Back to Top Button */}
+        {showBackToTop && (
+          <Button
+            onClick={scrollToTop}
+            size="icon"
+            className="fixed bottom-6 right-6 z-50 rounded-full shadow-lg"
+          >
+            <ArrowUp className="h-5 w-5" />
+          </Button>
+        )}
       </main>
     </div>
   );
