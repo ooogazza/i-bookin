@@ -734,8 +734,6 @@ const SiteDetail = () => {
     <div className="min-h-screen bg-secondary/30">
       <Header 
         showBackButton
-        developerLogo={developerLogo}
-        developerName={developer?.name}
         actions={
           <>
             {isAdmin && (
@@ -764,6 +762,15 @@ const SiteDetail = () => {
       />
       
       <main className="container py-8">
+        {developerLogo && (
+          <div className="mb-6">
+            <img 
+              src={developerLogo} 
+              alt={developer?.name || "Developer"}
+              className="h-16 w-auto object-contain"
+            />
+          </div>
+        )}
         <div className="mb-8">
           <h2 className="text-3xl font-bold tracking-tight">{site.name}</h2>
           {site.description && (
