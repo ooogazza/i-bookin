@@ -7,11 +7,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Settings, Plus, Users, Trash2 } from "lucide-react";
+import { Settings, Plus, Users, Trash2, ShoppingCart, FileText, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import jsPDF from "jspdf";
 
 interface Site {
   id: string;
@@ -63,6 +65,21 @@ interface AvailableUser {
   email: string;
 }
 
+interface InvoiceItem {
+  plot: Plot;
+  liftType: string;
+  liftValueId: string;
+  liftValue: number;
+  percentage: number;
+  bookedValue: number;
+}
+
+interface GangMember {
+  name: string;
+  type: string;
+  amount: number;
+}
+
 const LIFT_LABELS = {
   lift_1: "Lift 1",
   lift_2: "Lift 2",
@@ -100,6 +117,19 @@ const SiteDetail = () => {
 
   const [inviteUserDialogOpen, setInviteUserDialogOpen] = useState(false);
   const [selectedInviteUserId, setSelectedInviteUserId] = useState("");
+
+  const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
+  const [selectedBookingPlot, setSelectedBookingPlot] = useState<Plot | null>(null);
+  const [selectedBookingLiftType, setSelectedBookingLiftType] = useState("");
+  const [bookingPercentage, setBookingPercentage] = useState(100);
+  
+  const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>([]);
+  const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
+  const [gangMembers, setGangMembers] = useState<GangMember[]>([]);
+  const [gangDialogOpen, setGangDialogOpen] = useState(false);
+  const [memberName, setMemberName] = useState("");
+  const [memberType, setMemberType] = useState("bricklayer");
+  const [memberAmount, setMemberAmount] = useState(0);
 
   useEffect(() => {
     if (id) {
@@ -336,11 +366,11 @@ const SiteDetail = () => {
   };
 
   const getCellColor = (totalBooked: number): string => {
-    if (totalBooked === 0) return "bg-background hover:bg-muted/50";
-    if (totalBooked <= 33) return "bg-green-100 hover:bg-green-200 dark:bg-green-900/20 dark:hover:bg-green-900/30";
-    if (totalBooked <= 66) return "bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/20 dark:hover:bg-yellow-900/30";
-    if (totalBooked < 100) return "bg-orange-100 hover:bg-orange-200 dark:bg-orange-900/20 dark:hover:bg-orange-900/30";
-    return "bg-red-100 hover:bg-red-200 dark:bg-red-900/20 dark:hover:bg-red-900/30";
+    if (totalBooked === 0) return "bg-background hover:bg-muted/50 cursor-pointer";
+    if (totalBooked <= 33) return "bg-green-100 hover:bg-green-200 dark:bg-green-900/20 dark:hover:bg-green-900/30 cursor-pointer";
+    if (totalBooked <= 66) return "bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/20 dark:hover:bg-yellow-900/30 cursor-pointer";
+    if (totalBooked < 100) return "bg-orange-100 hover:bg-orange-200 dark:bg-orange-900/20 dark:hover:bg-orange-900/30 cursor-pointer";
+    return "bg-red-100 hover:bg-red-200 dark:bg-red-900/20 dark:hover:bg-red-900/30 cursor-not-allowed";
   };
 
   const handleLiftCellClick = (plot: Plot, liftType: string) => {
@@ -349,16 +379,181 @@ const SiteDetail = () => {
       return;
     }
 
-    if (!isAdmin) {
-      // Non-admin users navigate to booking page
-      navigate(`/plot/${plot.id}/booking`);
+    const totalBooked = getTotalBooked(plot, liftType);
+    if (totalBooked >= 100) {
+      toast.error("This lift is fully booked");
       return;
     }
 
-    // Admins manage plot assignments
-    setSelectedPlot(plot);
-    setSelectedHouseTypeId(plot.house_type_id || "");
-    setPlotDialogOpen(true);
+    if (isAdmin) {
+      // Admins manage plot assignments
+      setSelectedPlot(plot);
+      setSelectedHouseTypeId(plot.house_type_id || "");
+      setPlotDialogOpen(true);
+      return;
+    }
+
+    // Non-admin users open booking dialog
+    setSelectedBookingPlot(plot);
+    setSelectedBookingLiftType(liftType);
+    const remaining = 100 - totalBooked;
+    setBookingPercentage(Math.min(100, remaining));
+    setBookingDialogOpen(true);
+  };
+
+  const handleAddToInvoice = () => {
+    if (!selectedBookingPlot || !selectedBookingLiftType) return;
+
+    const liftValue = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType);
+    const liftValueId = selectedBookingPlot.house_types!.lift_values.find(
+      lv => lv.lift_type === selectedBookingLiftType
+    )?.id || "";
+
+    const bookedValue = (liftValue * bookingPercentage) / 100;
+
+    const newItem: InvoiceItem = {
+      plot: selectedBookingPlot,
+      liftType: selectedBookingLiftType,
+      liftValueId,
+      liftValue,
+      percentage: bookingPercentage,
+      bookedValue
+    };
+
+    setInvoiceItems([...invoiceItems, newItem]);
+    setBookingDialogOpen(false);
+    toast.success("Added to invoice");
+  };
+
+  const handleRemoveFromInvoice = (index: number) => {
+    setInvoiceItems(invoiceItems.filter((_, i) => i !== index));
+  };
+
+  const handleAddGangMember = () => {
+    if (!memberName || memberAmount <= 0) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+    
+    setGangMembers([...gangMembers, {
+      name: memberName,
+      type: memberType,
+      amount: memberAmount
+    }]);
+    
+    setMemberName("");
+    setMemberAmount(0);
+    setGangDialogOpen(false);
+  };
+
+  const handleRemoveGangMember = (index: number) => {
+    setGangMembers(gangMembers.filter((_, i) => i !== index));
+  };
+
+  const totalInvoiceValue = invoiceItems.reduce((sum, item) => sum + item.bookedValue, 0);
+  const totalGangAllocated = gangMembers.reduce((sum, m) => sum + m.amount, 0);
+  const remainingToAllocate = totalInvoiceValue - totalGangAllocated;
+
+  const handleConfirmInvoice = async () => {
+    if (!user) return;
+
+    if (gangMembers.length === 0) {
+      toast.error("Please add at least one gang member");
+      return;
+    }
+
+    if (Math.abs(remainingToAllocate) > 0.01) {
+      toast.error("Please allocate the full invoice value to gang members");
+      return;
+    }
+
+    try {
+      const invoiceNumber = `INV-${Date.now()}`;
+      
+      for (const item of invoiceItems) {
+        const { data: booking, error: bookingError } = await supabase
+          .from("bookings")
+          .insert({
+            lift_value_id: item.liftValueId,
+            plot_id: item.plot.id,
+            booked_by: user.id,
+            percentage: item.percentage,
+            booked_value: item.bookedValue,
+            invoice_number: invoiceNumber,
+            status: "confirmed"
+          })
+          .select()
+          .single();
+
+        if (bookingError) throw bookingError;
+
+        const gangDivisions = gangMembers.map(m => ({
+          booking_id: booking.id,
+          member_name: m.name,
+          member_type: m.type,
+          amount: m.amount
+        }));
+
+        const { error: gangError } = await supabase
+          .from("gang_divisions")
+          .insert(gangDivisions);
+
+        if (gangError) throw gangError;
+      }
+
+      toast.success("Invoice confirmed and sent");
+      setInvoiceItems([]);
+      setGangMembers([]);
+      setInvoiceDialogOpen(false);
+      fetchSiteData();
+    } catch (error: any) {
+      toast.error("Failed to confirm invoice");
+      console.error("Error:", error);
+    }
+  };
+
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    
+    doc.setFontSize(18);
+    doc.text("Invoice", 20, 20);
+    
+    doc.setFontSize(12);
+    let y = 40;
+    
+    doc.text("Invoice Items:", 20, y);
+    y += 10;
+    
+    invoiceItems.forEach((item, index) => {
+      doc.setFontSize(10);
+      doc.text(`${index + 1}. Plot ${item.plot.plot_number} - ${LIFT_LABELS[item.liftType as keyof typeof LIFT_LABELS]}`, 25, y);
+      y += 6;
+      doc.text(`   ${item.percentage}% of £${item.liftValue.toFixed(2)} = £${item.bookedValue.toFixed(2)}`, 25, y);
+      y += 10;
+    });
+    
+    y += 5;
+    doc.setFontSize(12);
+    doc.text(`Total Value: £${totalInvoiceValue.toFixed(2)}`, 20, y);
+    y += 15;
+    
+    if (gangMembers.length > 0) {
+      doc.text("Gang Division:", 20, y);
+      y += 10;
+      
+      gangMembers.forEach((member) => {
+        doc.setFontSize(10);
+        doc.text(`${member.name} (${member.type}): £${member.amount.toFixed(2)}`, 25, y);
+        y += 8;
+      });
+      
+      y += 5;
+      doc.setFontSize(12);
+      doc.text(`Total Allocated: £${totalGangAllocated.toFixed(2)}`, 20, y);
+    }
+    
+    doc.save(`invoice-${Date.now()}.pdf`);
+    toast.success("PDF exported");
   };
 
   const handleInviteUser = async () => {
@@ -438,18 +633,27 @@ const SiteDetail = () => {
           )}
         </div>
 
-        {isAdmin && (
-          <div className="mb-6 flex gap-4">
-            <Button onClick={() => openHouseTypeDialog()}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add House Type
+        <div className="mb-6 flex gap-4 justify-between">
+          {isAdmin && (
+            <div className="flex gap-4">
+              <Button onClick={() => openHouseTypeDialog()}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add House Type
+              </Button>
+              <Button onClick={() => setInviteUserDialogOpen(true)} variant="outline">
+                <Users className="mr-2 h-4 w-4" />
+                Invite Users
+              </Button>
+            </div>
+          )}
+          
+          {!isAdmin && invoiceItems.length > 0 && (
+            <Button onClick={() => setInvoiceDialogOpen(true)} className="ml-auto">
+              <ShoppingCart className="mr-2 h-4 w-4" />
+              View Invoice ({invoiceItems.length})
             </Button>
-            <Button onClick={() => setInviteUserDialogOpen(true)} variant="outline">
-              <Users className="mr-2 h-4 w-4" />
-              Invite Users
-            </Button>
-          </div>
-        )}
+          )}
+        </div>
 
         {houseTypes.length > 0 && isAdmin && (
           <div className="mb-6">
@@ -530,18 +734,18 @@ const SiteDetail = () => {
                         </td>
                         {Object.keys(LIFT_LABELS).map(liftType => {
                           const totalBooked = getTotalBooked(plot, liftType);
-                          const value = getLiftValue(plot.house_types, liftType);
                           
                           return (
                             <td 
                               key={liftType} 
-                              className={`p-2 text-center text-sm cursor-pointer transition-colors ${getCellColor(totalBooked)}`}
+                              className={`p-2 text-center text-sm transition-colors ${getCellColor(totalBooked)}`}
                               onClick={() => handleLiftCellClick(plot, liftType)}
                             >
-                              <div className="flex flex-col">
-                                <span className="font-medium">£{value.toFixed(2)}</span>
-                                {totalBooked > 0 && (
-                                  <span className="text-xs font-semibold">{totalBooked}%</span>
+                              <div className="flex flex-col items-center justify-center min-h-[60px]">
+                                {totalBooked > 0 ? (
+                                  <span className="text-lg font-bold">{totalBooked}%</span>
+                                ) : (
+                                  <span className="text-muted-foreground">-</span>
                                 )}
                               </div>
                             </td>
@@ -691,6 +895,247 @@ const SiteDetail = () => {
               </div>
               <Button onClick={handleInviteUser} className="w-full" disabled={!selectedInviteUserId}>
                 Invite User
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Booking Dialog */}
+        <Dialog open={bookingDialogOpen} onOpenChange={setBookingDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Book Work</DialogTitle>
+            </DialogHeader>
+            {selectedBookingPlot && (
+              <div className="space-y-4">
+                <div className="p-4 bg-muted rounded-lg">
+                  <p className="text-sm text-muted-foreground">Plot {selectedBookingPlot.plot_number}</p>
+                  <p className="font-semibold">{LIFT_LABELS[selectedBookingLiftType as keyof typeof LIFT_LABELS]}</p>
+                  <p className="text-lg font-bold text-primary mt-2">
+                    £{getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType).toFixed(2)}
+                  </p>
+                </div>
+
+                <div className="p-4 bg-muted rounded-lg">
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm text-muted-foreground">Already Booked:</span>
+                    <span className="font-semibold">{getTotalBooked(selectedBookingPlot, selectedBookingLiftType)}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Available:</span>
+                    <span className="font-semibold text-primary">
+                      {100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType)}%
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Percentage: {bookingPercentage}%</Label>
+                  <Slider
+                    value={[bookingPercentage]}
+                    onValueChange={(value) => setBookingPercentage(value[0])}
+                    min={1}
+                    max={100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType)}
+                    step={1}
+                  />
+                </div>
+
+                <div className="p-4 bg-primary/10 rounded-lg">
+                  <div className="flex justify-between">
+                    <span className="font-medium">Booking Value:</span>
+                    <span className="text-xl font-bold text-primary">
+                      £{((getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * bookingPercentage) / 100).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+
+                <Button onClick={handleAddToInvoice} className="w-full">
+                  Add to Invoice
+                </Button>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Invoice Dialog */}
+        <Dialog open={invoiceDialogOpen} onOpenChange={setInvoiceDialogOpen}>
+          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Invoice
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-6">
+              {/* Invoice Items */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Items</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {invoiceItems.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-4">No items added</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {invoiceItems.map((item, index) => (
+                        <div key={index} className="flex justify-between items-start p-3 bg-muted rounded-lg">
+                          <div className="flex-1">
+                            <p className="font-medium">
+                              Plot {item.plot.plot_number} - {LIFT_LABELS[item.liftType as keyof typeof LIFT_LABELS]}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {item.percentage}% of £{item.liftValue.toFixed(2)}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-primary">£{item.bookedValue.toFixed(2)}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveFromInvoice(index)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      <div className="flex justify-between items-center pt-4 border-t">
+                        <span className="font-semibold text-lg">Total:</span>
+                        <span className="font-bold text-2xl text-primary">
+                          £{totalInvoiceValue.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Gang Division */}
+              {invoiceItems.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <div className="flex justify-between items-center">
+                      <CardTitle>Gang Division</CardTitle>
+                      <Button onClick={() => setGangDialogOpen(true)} size="sm">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Member
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {gangMembers.length === 0 ? (
+                      <p className="text-center text-muted-foreground py-4">
+                        No gang members added yet
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {gangMembers.map((member, index) => (
+                          <div key={index} className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                            <div>
+                              <p className="font-medium">{member.name}</p>
+                              <p className="text-sm text-muted-foreground capitalize">{member.type}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold">£{member.amount.toFixed(2)}</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemoveGangMember(index)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                        
+                        <div className="mt-4 pt-4 border-t space-y-2">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Invoice Total:</span>
+                            <span className="font-semibold">£{totalInvoiceValue.toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Allocated:</span>
+                            <span className="font-semibold">£{totalGangAllocated.toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Remaining:</span>
+                            <span className={`font-semibold ${remainingToAllocate < 0 ? 'text-destructive' : remainingToAllocate > 0 ? 'text-orange-500' : 'text-green-500'}`}>
+                              £{remainingToAllocate.toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Actions */}
+              {invoiceItems.length > 0 && (
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={handleExportPDF} 
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    Export PDF
+                  </Button>
+                  <Button 
+                    onClick={handleConfirmInvoice} 
+                    className="flex-1"
+                    disabled={gangMembers.length === 0 || Math.abs(remainingToAllocate) > 0.01}
+                  >
+                    Confirm Invoice
+                  </Button>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Gang Member Dialog */}
+        <Dialog open={gangDialogOpen} onOpenChange={setGangDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Gang Member</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Name</Label>
+                <Input
+                  value={memberName}
+                  onChange={(e) => setMemberName(e.target.value)}
+                  placeholder="Enter name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Type</Label>
+                <Select value={memberType} onValueChange={setMemberType}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="bricklayer">Bricklayer</SelectItem>
+                    <SelectItem value="laborer">Laborer</SelectItem>
+                    <SelectItem value="hod carrier">Hod Carrier</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Amount (£)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={memberAmount}
+                  onChange={(e) => setMemberAmount(parseFloat(e.target.value) || 0)}
+                  placeholder="0.00"
+                />
+              </div>
+              <Button onClick={handleAddGangMember} className="w-full">
+                Add Member
               </Button>
             </div>
           </DialogContent>
