@@ -35,7 +35,7 @@ export const Header = ({ showBackButton = false }: HeaderProps) => {
           )}
           <img src={logo} alt="E-Build Logo" className="h-10 w-10" />
           <div className="flex flex-col">
-            <h1 className="text-xl font-bold leading-tight">E-Build</h1>
+            <h1 className="text-2xl font-bold leading-tight">E-Build</h1>
             <p className="text-xs text-muted-foreground leading-tight">Brickwork Manager</p>
           </div>
         </div>

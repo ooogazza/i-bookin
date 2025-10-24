@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.png";
-import { ArrowRight, Building2, FileText, Users } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -28,7 +28,7 @@ const Landing = () => {
           Professional construction payment management system for tracking lifts, managing bookings, and streamlining payments for building projects.
         </p>
 
-        <div className="flex gap-4 mb-16">
+        <div className="flex gap-4">
           <Button 
             size="lg" 
             onClick={() => navigate("/auth")}
@@ -45,33 +45,6 @@ const Landing = () => {
           >
             Sign In
           </Button>
-        </div>
-
-        {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl w-full">
-          <div className="p-6 bg-card rounded-lg border shadow-sm">
-            <Building2 className="h-12 w-12 text-primary mb-4 mx-auto" />
-            <h3 className="text-lg font-semibold mb-2">Site Management</h3>
-            <p className="text-sm text-muted-foreground">
-              Manage multiple construction sites and track progress across all your projects
-            </p>
-          </div>
-
-          <div className="p-6 bg-card rounded-lg border shadow-sm">
-            <FileText className="h-12 w-12 text-primary mb-4 mx-auto" />
-            <h3 className="text-lg font-semibold mb-2">Invoice Tracking</h3>
-            <p className="text-sm text-muted-foreground">
-              Create and track invoices with automated gang division and payment allocation
-            </p>
-          </div>
-
-          <div className="p-6 bg-card rounded-lg border shadow-sm">
-            <Users className="h-12 w-12 text-primary mb-4 mx-auto" />
-            <h3 className="text-lg font-semibold mb-2">Team Collaboration</h3>
-            <p className="text-sm text-muted-foreground">
-              Assign plots to team members and collaborate on project completion
-            </p>
-          </div>
         </div>
       </div>
     </div>
