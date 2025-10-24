@@ -430,7 +430,10 @@ const SiteDetail = () => {
 
     setInvoiceItems([...invoiceItems, newItem]);
     setBookingDialogOpen(false);
-    toast.success("Added to invoice - cell updated");
+    toast.success("Added to invoice");
+    
+    // Automatically open invoice dialog after adding item
+    setTimeout(() => setInvoiceDialogOpen(true), 100);
   };
 
   const handleRemoveFromInvoice = (index: number) => {
@@ -674,13 +677,13 @@ const SiteDetail = () => {
             )}
           </div>
           
-          {!isAdmin && (
+          {invoiceItems.length > 0 && (
             <Button 
               onClick={() => setInvoiceDialogOpen(true)}
-              variant={invoiceItems.length > 0 ? "default" : "outline"}
+              variant="default"
             >
               <ShoppingCart className="mr-2 h-4 w-4" />
-              View Invoice {invoiceItems.length > 0 && `(${invoiceItems.length})`}
+              View Invoice ({invoiceItems.length})
             </Button>
           )}
         </div>
