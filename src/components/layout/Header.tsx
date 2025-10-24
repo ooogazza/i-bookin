@@ -5,14 +5,25 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { LogOut, ArrowLeft } from "lucide-react";
 import logo from "@/assets/logo.png";
+import { ReactNode } from "react";
 
 interface HeaderProps {
   showBackButton?: boolean;
+  showLogout?: boolean;
+  developerLogo?: string;
+  developerName?: string;
+  actions?: ReactNode;
 }
 
-export const Header = ({ showBackButton = false }: HeaderProps) => {
+export const Header = ({ 
+  showBackButton = false,
+  showLogout = false,
+  developerLogo,
+  developerName,
+  actions
+}: HeaderProps) => {
   const navigate = useNavigate();
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
 
   const handleLogout = async () => {
     const { error } = await signOut();
@@ -33,24 +44,27 @@ export const Header = ({ showBackButton = false }: HeaderProps) => {
               <ArrowLeft className="h-5 w-5" />
             </Button>
           )}
-          <img src={logo} alt="E-Build Logo" className="h-10 w-10" />
-          <div className="flex flex-col">
-            <h1 className="text-2xl font-bold leading-tight">E-Build</h1>
-            <p className="text-xs text-muted-foreground leading-tight">Brickwork Manager</p>
-          </div>
+          {developerLogo ? (
+            <img src={developerLogo} alt={developerName || "Developer"} className="h-10 w-auto object-contain" />
+          ) : (
+            <>
+              <img src={logo} alt="E-Build Logo" className="h-10 w-10" />
+              <div className="flex flex-col">
+                <h1 className="text-2xl font-bold leading-tight">E-Build</h1>
+                <p className="text-xs text-muted-foreground leading-tight">Brickwork Manager</p>
+              </div>
+            </>
+          )}
         </div>
         
         <nav className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => navigate("/dashboard")}>
-            Sites
-          </Button>
-          <Button variant="ghost" onClick={() => navigate("/booking-in")}>
-            Booking In
-          </Button>
-          <Button variant="outline" onClick={handleLogout}>
-            <LogOut className="mr-2 h-4 w-4" />
-            Logout
-          </Button>
+          {actions}
+          {showLogout && (
+            <Button variant="outline" onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Logout
+            </Button>
+          )}
         </nav>
       </div>
     </header>

@@ -130,16 +130,15 @@ const DeveloperDetail = () => {
 
   return (
     <div className="min-h-screen bg-secondary/30">
-      <Header showBackButton />
+      <Header 
+        showBackButton 
+        developerLogo={logo}
+        developerName={developer.name}
+      />
       
       <main className="container py-8">
         <div className="mb-8">
-          <div className="flex items-center gap-4 mb-4">
-            {logo && (
-              <img src={logo} alt={developer.name} className="h-16 w-auto object-contain" />
-            )}
-            <p className="text-muted-foreground">Sites for this developer</p>
-          </div>
+          <p className="text-muted-foreground">Sites for this developer</p>
         </div>
 
         {sites.length === 0 ? (

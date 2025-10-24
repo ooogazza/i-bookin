@@ -199,22 +199,26 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-secondary/30">
-      <Header />
+      <Header 
+        showLogout 
+        actions={
+          isAdmin ? (
+            <Button onClick={() => setCreateSiteDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              New Site
+            </Button>
+          ) : undefined
+        }
+      />
       
       <main className="container py-8">
-        <div className="mb-8 flex items-start justify-between">
+        <div className="mb-8">
           <div>
             <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
             <p className="text-muted-foreground">
               {isAdmin ? "Manage all developers and sites" : "View your assigned developers and sites"}
             </p>
           </div>
-          {isAdmin && (
-            <Button onClick={() => setCreateSiteDialogOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              New Site
-            </Button>
-          )}
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 mb-8">

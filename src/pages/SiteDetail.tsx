@@ -693,7 +693,7 @@ const SiteDetail = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-secondary/30">
-        <Header />
+        <Header showBackButton />
         <main className="container py-8">
           <p className="text-center text-muted-foreground">Loading...</p>
         </main>
@@ -704,7 +704,7 @@ const SiteDetail = () => {
   if (!site) {
     return (
       <div className="min-h-screen bg-secondary/30">
-        <Header />
+        <Header showBackButton />
         <main className="container py-8">
           <p className="text-center text-muted-foreground">Site not found</p>
         </main>
@@ -714,18 +714,10 @@ const SiteDetail = () => {
 
   return (
     <div className="min-h-screen bg-secondary/30">
-      <Header showBackButton />
-      
-      <main className="container py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold tracking-tight">{site.name}</h2>
-          {site.description && (
-            <p className="text-muted-foreground">{site.description}</p>
-          )}
-        </div>
-
-        <div className="mb-6 flex gap-4 justify-between items-center">
-          <div className="flex gap-4">
+      <Header 
+        showBackButton
+        actions={
+          <>
             {isAdmin && (
               <>
                 <Button onClick={() => openHouseTypeDialog()}>
@@ -738,17 +730,30 @@ const SiteDetail = () => {
                 </Button>
               </>
             )}
-          </div>
-          
-          {invoiceItems.length > 0 && (
-            <Button 
-              onClick={() => setInvoiceDialogOpen(true)}
-              variant="default"
-            >
-              <FileText className="mr-2 h-4 w-4" />
-              View Invoice
-            </Button>
+            {invoiceItems.length > 0 && (
+              <Button 
+                onClick={() => setInvoiceDialogOpen(true)}
+                variant="default"
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                View Invoice
+              </Button>
+            )}
+          </>
+        }
+      />
+      
+      <main className="container py-8">
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold tracking-tight">{site.name}</h2>
+          {site.description && (
+            <p className="text-muted-foreground">{site.description}</p>
           )}
+        </div>
+
+        <div className="mb-6 flex gap-4 justify-between items-center">
+          <div className="flex gap-4">
+          </div>
         </div>
 
         {houseTypes.length > 0 && isAdmin && (

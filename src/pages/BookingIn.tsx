@@ -277,10 +277,18 @@ Total Allocated: £${gangDivisions.reduce((sum, m) => sum + m.amount, 0).toFixed
 
   return (
     <div className="min-h-screen bg-secondary/30">
-      <Header showBackButton />
+      <Header 
+        showBackButton
+        actions={
+          <Button onClick={handlePrint} variant="outline">
+            <Printer className="mr-2 h-4 w-4" />
+            Print
+          </Button>
+        }
+      />
       
       <main className="container py-8">
-        <div className="flex items-center justify-between mb-8">
+        <div className="mb-8">
           <div>
             <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
               <FileText className="h-8 w-8 text-primary" />
@@ -290,10 +298,6 @@ Total Allocated: £${gangDivisions.reduce((sum, m) => sum + m.amount, 0).toFixed
               Invoice summary of all booked work
             </p>
           </div>
-          <Button onClick={handlePrint} variant="outline">
-            <Printer className="mr-2 h-4 w-4" />
-            Print
-          </Button>
         </div>
 
         {loading ? (
