@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { Settings, Plus, Users, Trash2, ShoppingCart, FileText, X, ArrowUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import jsPDF from "jspdf";
+import { developerLogos } from "@/lib/developerLogos";
 
 interface Site {
   id: string;
@@ -21,6 +22,7 @@ interface Site {
   description: string | null;
   number_of_plots: number;
   number_of_house_types: number;
+  developer_id: string | null;
 }
 
 interface HouseType {
@@ -97,6 +99,7 @@ const SiteDetail = () => {
   const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
   const [site, setSite] = useState<Site | null>(null);
+  const [developer, setDeveloper] = useState<{ name: string } | null>(null);
   const [houseTypes, setHouseTypes] = useState<HouseType[]>([]);
   const [plots, setPlots] = useState<Plot[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -168,6 +171,19 @@ const SiteDetail = () => {
 
       if (siteError) throw siteError;
       setSite(siteData);
+
+      // Fetch developer if site has developer_id
+      if (siteData?.developer_id) {
+        const { data: devData, error: devError } = await supabase
+          .from("developers")
+          .select("name")
+          .eq("id", siteData.developer_id)
+          .single();
+        
+        if (!devError && devData) {
+          setDeveloper(devData);
+        }
+      }
 
       const { data: houseTypesData, error: houseTypesError } = await supabase
         .from("house_types")
@@ -712,10 +728,14 @@ const SiteDetail = () => {
     );
   }
 
+  const developerLogo = developer ? developerLogos[developer.name] : undefined;
+
   return (
     <div className="min-h-screen bg-secondary/30">
       <Header 
         showBackButton
+        developerLogo={developerLogo}
+        developerName={developer?.name}
         actions={
           <>
             {isAdmin && (
