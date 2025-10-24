@@ -75,6 +75,30 @@ export type Database = {
           },
         ]
       }
+      developers: {
+        Row: {
+          created_at: string
+          id: string
+          logo_url: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       gang_divisions: {
         Row: {
           amount: number
@@ -292,7 +316,9 @@ export type Database = {
           created_at: string
           created_by: string
           description: string | null
+          developer_id: string | null
           id: string
+          location: string | null
           name: string
           number_of_house_types: number
           number_of_plots: number
@@ -302,7 +328,9 @@ export type Database = {
           created_at?: string
           created_by: string
           description?: string | null
+          developer_id?: string | null
           id?: string
+          location?: string | null
           name: string
           number_of_house_types?: number
           number_of_plots?: number
@@ -312,7 +340,9 @@ export type Database = {
           created_at?: string
           created_by?: string
           description?: string | null
+          developer_id?: string | null
           id?: string
+          location?: string | null
           name?: string
           number_of_house_types?: number
           number_of_plots?: number
@@ -324,6 +354,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sites_developer_id_fkey"
+            columns: ["developer_id"]
+            isOneToOne: false
+            referencedRelation: "developers"
             referencedColumns: ["id"]
           },
         ]

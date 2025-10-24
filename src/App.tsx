@@ -8,6 +8,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import DeveloperDetail from "./pages/DeveloperDetail";
 import SiteDetail from "./pages/SiteDetail";
 import PlotBooking from "./pages/PlotBooking";
 import BookingIn from "./pages/BookingIn";
@@ -32,6 +33,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/developer/:developerId"
+              element={
+                <ProtectedRoute>
+                  <DeveloperDetail />
                 </ProtectedRoute>
               }
             />

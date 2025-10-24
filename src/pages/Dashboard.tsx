@@ -12,71 +12,104 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Plus, Building2, FileText, Trash2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { developerLogos } from "@/lib/developerLogos";
+
+interface Developer {
+  id: string;
+  name: string;
+  logo_url: string | null;
+  site_count?: number;
+}
 
 interface Site {
   id: string;
   name: string;
   description: string | null;
+  location: string | null;
+  developer_id: string | null;
   created_at: string;
 }
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { isAdmin, user } = useAuth();
-  const [sites, setSites] = useState<Site[]>([]);
+  const [developers, setDevelopers] = useState<Developer[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [createSiteDialogOpen, setCreateSiteDialogOpen] = useState(false);
   const [siteName, setSiteName] = useState("");
-  const [siteDescription, setSiteDescription] = useState("");
+  const [siteLocation, setSiteLocation] = useState("");
+  const [selectedDeveloper, setSelectedDeveloper] = useState("");
   const [numberOfPlots, setNumberOfPlots] = useState(1);
   const [creating, setCreating] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [siteToDelete, setSiteToDelete] = useState<Site | null>(null);
+  const [allDevelopers, setAllDevelopers] = useState<Developer[]>([]);
 
   useEffect(() => {
-    if (user) fetchSites();
+    if (user) {
+      fetchDevelopers();
+      fetchAllDevelopers();
+    }
   }, [user, isAdmin]);
 
-  const fetchSites = async () => {
+  const fetchDevelopers = async () => {
     if (!user) return;
 
     try {
-      if (isAdmin) {
-        const { data, error } = await supabase
-          .from("sites")
-          .select("*")
-          .order("created_at", { ascending: false });
+      // Fetch all developers
+      const { data: allDevs, error: devsError } = await supabase
+        .from("developers")
+        .select("*")
+        .order("name");
 
-        if (error) throw error;
-        setSites(data || []);
-      } else {
-        const { data, error } = await supabase
-          .from("user_site_assignments")
-          .select(`
-            sites!inner (
-              id,
-              name,
-              description,
-              created_at
-            )
-          `)
-          .eq("user_id", user.id);
+      if (devsError) throw devsError;
 
-        if (error) throw error;
-        setSites(data?.map((d: any) => d.sites).filter(Boolean) || []);
-      }
+      // Fetch site counts per developer
+      const { data: sites, error: sitesError } = await supabase
+        .from("sites")
+        .select("developer_id");
+
+      if (sitesError) throw sitesError;
+
+      // Count sites per developer
+      const siteCounts = sites?.reduce((acc: Record<string, number>, site) => {
+        if (site.developer_id) {
+          acc[site.developer_id] = (acc[site.developer_id] || 0) + 1;
+        }
+        return acc;
+      }, {});
+
+      const developersWithCounts = allDevs?.map(dev => ({
+        ...dev,
+        site_count: siteCounts?.[dev.id] || 0
+      })) || [];
+
+      setDevelopers(developersWithCounts);
     } catch (error: any) {
-      toast.error("Failed to load sites");
-      console.error("Error fetching sites:", error);
+      toast.error("Failed to load developers");
+      console.error("Error fetching developers:", error);
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchAllDevelopers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("developers")
+        .select("*")
+        .order("name");
+
+      if (error) throw error;
+      setAllDevelopers(data || []);
+    } catch (error: any) {
+      console.error("Error fetching all developers:", error);
+    }
+  };
+
   const handleCreateSite = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !siteName.trim()) return;
+    if (!user || !siteName.trim() || !selectedDeveloper) return;
 
     setCreating(true);
 
@@ -86,7 +119,8 @@ const Dashboard = () => {
         .from("sites")
         .insert({
           name: siteName.trim(),
-          description: siteDescription.trim() || null,
+          location: siteLocation.trim() || null,
+          developer_id: selectedDeveloper,
           created_by: user.id,
           number_of_plots: numberOfPlots,
           number_of_house_types: 0
@@ -113,9 +147,10 @@ const Dashboard = () => {
       toast.success("Site created successfully");
       setCreateSiteDialogOpen(false);
       setSiteName("");
-      setSiteDescription("");
+      setSiteLocation("");
+      setSelectedDeveloper("");
       setNumberOfPlots(1);
-      fetchSites();
+      fetchDevelopers();
     } catch (error: any) {
       toast.error("Failed to create site");
       console.error("Error:", error);
@@ -124,33 +159,6 @@ const Dashboard = () => {
     }
   };
 
-  const handleDeleteClick = (e: React.MouseEvent, site: Site) => {
-    e.stopPropagation();
-    setSiteToDelete(site);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!siteToDelete) return;
-
-    try {
-      const { error } = await supabase
-        .from("sites")
-        .delete()
-        .eq("id", siteToDelete.id);
-
-      if (error) throw error;
-
-      toast.success("Site deleted successfully");
-      fetchSites();
-    } catch (error: any) {
-      toast.error("Failed to delete site");
-      console.error("Error:", error);
-    } finally {
-      setDeleteDialogOpen(false);
-      setSiteToDelete(null);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-secondary/30">
@@ -160,9 +168,18 @@ const Dashboard = () => {
         <div className="mb-8">
           <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
           <p className="text-muted-foreground">
-            {isAdmin ? "Manage all sites and bookings" : "View your assigned sites and bookings"}
+            {isAdmin ? "Manage all developers and sites" : "View your assigned developers and sites"}
           </p>
         </div>
+
+        {isAdmin && (
+          <div className="mb-6">
+            <Button onClick={() => setCreateSiteDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              New Site
+            </Button>
+          </div>
+        )}
 
         <div className="grid gap-6 md:grid-cols-2 mb-8">
           <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate("/booking-in")}>
@@ -181,97 +198,59 @@ const Dashboard = () => {
               </Button>
             </CardContent>
           </Card>
-
-          {isAdmin && (
-            <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate("/admin")}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building2 className="h-6 w-6 text-primary" />
-                  Admin Panel
-                </CardTitle>
-                <CardDescription>Manage construction sites</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button variant="outline" className="w-full">
-                  Open Admin
-                </Button>
-              </CardContent>
-            </Card>
-          )}
         </div>
 
         <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-2xl font-bold">
-              {isAdmin ? "All Sites" : "Your Sites"}
-            </h3>
-            {isAdmin && (
-              <Button onClick={() => setCreateSiteDialogOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                New Site
-              </Button>
-            )}
-          </div>
+          <h3 className="text-2xl font-bold mb-4">Developers</h3>
         </div>
 
         {loading ? (
           <div className="text-center py-12">
-            <p className="text-muted-foreground">Loading sites...</p>
+            <p className="text-muted-foreground">Loading developers...</p>
           </div>
-        ) : sites.length === 0 ? (
+        ) : developers.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Building2 className="h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-lg font-medium mb-2">No sites yet</p>
-              <p className="text-sm text-muted-foreground mb-4">
-                {isAdmin
-                  ? "Create your first site to get started"
-                  : "No sites have been assigned to you yet"}
+              <p className="text-lg font-medium mb-2">No developers yet</p>
+              <p className="text-sm text-muted-foreground">
+                No developers have been added to the system
               </p>
-              {isAdmin && (
-                <Button onClick={() => setCreateSiteDialogOpen(true)}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Site
-                </Button>
-              )}
             </CardContent>
           </Card>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {sites.map((site) => (
-              <Card
-                key={site.id}
-                className="cursor-pointer hover:shadow-lg transition-shadow"
-                onClick={() => navigate(`/site/${site.id}`)}
-              >
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <CardTitle className="flex items-center gap-2">
-                      <Building2 className="h-5 w-5 text-primary" />
-                      {site.name}
-                    </CardTitle>
-                    {isAdmin && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={(e) => handleDeleteClick(e, site)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                  {site.description && (
-                    <CardDescription>{site.description}</CardDescription>
-                  )}
-                </CardHeader>
-                <CardContent>
-                  <Button variant="outline" className="w-full">
-                    View Site
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+            {developers.map((developer) => {
+              const logo = developerLogos[developer.name];
+              return (
+                <Card
+                  key={developer.id}
+                  className="cursor-pointer hover:shadow-lg transition-shadow"
+                  onClick={() => navigate(`/developer/${developer.id}`)}
+                >
+                  <CardHeader>
+                    <div className="flex items-center gap-3 mb-2">
+                      {logo && (
+                        <img 
+                          src={logo} 
+                          alt={developer.name}
+                          className="h-12 w-auto object-contain"
+                        />
+                      )}
+                    </div>
+                    <CardTitle>{developer.name}</CardTitle>
+                    <CardDescription>
+                      {developer.site_count || 0} site{developer.site_count !== 1 ? 's' : ''}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button variant="outline" className="w-full">
+                      View Sites
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
 
@@ -282,6 +261,21 @@ const Dashboard = () => {
               <DialogTitle>Create New Site</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleCreateSite} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="developer">Developer *</Label>
+                <Select value={selectedDeveloper} onValueChange={setSelectedDeveloper} required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a developer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allDevelopers.map((dev) => (
+                      <SelectItem key={dev.id} value={dev.id}>
+                        {dev.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="siteName">Site Name *</Label>
                 <Input
@@ -294,14 +288,14 @@ const Dashboard = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="siteDescription">Description</Label>
-                <Textarea
-                  id="siteDescription"
-                  value={siteDescription}
-                  onChange={(e) => setSiteDescription(e.target.value)}
-                  placeholder="Optional description"
-                  rows={3}
-                  maxLength={500}
+                <Label htmlFor="siteLocation">Location *</Label>
+                <Input
+                  id="siteLocation"
+                  value={siteLocation}
+                  onChange={(e) => setSiteLocation(e.target.value)}
+                  placeholder="e.g., Manchester"
+                  required
+                  maxLength={200}
                 />
               </div>
               <div className="space-y-2">
@@ -326,23 +320,6 @@ const Dashboard = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Delete Confirmation Dialog */}
-        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete Site</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to delete "{siteToDelete?.name}"? This action cannot be undone and will remove all associated plots and data.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </main>
     </div>
   );
