@@ -622,7 +622,6 @@ const SiteDetail = () => {
                     <SelectValue placeholder="Select house type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
                     {houseTypes.map(ht => (
                       <SelectItem key={ht.id} value={ht.id}>{ht.name}</SelectItem>
                     ))}
@@ -650,7 +649,7 @@ const SiteDetail = () => {
                     <SelectValue placeholder="Select user" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    
                     {users.map(u => (
                       <SelectItem key={u.user_id} value={u.user_id}>
                         {u.profiles.full_name} ({u.profiles.email})
