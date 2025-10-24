@@ -20,27 +20,36 @@ export type Database = {
           booked_value: number
           created_at: string
           id: string
+          invoice_number: string | null
           lift_value_id: string
           notes: string | null
           percentage: number
+          plot_id: string | null
+          status: string
         }
         Insert: {
           booked_by: string
           booked_value: number
           created_at?: string
           id?: string
+          invoice_number?: string | null
           lift_value_id: string
           notes?: string | null
           percentage: number
+          plot_id?: string | null
+          status?: string
         }
         Update: {
           booked_by?: string
           booked_value?: number
           created_at?: string
           id?: string
+          invoice_number?: string | null
           lift_value_id?: string
           notes?: string | null
           percentage?: number
+          plot_id?: string | null
+          status?: string
         }
         Relationships: [
           {
@@ -55,6 +64,13 @@ export type Database = {
             columns: ["lift_value_id"]
             isOneToOne: false
             referencedRelation: "lift_values"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_plot_id_fkey"
+            columns: ["plot_id"]
+            isOneToOne: false
+            referencedRelation: "plots"
             referencedColumns: ["id"]
           },
         ]
@@ -164,6 +180,51 @@ export type Database = {
           },
         ]
       }
+      plots: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          house_type_id: string | null
+          id: string
+          plot_number: number
+          site_id: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          house_type_id?: string | null
+          id?: string
+          plot_number: number
+          site_id: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          house_type_id?: string | null
+          id?: string
+          plot_number?: number
+          site_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plots_house_type_id_fkey"
+            columns: ["house_type_id"]
+            isOneToOne: false
+            referencedRelation: "house_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plots_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -195,6 +256,8 @@ export type Database = {
           description: string | null
           id: string
           name: string
+          number_of_house_types: number
+          number_of_plots: number
           updated_at: string
         }
         Insert: {
@@ -203,6 +266,8 @@ export type Database = {
           description?: string | null
           id?: string
           name: string
+          number_of_house_types?: number
+          number_of_plots?: number
           updated_at?: string
         }
         Update: {
@@ -211,6 +276,8 @@ export type Database = {
           description?: string | null
           id?: string
           name?: string
+          number_of_house_types?: number
+          number_of_plots?: number
           updated_at?: string
         }
         Relationships: [
@@ -248,6 +315,35 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_site_assignments: {
+        Row: {
+          created_at: string
+          id: string
+          site_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          site_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          site_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_site_assignments_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
             referencedColumns: ["id"]
           },
         ]

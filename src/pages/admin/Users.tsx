@@ -32,10 +32,22 @@ interface UserRole {
   role: string;
 }
 
+interface Site {
+  id: string;
+  name: string;
+}
+
 const Users = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [userRoles, setUserRoles] = useState<UserRole[]>([]);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [sites, setSites] = useState<Site[]>([]);
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [roleDialogOpen, setRoleDialogOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState<"admin" | "standard">("standard");
+  const [selectedSiteId, setSelectedSiteId] = useState("");
   const [selectedUserId, setSelectedUserId] = useState("");
   const [selectedRole, setSelectedRole] = useState("standard");
   const [loading, setLoading] = useState(false);
@@ -43,6 +55,7 @@ const Users = () => {
   useEffect(() => {
     fetchUsers();
     fetchUserRoles();
+    fetchSites();
   }, []);
 
   const fetchUsers = async () => {
@@ -74,15 +87,81 @@ const Users = () => {
     }
   };
 
+  const fetchSites = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("sites")
+        .select("id, name")
+        .order("name");
+
+      if (error) throw error;
+      setSites(data || []);
+    } catch (error: any) {
+      console.error("Error:", error);
+    }
+  };
+
   const getUserRole = (userId: string): string => {
     const role = userRoles.find((r) => r.user_id === userId);
     return role?.role || "standard";
   };
 
+  const openInviteDialog = () => {
+    setEmail("");
+    setFullName("");
+    setPassword("");
+    setRole("standard");
+    setSelectedSiteId("");
+    setInviteDialogOpen(true);
+  };
+
   const openRoleDialog = (userId: string) => {
     setSelectedUserId(userId);
     setSelectedRole(getUserRole(userId));
-    setDialogOpen(true);
+    setRoleDialogOpen(true);
+  };
+
+  const handleInviteUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const { data: newUserData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { full_name: fullName }
+        }
+      });
+
+      if (signUpError) throw signUpError;
+      if (!newUserData.user) throw new Error("User creation failed");
+
+      const { error: roleError } = await supabase
+        .from("user_roles")
+        .insert({ user_id: newUserData.user.id, role: role as any });
+
+      if (roleError) throw roleError;
+
+      // If user is not admin and site is selected, assign to site
+      if (role === "standard" && selectedSiteId) {
+        const { error: siteError } = await supabase
+          .from("user_site_assignments")
+          .insert({ user_id: newUserData.user.id, site_id: selectedSiteId });
+
+        if (siteError) throw siteError;
+      }
+
+      toast.success("User invited successfully");
+      setInviteDialogOpen(false);
+      fetchUsers();
+      fetchUserRoles();
+    } catch (error: any) {
+      toast.error("Failed to invite user");
+      console.error("Error:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleUpdateRole = async (e: React.FormEvent) => {
@@ -90,13 +169,11 @@ const Users = () => {
     setLoading(true);
 
     try {
-      // First, delete existing role
       await supabase
         .from("user_roles")
         .delete()
         .eq("user_id", selectedUserId);
 
-      // Then insert new role
       const { error } = await supabase
         .from("user_roles")
         .insert({
@@ -107,7 +184,7 @@ const Users = () => {
       if (error) throw error;
 
       toast.success("User role updated successfully");
-      setDialogOpen(false);
+      setRoleDialogOpen(false);
       fetchUserRoles();
     } catch (error: any) {
       toast.error("Failed to update user role");
@@ -122,9 +199,15 @@ const Users = () => {
       <Header />
       
       <main className="container py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold tracking-tight">User Management</h2>
-          <p className="text-muted-foreground">Manage user roles and permissions</p>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">User Management</h2>
+            <p className="text-muted-foreground">Manage user roles and permissions</p>
+          </div>
+          <Button onClick={openInviteDialog}>
+            <UserPlus className="mr-2 h-4 w-4" />
+            Invite User
+          </Button>
         </div>
 
         <Card>
@@ -177,7 +260,81 @@ const Users = () => {
           </CardContent>
         </Card>
 
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        {/* Invite User Dialog */}
+        <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Invite User</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleInviteUser} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input
+                  id="fullName"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="role">Role</Label>
+                <Select value={role} onValueChange={(val) => setRole(val as "admin" | "standard")}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="standard">Standard User</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {role === "standard" && (
+                <div className="space-y-2">
+                  <Label htmlFor="site">Assign to Site (Optional)</Label>
+                  <Select value={selectedSiteId} onValueChange={setSelectedSiteId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select site" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">No site</SelectItem>
+                      {sites.map(site => (
+                        <SelectItem key={site.id} value={site.id}>
+                          {site.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Inviting..." : "Invite User"}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Change Role Dialog */}
+        <Dialog open={roleDialogOpen} onOpenChange={setRoleDialogOpen}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Update User Role</DialogTitle>

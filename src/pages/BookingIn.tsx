@@ -19,9 +19,15 @@ interface BookingData {
   id: string;
   percentage: number;
   booked_value: number;
+  invoice_number: string;
+  status: string;
   created_at: string;
-  lift_values: {
-    lift_type: string;
+  profiles: {
+    full_name: string;
+    email: string;
+  };
+  plots: {
+    plot_number: number;
     house_types: {
       name: string;
       sites: {
@@ -29,6 +35,14 @@ interface BookingData {
       };
     };
   };
+  lift_values: {
+    lift_type: string;
+  };
+  gang_divisions: {
+    member_name: string;
+    member_type: string;
+    amount: number;
+  }[];
 }
 
 const LIFT_LABELS = {
@@ -56,20 +70,33 @@ const BookingIn = () => {
         .from("bookings")
         .select(`
           *,
-          lift_values (
-            lift_type,
+          profiles!bookings_booked_by_fkey (
+            full_name,
+            email
+          ),
+          plots (
+            plot_number,
             house_types (
               name,
               sites (
                 name
               )
             )
+          ),
+          lift_values (
+            lift_type
+          ),
+          gang_divisions (
+            member_name,
+            member_type,
+            amount
           )
         `)
+        .eq("status", "confirmed")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setBookings(data || []);
+      setBookings(data as any || []);
     } catch (error: any) {
       toast.error("Failed to load bookings");
       console.error("Error:", error);
@@ -123,7 +150,10 @@ const BookingIn = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>Invoice #</TableHead>
+                      <TableHead>Booked By</TableHead>
                       <TableHead>Site</TableHead>
+                      <TableHead>Plot</TableHead>
                       <TableHead>House Type</TableHead>
                       <TableHead>Lift</TableHead>
                       <TableHead className="text-right">Percentage</TableHead>
@@ -134,10 +164,11 @@ const BookingIn = () => {
                   <TableBody>
                     {bookings.map((booking) => (
                       <TableRow key={booking.id}>
-                        <TableCell className="font-medium">
-                          {booking.lift_values.house_types.sites.name}
-                        </TableCell>
-                        <TableCell>{booking.lift_values.house_types.name}</TableCell>
+                        <TableCell className="font-medium">{booking.invoice_number}</TableCell>
+                        <TableCell>{booking.profiles.full_name}</TableCell>
+                        <TableCell>{booking.plots.house_types.sites.name}</TableCell>
+                        <TableCell>Plot {booking.plots.plot_number}</TableCell>
+                        <TableCell>{booking.plots.house_types.name}</TableCell>
                         <TableCell>
                           {LIFT_LABELS[booking.lift_values.lift_type as keyof typeof LIFT_LABELS]}
                         </TableCell>
@@ -153,7 +184,7 @@ const BookingIn = () => {
                   </TableBody>
                   <TableFooter>
                     <TableRow>
-                      <TableCell colSpan={4} className="text-right font-bold">
+                      <TableCell colSpan={7} className="text-right font-bold">
                         Total
                       </TableCell>
                       <TableCell className="text-right font-bold text-lg">

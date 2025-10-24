@@ -33,6 +33,8 @@ const Sites = () => {
   const [editingSite, setEditingSite] = useState<Site | null>(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [numberOfPlots, setNumberOfPlots] = useState(0);
+  const [numberOfHouseTypes, setNumberOfHouseTypes] = useState(0);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -58,6 +60,8 @@ const Sites = () => {
     setEditingSite(null);
     setName("");
     setDescription("");
+    setNumberOfPlots(0);
+    setNumberOfHouseTypes(0);
     setDialogOpen(true);
   };
 
@@ -65,6 +69,8 @@ const Sites = () => {
     setEditingSite(site);
     setName(site.name);
     setDescription(site.description || "");
+    setNumberOfPlots((site as any).number_of_plots || 0);
+    setNumberOfHouseTypes((site as any).number_of_house_types || 0);
     setDialogOpen(true);
   };
 
@@ -78,17 +84,45 @@ const Sites = () => {
       if (editingSite) {
         const { error } = await supabase
           .from("sites")
-          .update({ name, description })
+          .update({ 
+            name, 
+            description,
+            number_of_plots: numberOfPlots,
+            number_of_house_types: numberOfHouseTypes
+          })
           .eq("id", editingSite.id);
 
         if (error) throw error;
         toast.success("Site updated successfully");
       } else {
-        const { error } = await supabase
+        const { data: site, error } = await supabase
           .from("sites")
-          .insert({ name, description, created_by: user.id });
+          .insert({ 
+            name, 
+            description, 
+            created_by: user.id,
+            number_of_plots: numberOfPlots,
+            number_of_house_types: numberOfHouseTypes
+          })
+          .select()
+          .single();
 
         if (error) throw error;
+
+        // Create plots for the site
+        if (site && numberOfPlots > 0) {
+          const plots = Array.from({ length: numberOfPlots }, (_, i) => ({
+            site_id: site.id,
+            plot_number: i + 1
+          }));
+          
+          const { error: plotsError } = await supabase
+            .from("plots")
+            .insert(plots);
+          
+          if (plotsError) throw plotsError;
+        }
+
         toast.success("Site created successfully");
       }
 
@@ -140,6 +174,8 @@ const Sites = () => {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Description</TableHead>
+                  <TableHead>Plots</TableHead>
+                  <TableHead>House Types</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -149,6 +185,8 @@ const Sites = () => {
                   <TableRow key={site.id}>
                     <TableCell className="font-medium">{site.name}</TableCell>
                     <TableCell>{site.description || "-"}</TableCell>
+                    <TableCell>{(site as any).number_of_plots || 0}</TableCell>
+                    <TableCell>{(site as any).number_of_house_types || 0}</TableCell>
                     <TableCell>{new Date(site.created_at).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right space-x-2">
                       <Button variant="outline" size="sm" onClick={() => openEditDialog(site)}>
@@ -190,6 +228,30 @@ const Sites = () => {
                   placeholder="Optional description"
                   rows={3}
                 />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="plots">Number of Plots</Label>
+                  <Input
+                    id="plots"
+                    type="number"
+                    min="0"
+                    value={numberOfPlots}
+                    onChange={(e) => setNumberOfPlots(parseInt(e.target.value) || 0)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="houseTypes">Number of House Types</Label>
+                  <Input
+                    id="houseTypes"
+                    type="number"
+                    min="0"
+                    value={numberOfHouseTypes}
+                    onChange={(e) => setNumberOfHouseTypes(parseInt(e.target.value) || 0)}
+                    required
+                  />
+                </div>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "Saving..." : editingSite ? "Update Site" : "Create Site"}
