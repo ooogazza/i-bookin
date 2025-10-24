@@ -136,7 +136,7 @@ const PlotBooking = () => {
 
   const getAvailableLifts = () => {
     if (!plot) return [];
-    return plot.house_types.lift_values.filter(lv => getRemainingPercentage(lv.id) > 0);
+    return plot.house_types.lift_values.filter(lv => lv.id && lv.id !== "" && getRemainingPercentage(lv.id) > 0);
   };
 
   const handleAddMember = () => {
