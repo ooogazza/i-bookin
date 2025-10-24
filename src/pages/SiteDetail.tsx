@@ -257,10 +257,13 @@ const SiteDetail = () => {
     if (!site) return;
 
     try {
+      // Calculate total value from all lift values
+      const totalValue = Object.values(liftValues).reduce((sum, value) => sum + (value || 0), 0);
+
       if (editingHouseType) {
         await supabase
           .from("house_types")
-          .update({ name: houseTypeName })
+          .update({ name: houseTypeName, total_value: totalValue })
           .eq("id", editingHouseType.id);
 
         for (const [liftType, value] of Object.entries(liftValues)) {
@@ -281,7 +284,7 @@ const SiteDetail = () => {
       } else {
         const { data: newHouseType, error } = await supabase
           .from("house_types")
-          .insert({ site_id: site.id, name: houseTypeName, total_value: 0 })
+          .insert({ site_id: site.id, name: houseTypeName, total_value: totalValue })
           .select()
           .single();
 
