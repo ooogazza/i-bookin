@@ -131,6 +131,7 @@ const SiteDetail = () => {
   const [memberType, setMemberType] = useState("bricklayer");
   const [memberAmount, setMemberAmount] = useState(0);
   const [invoiceNotes, setInvoiceNotes] = useState("");
+  const [notesAmount, setNotesAmount] = useState(0);
 
   useEffect(() => {
     if (id) {
@@ -441,15 +442,15 @@ const SiteDetail = () => {
   };
 
   const handleAddGangMember = () => {
-    if (!memberName || memberAmount <= 0) {
-      toast.error("Please fill in all fields");
+    if (!memberName) {
+      toast.error("Please enter a name");
       return;
     }
     
     setGangMembers([...gangMembers, {
       name: memberName,
       type: memberType,
-      amount: memberAmount
+      amount: 0
     }]);
     
     setMemberName("");
@@ -461,9 +462,15 @@ const SiteDetail = () => {
     setGangMembers(gangMembers.filter((_, i) => i !== index));
   };
 
-  const totalInvoiceValue = invoiceItems.reduce((sum, item) => sum + item.bookedValue, 0);
+  const totalInvoiceValue = invoiceItems.reduce((sum, item) => sum + item.bookedValue, 0) + notesAmount;
   const totalGangAllocated = gangMembers.reduce((sum, m) => sum + m.amount, 0);
   const remainingToAllocate = totalInvoiceValue - totalGangAllocated;
+  
+  const handleUpdateMemberAmount = (index: number, amount: number) => {
+    const updated = [...gangMembers];
+    updated[index] = { ...updated[index], amount };
+    setGangMembers(updated);
+  };
 
   const handleConfirmInvoice = async () => {
     if (!user) return;
@@ -517,6 +524,7 @@ const SiteDetail = () => {
       setInvoiceItems([]);
       setGangMembers([]);
       setInvoiceNotes("");
+      setNotesAmount(0);
       setInvoiceDialogOpen(false);
       fetchSiteData();
     } catch (error: any) {
@@ -1045,19 +1053,34 @@ const SiteDetail = () => {
               {invoiceItems.length > 0 && (
                 <Card>
                   <CardHeader>
-                    <CardTitle>Notes</CardTitle>
+                    <CardTitle>Notes & Additional Amount</CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <textarea
-                      className="w-full min-h-[100px] p-3 rounded-md border border-input bg-background resize-y focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                      placeholder="Add any notes or comments about this invoice..."
-                      value={invoiceNotes}
-                      onChange={(e) => setInvoiceNotes(e.target.value)}
-                      maxLength={500}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {invoiceNotes.length}/500 characters
-                    </p>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <textarea
+                        className="w-full min-h-[100px] p-3 rounded-md border border-input bg-background resize-y focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                        placeholder="Add any notes or comments about this invoice..."
+                        value={invoiceNotes}
+                        onChange={(e) => setInvoiceNotes(e.target.value)}
+                        maxLength={500}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {invoiceNotes.length}/500 characters
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Add Additional Amount: £{notesAmount.toFixed(2)}</Label>
+                      <Slider
+                        value={[notesAmount]}
+                        onValueChange={(value) => setNotesAmount(value[0])}
+                        min={0}
+                        max={5000}
+                        step={10}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Use this slider to add extra charges like materials, travel, etc.
+                      </p>
+                    </div>
                   </CardContent>
                 </Card>
               )}
@@ -1080,15 +1103,14 @@ const SiteDetail = () => {
                         No gang members added yet - add members to allocate payment
                       </p>
                     ) : (
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         {gangMembers.map((member, index) => (
-                          <div key={index} className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                            <div>
-                              <p className="font-medium">{member.name}</p>
-                              <p className="text-sm text-muted-foreground capitalize">{member.type}</p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold">£{member.amount.toFixed(2)}</span>
+                          <div key={index} className="p-3 bg-muted rounded-lg space-y-3">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <p className="font-medium">{member.name}</p>
+                                <p className="text-sm text-muted-foreground capitalize">{member.type}</p>
+                              </div>
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -1096,6 +1118,18 @@ const SiteDetail = () => {
                               >
                                 <X className="h-4 w-4" />
                               </Button>
+                            </div>
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-center">
+                                <Label className="text-sm">Amount: £{member.amount.toFixed(2)}</Label>
+                              </div>
+                              <Slider
+                                value={[member.amount]}
+                                onValueChange={(value) => handleUpdateMemberAmount(index, value[0])}
+                                min={0}
+                                max={totalInvoiceValue}
+                                step={10}
+                              />
                             </div>
                           </div>
                         ))}
@@ -1174,16 +1208,9 @@ const SiteDetail = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label>Amount (£)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={memberAmount}
-                  onChange={(e) => setMemberAmount(parseFloat(e.target.value) || 0)}
-                  placeholder="0.00"
-                />
-              </div>
+              <p className="text-sm text-muted-foreground">
+                Amount will be allocated using the slider in the invoice view
+              </p>
               <Button onClick={handleAddGangMember} className="w-full">
                 Add Member
               </Button>
