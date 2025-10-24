@@ -8,6 +8,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import SiteDetail from "./pages/SiteDetail";
+import PlotBooking from "./pages/PlotBooking";
 import BookingIn from "./pages/BookingIn";
 import Admin from "./pages/Admin";
 import Sites from "./pages/admin/Sites";
@@ -40,6 +41,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <SiteDetail />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/plot/:id/booking"
+              element={
+                <ProtectedRoute>
+                  <PlotBooking />
                 </ProtectedRoute>
               }
             />
