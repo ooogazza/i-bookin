@@ -22,6 +22,7 @@ interface Site {
   description: string | null;
   location: string | null;
   created_at: string;
+  number_of_plots: number;
 }
 
 const DeveloperDetail = () => {
@@ -57,7 +58,7 @@ const DeveloperDetail = () => {
       // Fetch sites for this developer
       const { data: sitesData, error: sitesError } = await supabase
         .from("sites")
-        .select("*")
+        .select("id, name, description, location, created_at, number_of_plots")
         .eq("developer_id", developerId)
         .order("created_at", { ascending: false });
 
@@ -177,14 +178,21 @@ const DeveloperDetail = () => {
                     )}
                   </div>
                   {site.location && (
-                    <CardDescription className="flex items-center gap-1 text-primary">
-                      📌 {site.location}
+                    <CardDescription className="flex items-center gap-1">
+                      <span className="text-primary">📍</span>
+                      <span className="text-primary">{site.location}</span>
                     </CardDescription>
                   )}
                   {site.description && (
                     <CardDescription>{site.description}</CardDescription>
                   )}
                 </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <span>{new Date(site.created_at).toLocaleDateString()}</span>
+                    <span>{site.number_of_plots} plot{site.number_of_plots !== 1 ? 's' : ''}</span>
+                  </div>
+                </CardContent>
               </Card>
             ))}
           </div>

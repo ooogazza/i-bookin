@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           booked_by: string
           booked_value: number
+          confirmed_by_admin: boolean | null
           created_at: string
           id: string
           invoice_number: string | null
@@ -30,6 +31,7 @@ export type Database = {
         Insert: {
           booked_by: string
           booked_value: number
+          confirmed_by_admin?: boolean | null
           created_at?: string
           id?: string
           invoice_number?: string | null
@@ -42,6 +44,7 @@ export type Database = {
         Update: {
           booked_by?: string
           booked_value?: number
+          confirmed_by_admin?: boolean | null
           created_at?: string
           id?: string
           invoice_number?: string | null

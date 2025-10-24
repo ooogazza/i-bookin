@@ -15,7 +15,7 @@ import {
   TableRow,
   TableFooter,
 } from "@/components/ui/table";
-import { FileText, Printer, Eye } from "lucide-react";
+import { FileText, Printer } from "lucide-react";
 
 interface BookingData {
   id: string;
@@ -59,6 +59,7 @@ interface GroupedInvoice {
   total_value: number;
   notes: string | null;
   is_viewed?: boolean;
+  is_confirmed?: boolean;
 }
 
 const LIFT_LABELS = {
@@ -94,6 +95,7 @@ const BookingIn = () => {
         .select(`
           *,
           notes,
+          confirmed_by_admin,
           profiles!bookings_booked_by_fkey (
             full_name,
             email
@@ -130,7 +132,7 @@ const BookingIn = () => {
       setBookings(data as any || []);
       
       // Group bookings by invoice number
-      const grouped = (data as any || []).reduce((acc: { [key: string]: GroupedInvoice }, booking: BookingData) => {
+      const grouped = (data as any || []).reduce((acc: { [key: string]: GroupedInvoice }, booking: any) => {
         if (!acc[booking.invoice_number]) {
           acc[booking.invoice_number] = {
             invoice_number: booking.invoice_number,
@@ -138,7 +140,8 @@ const BookingIn = () => {
             booked_by: booking.profiles,
             items: [],
             total_value: 0,
-            notes: booking.notes
+            notes: booking.notes,
+            is_confirmed: booking.confirmed_by_admin
           };
         }
         acc[booking.invoice_number].items.push(booking);
@@ -199,6 +202,35 @@ const BookingIn = () => {
       } catch (error: any) {
         console.error("Error marking invoice as viewed:", error);
       }
+    }
+  };
+
+  const handleConfirmInvoice = async (invoice: GroupedInvoice) => {
+    if (!isAdmin) return;
+
+    try {
+      // Update all bookings in this invoice
+      const { error } = await supabase
+        .from("bookings")
+        .update({ confirmed_by_admin: true })
+        .eq("invoice_number", invoice.invoice_number);
+
+      if (error) throw error;
+
+      // Update local state
+      setGroupedInvoices((prev: GroupedInvoice[]) => 
+        prev.map((inv: GroupedInvoice) => 
+          inv.invoice_number === invoice.invoice_number 
+            ? { ...inv, is_confirmed: true } as GroupedInvoice
+            : inv
+        )
+      );
+
+      toast.success("Invoice confirmed successfully");
+      setDetailsDialogOpen(false);
+    } catch (error: any) {
+      toast.error("Failed to confirm invoice");
+      console.error("Error:", error);
     }
   };
 
@@ -294,12 +326,12 @@ Total Allocated: £${gangDivisions.reduce((sum, m) => sum + m.amount, 0).toFixed
                     {groupedInvoices.map((invoice) => (
                       <TableRow 
                         key={invoice.invoice_number}
-                        className="cursor-pointer hover:bg-muted/50"
+                        className={`cursor-pointer hover:bg-muted/50 ${isAdmin && invoice.is_confirmed ? 'bg-green-500/10' : ''}`}
                         onClick={() => handleViewDetails(invoice)}
                       >
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-2">
-                            {isAdmin && !invoice.is_viewed && (
+                            {isAdmin && !invoice.is_viewed && !invoice.is_confirmed && (
                               <div className="h-2 w-2 rounded-full bg-primary" />
                             )}
                             {invoice.invoice_number}
@@ -444,13 +476,24 @@ Total Allocated: £${gangDivisions.reduce((sum, m) => sum + m.amount, 0).toFixed
                   </div>
                 </div>
 
-                <Button 
-                  onClick={() => handleExportInvoice(selectedInvoice)} 
-                  className="w-full"
-                >
-                  <Printer className="mr-2 h-4 w-4" />
-                  Export Invoice
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={() => handleExportInvoice(selectedInvoice)} 
+                    className="flex-1"
+                    variant="default"
+                  >
+                    <Printer className="mr-2 h-4 w-4" />
+                    Export PDF
+                  </Button>
+                  {isAdmin && !selectedInvoice.is_confirmed && (
+                    <Button 
+                      onClick={() => handleConfirmInvoice(selectedInvoice)} 
+                      className="flex-1 bg-green-600 hover:bg-green-700"
+                    >
+                      Confirm
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
           </DialogContent>
