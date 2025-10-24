@@ -132,6 +132,8 @@ const SiteDetail = () => {
   const [memberAmount, setMemberAmount] = useState(0);
   const [invoiceNotes, setInvoiceNotes] = useState("");
   const [notesAmount, setNotesAmount] = useState(0);
+  const [editingMemberIndex, setEditingMemberIndex] = useState<number | null>(null);
+  const [tempAmount, setTempAmount] = useState("");
 
   useEffect(() => {
     if (id) {
@@ -475,6 +477,24 @@ const SiteDetail = () => {
     const updated = [...gangMembers];
     updated[index] = { ...updated[index], amount: cappedAmount };
     setGangMembers(updated);
+  };
+
+  const handleDirectAmountInput = (index: number, value: string) => {
+    const numValue = parseFloat(value) || 0;
+    const otherMembersTotal = gangMembers.reduce((sum, m, i) => i !== index ? sum + m.amount : sum, 0);
+    const maxAllowed = totalInvoiceValue - otherMembersTotal;
+    const cappedAmount = Math.min(Math.max(0, numValue), maxAllowed);
+    
+    const updated = [...gangMembers];
+    updated[index] = { ...updated[index], amount: cappedAmount };
+    setGangMembers(updated);
+    setEditingMemberIndex(null);
+    setTempAmount("");
+  };
+
+  const handleStartEditing = (index: number, currentAmount: number) => {
+    setEditingMemberIndex(index);
+    setTempAmount(currentAmount.toFixed(2));
   };
 
   const handleConfirmInvoice = async () => {
@@ -1126,7 +1146,30 @@ const SiteDetail = () => {
                             </div>
                             <div className="space-y-2">
                               <div className="flex justify-between items-center">
-                                <Label className="text-sm">Amount: £{member.amount.toFixed(2)}</Label>
+                                {editingMemberIndex === index ? (
+                                  <Input
+                                    type="number"
+                                    value={tempAmount}
+                                    onChange={(e) => setTempAmount(e.target.value)}
+                                    onBlur={() => handleDirectAmountInput(index, tempAmount)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        handleDirectAmountInput(index, tempAmount);
+                                      }
+                                    }}
+                                    className="w-32"
+                                    autoFocus
+                                    step="0.01"
+                                    min="0"
+                                  />
+                                ) : (
+                                  <Label 
+                                    className="text-sm cursor-pointer hover:text-primary transition-colors"
+                                    onClick={() => handleStartEditing(index, member.amount)}
+                                  >
+                                    Amount: £{member.amount.toFixed(2)}
+                                  </Label>
+                                )}
                               </div>
                               <Slider
                                 value={[(member.amount / totalInvoiceValue) * 100]}
