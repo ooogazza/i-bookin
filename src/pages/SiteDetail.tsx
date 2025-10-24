@@ -674,10 +674,13 @@ const SiteDetail = () => {
             )}
           </div>
           
-          {!isAdmin && invoiceItems.length > 0 && (
-            <Button onClick={() => setInvoiceDialogOpen(true)}>
+          {!isAdmin && (
+            <Button 
+              onClick={() => setInvoiceDialogOpen(true)}
+              variant={invoiceItems.length > 0 ? "default" : "outline"}
+            >
               <ShoppingCart className="mr-2 h-4 w-4" />
-              View Invoice ({invoiceItems.length})
+              View Invoice {invoiceItems.length > 0 && `(${invoiceItems.length})`}
             </Button>
           )}
         </div>
