@@ -14,6 +14,7 @@ import PlotBooking from "./pages/PlotBooking";
 import BookingIn from "./pages/BookingIn";
 import Admin from "./pages/Admin";
 import Sites from "./pages/admin/Sites";
+import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -84,6 +85,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route path="/install" element={<Install />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
