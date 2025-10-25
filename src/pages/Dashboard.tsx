@@ -272,16 +272,16 @@ const Dashboard = () => {
                   onClick={() => navigate(`/developer/${developer.id}`)}
                 >
                   <CardHeader>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center min-h-[80px]">
                       {logo && (
                         <img 
                           src={logo} 
                           alt={developer.name}
-                          className="h-16 w-auto object-contain rounded-lg"
+                          className="h-12 w-auto max-w-[200px] object-contain rounded-lg"
                         />
                       )}
                     </div>
-                    <CardDescription className="mt-3">
+                    <CardDescription className="mt-3 text-center">
                       {developer.site_count || 0} site{developer.site_count !== 1 ? 's' : ''}
                     </CardDescription>
                   </CardHeader>

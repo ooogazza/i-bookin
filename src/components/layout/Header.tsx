@@ -10,16 +10,12 @@ import { ReactNode } from "react";
 interface HeaderProps {
   showBackButton?: boolean;
   showLogout?: boolean;
-  developerLogo?: string;
-  developerName?: string;
   actions?: ReactNode;
 }
 
 export const Header = ({ 
   showBackButton = false,
   showLogout = false,
-  developerLogo,
-  developerName,
   actions
 }: HeaderProps) => {
   const navigate = useNavigate();
@@ -45,22 +41,18 @@ export const Header = ({
             </Button>
           )}
           <img src={logo} alt="I-Book Logo" className="h-10 w-10 rounded-lg" />
-          {developerLogo ? (
-            <img src={developerLogo} alt={developerName || "Developer"} className="h-10 w-auto object-contain rounded-lg" />
-          ) : (
-            <div className="flex flex-col">
-              <h1 className="text-2xl font-bold leading-tight">I-Book</h1>
-              <p className="text-xs text-muted-foreground leading-tight">Brickwork Manager</p>
-            </div>
-          )}
+          <div className="flex flex-col">
+            <h1 className="text-2xl font-bold leading-tight">I-Book</h1>
+            <p className="text-xs text-muted-foreground leading-tight">Brickwork Manager</p>
+          </div>
         </div>
         
-        <nav className="flex items-center gap-4">
+        <nav className="flex items-center gap-2 flex-wrap">
           {actions}
           {showLogout && (
-            <Button variant="outline" onClick={handleLogout}>
+            <Button variant="outline" onClick={handleLogout} size="sm" className="whitespace-nowrap">
               <LogOut className="mr-2 h-4 w-4" />
-              Logout
+              <span className="hidden sm:inline">Logout</span>
             </Button>
           )}
         </nav>

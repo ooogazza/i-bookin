@@ -777,29 +777,25 @@ const SiteDetail = () => {
       {/* Sticky Header with Column Titles */}
       {showStickyHeader && site && (
         <div className="fixed top-16 left-0 right-0 z-40 bg-background/95 backdrop-blur border-b shadow-md">
-          <div className="container py-2">
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="border-b">
-                    <th className="p-2 text-left font-medium text-sm">Plot</th>
-                    <th className="p-2 text-left font-medium text-sm">House Type</th>
-                    {Object.values(LIFT_LABELS).map(label => (
-                      <th key={label} className="p-2 text-center font-medium whitespace-nowrap text-sm">{label}</th>
-                    ))}
-                    {isAdmin && <th className="p-2 text-center font-medium text-sm">Actions</th>}
-                  </tr>
-                </thead>
-              </table>
-            </div>
+          <div className="container py-2 overflow-x-auto">
+            <table className="w-full border-collapse min-w-[800px]">
+              <thead>
+                <tr className="border-b">
+                  <th className="p-2 text-left font-medium text-sm w-20">Plot</th>
+                  <th className="p-2 text-left font-medium text-sm w-32">House Type</th>
+                  {Object.values(LIFT_LABELS).map(label => (
+                    <th key={label} className="p-2 text-center font-medium whitespace-nowrap text-sm min-w-[80px]">{label}</th>
+                  ))}
+                  {isAdmin && <th className="p-2 text-center font-medium text-sm w-24">Actions</th>}
+                </tr>
+              </thead>
+            </table>
           </div>
         </div>
       )}
       
       <Header 
         showBackButton
-        developerLogo={developerLogo}
-        developerName={developer?.name}
         actions={
           <>
             {isAdmin && users.length > 0 && (
@@ -867,20 +863,20 @@ const SiteDetail = () => {
       />
       
       <main className="container py-8">
-        {developerLogo && (
-          <div className="mb-6">
+        <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          {developerLogo && (
             <img 
               src={developerLogo} 
               alt={developer?.name || "Developer"}
-              className="h-16 w-auto object-contain"
+              className="h-12 w-auto object-contain rounded-lg"
             />
-          </div>
-        )}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold tracking-tight">{site.name}</h2>
-          {site.description && (
-            <p className="text-muted-foreground">{site.description}</p>
           )}
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">{site.name}</h2>
+            {site.description && (
+              <p className="text-muted-foreground">{site.description}</p>
+            )}
+          </div>
         </div>
 
         <div className="mb-6 flex gap-4 justify-between items-center">
@@ -950,16 +946,16 @@ const SiteDetail = () => {
                 {isAdmin ? "No plots created yet" : "No plots assigned to you"}
               </p>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
+              <div className="overflow-x-auto -mx-6 px-6">
+                <table className="w-full border-collapse min-w-[800px]">
                   <thead>
                     <tr className="border-b">
-                      <th className="p-2 text-left font-medium">Plot</th>
-                      <th className="p-2 text-left font-medium">House Type</th>
+                      <th className="p-2 text-left font-medium w-20">Plot</th>
+                      <th className="p-2 text-left font-medium w-32">House Type</th>
                       {Object.values(LIFT_LABELS).map(label => (
-                        <th key={label} className="p-2 text-center font-medium whitespace-nowrap text-sm">{label}</th>
+                        <th key={label} className="p-2 text-center font-medium whitespace-nowrap text-sm min-w-[80px]">{label}</th>
                       ))}
-                      {isAdmin && <th className="p-2 text-center font-medium">Actions</th>}
+                      {isAdmin && <th className="p-2 text-center font-medium w-24">Actions</th>}
                     </tr>
                   </thead>
                   <tbody>
