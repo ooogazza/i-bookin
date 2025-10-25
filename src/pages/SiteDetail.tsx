@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -148,16 +148,47 @@ const SiteDetail = () => {
   
   const [searchPlotNumber, setSearchPlotNumber] = useState("");
   const [searchPhase, setSearchPhase] = useState("");
+  
+  const stickyScrollRef = useRef<HTMLDivElement>(null);
+  const mainScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleScroll = () => {
-      setShowBackToTop(window.scrollY > 400);
-      setShowStickyHeader(window.scrollY > 200);
+      setShowBackToTop(window.scrollY > 800);
+      setShowStickyHeader(window.scrollY > 500);
     };
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Sync horizontal scroll between sticky header and main table
+  useEffect(() => {
+    const stickyScroll = stickyScrollRef.current;
+    const mainScroll = mainScrollRef.current;
+
+    if (!stickyScroll || !mainScroll) return;
+
+    const syncStickyFromMain = () => {
+      if (stickyScroll) {
+        stickyScroll.scrollLeft = mainScroll.scrollLeft;
+      }
+    };
+
+    const syncMainFromSticky = () => {
+      if (mainScroll) {
+        mainScroll.scrollLeft = stickyScroll.scrollLeft;
+      }
+    };
+
+    mainScroll.addEventListener('scroll', syncStickyFromMain);
+    stickyScroll.addEventListener('scroll', syncMainFromSticky);
+
+    return () => {
+      mainScroll.removeEventListener('scroll', syncStickyFromMain);
+      stickyScroll.removeEventListener('scroll', syncMainFromSticky);
+    };
+  }, [showStickyHeader]);
 
   useEffect(() => {
     if (id) {
@@ -777,7 +808,7 @@ const SiteDetail = () => {
       {/* Sticky Header with Column Titles */}
       {showStickyHeader && site && (
         <div className="fixed top-16 left-0 right-0 z-40 bg-background/95 backdrop-blur border-b shadow-md">
-          <div className="container py-2 overflow-x-auto">
+          <div ref={stickyScrollRef} className="container py-2 overflow-x-auto">
             <table className="w-full border-collapse min-w-[800px]">
               <thead>
                 <tr className="border-b">
@@ -953,7 +984,7 @@ const SiteDetail = () => {
                 {isAdmin ? "No plots created yet" : "No plots assigned to you"}
               </p>
             ) : (
-              <div className="overflow-auto relative max-h-[70vh]">
+              <div ref={mainScrollRef} className="overflow-auto relative max-h-[70vh]">
                 <div className="inline-block min-w-full">
                   <table className="w-full border-collapse min-w-[800px]">
                   <thead>
