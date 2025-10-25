@@ -133,25 +133,30 @@ const DeveloperDetail = () => {
       <Header 
         showBackButton 
         hideTitle
-        actions={
-          <div className="flex items-center gap-3">
-            {logo && (
+        leftContent={
+          logo && (
+            <div className="flex items-center gap-2">
               <img 
                 src={logo} 
                 alt={developer.name}
                 className="h-10 w-auto object-contain rounded-lg"
               />
-            )}
-            {isAdmin && (
-              <Button 
-                onClick={() => navigate("/admin/sites")}
-                size="sm"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                New Site
-              </Button>
-            )}
-          </div>
+              <span className="text-sm text-black dark:text-white font-medium">
+                {sites.length} {sites.length === 1 ? 'site' : 'sites'}
+              </span>
+            </div>
+          )
+        }
+        actions={
+          isAdmin && (
+            <Button 
+              onClick={() => navigate("/admin/sites")}
+              size="sm"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              New Site
+            </Button>
+          )
         }
       />
       

@@ -12,13 +12,15 @@ interface HeaderProps {
   showLogout?: boolean;
   actions?: ReactNode;
   hideTitle?: boolean;
+  leftContent?: ReactNode;
 }
 
 export const Header = ({ 
   showBackButton = false,
   showLogout = false,
   actions,
-  hideTitle = false
+  hideTitle = false,
+  leftContent
 }: HeaderProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -50,6 +52,7 @@ export const Header = ({
               <p className="text-xs text-muted-foreground leading-tight">Brickwork Manager</p>
             </div>
           )}
+          {leftContent}
         </div>
         
         <nav className="flex items-center gap-2 flex-wrap">
