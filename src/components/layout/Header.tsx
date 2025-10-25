@@ -35,12 +35,13 @@ export const Header = ({
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-3">
-          {showBackButton && (
-            <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          )}
-          <img src={logo} alt="I-Book Logo" className="h-10 w-10 rounded-lg" />
+          <img 
+            src={logo} 
+            alt="I-Book Logo" 
+            className={`h-10 w-10 rounded-lg ${showBackButton ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
+            onClick={showBackButton ? () => navigate("/dashboard") : undefined}
+            title={showBackButton ? "Back to Dashboard" : undefined}
+          />
           <div className="hidden sm:flex flex-col">
             <h1 className="text-2xl font-bold leading-tight">I-Book</h1>
             <p className="text-xs text-muted-foreground leading-tight">Brickwork Manager</p>

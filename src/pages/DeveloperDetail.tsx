@@ -104,7 +104,7 @@ const DeveloperDetail = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-secondary/30">
-        <Header />
+        <Header showBackButton />
         <main className="container py-8">
           <div className="text-center py-12">
             <p className="text-muted-foreground">Loading...</p>
@@ -117,7 +117,7 @@ const DeveloperDetail = () => {
   if (!developer) {
     return (
       <div className="min-h-screen bg-secondary/30">
-        <Header />
+        <Header showBackButton />
         <main className="container py-8">
           <div className="text-center py-12">
             <p className="text-muted-foreground">Developer not found</p>
@@ -131,7 +131,7 @@ const DeveloperDetail = () => {
 
   return (
     <div className="min-h-screen bg-secondary/30">
-      <Header />
+      <Header showBackButton />
       
       <main className="container py-8">
         <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
