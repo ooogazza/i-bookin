@@ -6,10 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Building2, Trash2 } from "lucide-react";
+import { Building2, Trash2, MapPin } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { developerLogos } from "@/lib/developerLogos";
-import locationPin from "@/assets/location-pin.png";
 
 interface Developer {
   id: string;
@@ -182,7 +181,7 @@ const DeveloperDetail = () => {
                   </div>
                   {site.location && (
                     <CardDescription className="flex items-center gap-1">
-                      <img src={locationPin} alt="Location" className="h-4 w-4" />
+                      <MapPin className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
                       <span className="text-blue-600 dark:text-blue-400">{site.location}</span>
                     </CardDescription>
                   )}
