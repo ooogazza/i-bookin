@@ -209,6 +209,14 @@ const SiteDetail = () => {
     }
   }, [id, isAdmin]);
 
+  // Auto-load saved gang members when invoice dialog opens
+  useEffect(() => {
+    if (invoiceDialogOpen && gangMembers.length === 0 && savedGangMembers.length > 0) {
+      const membersWithZeroAmount = savedGangMembers.map(m => ({ ...m, amount: 0 }));
+      setGangMembers(membersWithZeroAmount);
+    }
+  }, [invoiceDialogOpen, savedGangMembers]);
+
   const fetchSiteData = async () => {
     try {
       const { data: siteData, error: siteError } = await supabase
@@ -549,16 +557,6 @@ const SiteDetail = () => {
     setSavedGangMembers(updatedSaved);
     localStorage.setItem('savedGangMembers', JSON.stringify(updatedSaved));
     toast.success("Gang member removed");
-  };
-
-  const handleLoadSavedMembers = () => {
-    if (savedGangMembers.length === 0) {
-      toast.error("No saved gang members");
-      return;
-    }
-    const membersWithZeroAmount = savedGangMembers.map(m => ({ ...m, amount: 0 }));
-    setGangMembers(membersWithZeroAmount);
-    toast.success("Saved gang members loaded");
   };
 
   const handleRemoveGangMember = (index: number) => {
@@ -1477,17 +1475,10 @@ const SiteDetail = () => {
                   <CardHeader>
                     <div className="flex justify-between items-center">
                       <CardTitle>Gang Division - Who Gets Paid</CardTitle>
-                      <div className="flex gap-2">
-                        {savedGangMembers.length > 0 && gangMembers.length === 0 && (
-                          <Button onClick={handleLoadSavedMembers} variant="outline" size="sm">
-                            Load Saved Members
-                          </Button>
-                        )}
-                        <Button onClick={() => setGangDialogOpen(true)} size="sm">
-                          <Plus className="mr-2 h-4 w-4" />
-                          Add Member
-                        </Button>
-                      </div>
+                      <Button onClick={() => setGangDialogOpen(true)} size="sm">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Member
+                      </Button>
                     </div>
                   </CardHeader>
                   <CardContent>
