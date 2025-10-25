@@ -237,7 +237,7 @@ const Dashboard = () => {
                 )}
               </CardTitle>
               <CardDescription>
-                {isAdmin ? "View all invoices and bookings" : "View your invoices and bookings"}
+                {isAdmin ? "View all invoices" : "View your invoices"}
               </CardDescription>
             </CardHeader>
           </Card>
