@@ -118,26 +118,27 @@ All colors MUST be HSL.
   }
 
   /* Enhanced scrolling for mobile tables */
-  .overflow-x-auto {
+  .overflow-x-auto, .overflow-auto {
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
   }
 
-  .overflow-x-auto::-webkit-scrollbar {
+  .overflow-x-auto::-webkit-scrollbar, .overflow-auto::-webkit-scrollbar {
     height: 8px;
+    width: 8px;
   }
 
-  .overflow-x-auto::-webkit-scrollbar-track {
+  .overflow-x-auto::-webkit-scrollbar-track, .overflow-auto::-webkit-scrollbar-track {
     background: transparent;
   }
 
-  .overflow-x-auto::-webkit-scrollbar-thumb {
+  .overflow-x-auto::-webkit-scrollbar-thumb, .overflow-auto::-webkit-scrollbar-thumb {
     background: hsl(var(--muted-foreground) / 0.3);
     border-radius: 4px;
   }
 
-  .overflow-x-auto::-webkit-scrollbar-thumb:hover {
+  .overflow-x-auto::-webkit-scrollbar-thumb:hover, .overflow-auto::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--muted-foreground) / 0.5);
   }
 

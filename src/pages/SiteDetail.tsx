@@ -801,11 +801,11 @@ const SiteDetail = () => {
             {isAdmin && users.length > 0 && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-1">
+                  <Button variant="outline" size="sm" className="gap-1" title="View Invited Users">
                     <Users className="h-4 w-4" />
-                    <span className="hidden sm:inline">Invited Users ({users.length})</span>
-                    <span className="sm:hidden">({users.length})</span>
-                    <ChevronDown className="h-4 w-4" />
+                    <span className="hidden md:inline">Invited Users</span>
+                    <span className="hidden sm:inline md:hidden">({users.length})</span>
+                    <ChevronDown className="h-4 w-4 hidden md:inline" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent 
@@ -843,9 +843,10 @@ const SiteDetail = () => {
                   <Plus className="h-4 w-4" />
                   <span className="hidden md:inline ml-2">Add House Type</span>
                 </Button>
-                <Button onClick={() => setInviteUserDialogOpen(true)} variant="outline" size="sm" title="Invite Users">
+                <Button onClick={() => setInviteUserDialogOpen(true)} variant="outline" size="sm" title="Invite Users" className="gap-1">
+                  <Plus className="h-3 w-3" />
                   <Users className="h-4 w-4" />
-                  <span className="hidden md:inline ml-2">Invite Users</span>
+                  <span className="hidden md:inline ml-1">Invite Users</span>
                 </Button>
               </>
             )}
@@ -933,7 +934,11 @@ const SiteDetail = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <Button onClick={handleSearchPlot}>Search</Button>
+              <Button onClick={() => {
+                handleSearchPlot();
+                setSearchPlotNumber("");
+                setSearchPhase("");
+              }}>Search</Button>
             </div>
           </CardContent>
         </Card>
@@ -949,7 +954,7 @@ const SiteDetail = () => {
                 {isAdmin ? "No plots created yet" : "No plots assigned to you"}
               </p>
             ) : (
-              <div className="overflow-x-auto touch-pan-x overscroll-x-contain relative">
+              <div className="overflow-auto touch-pan-x overscroll-x-contain relative max-h-[70vh]">
                 <div className="inline-block min-w-full">
                   <table className="w-full border-collapse min-w-[800px]">
                   <thead>

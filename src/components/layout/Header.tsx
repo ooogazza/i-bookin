@@ -41,7 +41,7 @@ export const Header = ({
             </Button>
           )}
           <img src={logo} alt="I-Book Logo" className="h-10 w-10 rounded-lg" />
-          <div className="flex flex-col">
+          <div className="hidden sm:flex flex-col">
             <h1 className="text-2xl font-bold leading-tight">I-Book</h1>
             <p className="text-xs text-muted-foreground leading-tight">Brickwork Manager</p>
           </div>

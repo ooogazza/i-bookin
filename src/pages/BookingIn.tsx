@@ -438,9 +438,9 @@ const BookingIn = () => {
       <Header 
         showBackButton
         actions={
-          <Button onClick={handlePrint} variant="outline">
-            <Printer className="mr-2 h-4 w-4" />
-            Print
+          <Button onClick={handlePrint} variant="outline" size="sm" title="Print">
+            <Printer className="h-4 w-4" />
+            <span className="hidden md:inline ml-2">Print</span>
           </Button>
         }
       />
@@ -559,9 +559,9 @@ const BookingIn = () => {
               ) : (
                 <Table>
                   <TableHeader>
-                    <TableRow>
+                   <TableRow>
                       <TableHead>Invoice #</TableHead>
-                      <TableHead>Items</TableHead>
+                      <TableHead>Gang Members</TableHead>
                       <TableHead className="text-right">Total Value</TableHead>
                       <TableHead>Date</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
@@ -579,13 +579,11 @@ const BookingIn = () => {
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">
-                            {invoice.items.map((item, idx) => (
+                            {invoice.items[0]?.gang_divisions.map((member, idx) => (
                               <div key={idx} className="text-sm">
-                                <span className="font-medium">Plot {item.plots.plot_number}</span>
+                                <span className="font-medium">{member.member_name}</span>
                                 {' - '}
-                                <span>{LIFT_LABELS[item.lift_values.lift_type as keyof typeof LIFT_LABELS]}</span>
-                                {' '}
-                                <span className="text-muted-foreground">({item.percentage}%)</span>
+                                <span className="text-muted-foreground capitalize">£{member.amount.toFixed(2)}</span>
                               </div>
                             ))}
                           </div>
@@ -660,9 +658,9 @@ const BookingIn = () => {
                   <h4 className="font-semibold mb-3">Invoices</h4>
                   <Table>
                     <TableHeader>
-                      <TableRow>
+                     <TableRow>
                         <TableHead>Invoice #</TableHead>
-                        <TableHead>Items</TableHead>
+                        <TableHead>Gang Members</TableHead>
                         <TableHead className="text-right">Value</TableHead>
                         <TableHead>Date</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
@@ -685,13 +683,11 @@ const BookingIn = () => {
                           </TableCell>
                           <TableCell>
                             <div className="space-y-1">
-                              {invoice.items.map((item, idx) => (
+                              {invoice.items[0]?.gang_divisions.map((member, idx) => (
                                 <div key={idx} className="text-sm">
-                                  <span className="font-medium">Plot {item.plots.plot_number}</span>
+                                  <span className="font-medium">{member.member_name}</span>
                                   {' - '}
-                                  <span>{LIFT_LABELS[item.lift_values.lift_type as keyof typeof LIFT_LABELS]}</span>
-                                  {' '}
-                                  <span className="text-muted-foreground">({item.percentage}%)</span>
+                                  <span className="text-muted-foreground capitalize">£{member.amount.toFixed(2)}</span>
                                 </div>
                               ))}
                             </div>
