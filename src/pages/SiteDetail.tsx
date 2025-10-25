@@ -839,6 +839,74 @@ const SiteDetail = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const scrollToNextHighlightedPlotDown = () => {
+    const currentScrollY = window.scrollY;
+    const viewportBottom = currentScrollY + window.innerHeight;
+
+    // Find the first highlighted plot below the current viewport
+    let nextPlot: number | null = null;
+    let minDistance = Infinity;
+
+    highlightedPlots.forEach(plotNumber => {
+      const plotElement = document.querySelector(`[data-plot-number="${plotNumber}"]`);
+      if (plotElement) {
+        const rect = plotElement.getBoundingClientRect();
+        const elementTop = rect.top + currentScrollY;
+        
+        if (elementTop > viewportBottom) {
+          const distance = elementTop - viewportBottom;
+          if (distance < minDistance) {
+            minDistance = distance;
+            nextPlot = plotNumber;
+          }
+        }
+      }
+    });
+
+    if (nextPlot !== null) {
+      const plotElement = document.querySelector(`[data-plot-number="${nextPlot}"]`);
+      if (plotElement) {
+        const yOffset = -180;
+        const y = plotElement.getBoundingClientRect().top + window.pageYOffset + yOffset;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      }
+    }
+  };
+
+  const scrollToNextHighlightedPlotUp = () => {
+    const currentScrollY = window.scrollY;
+    const viewportTop = currentScrollY;
+
+    // Find the last highlighted plot above the current viewport
+    let previousPlot: number | null = null;
+    let minDistance = Infinity;
+
+    highlightedPlots.forEach(plotNumber => {
+      const plotElement = document.querySelector(`[data-plot-number="${plotNumber}"]`);
+      if (plotElement) {
+        const rect = plotElement.getBoundingClientRect();
+        const elementBottom = rect.bottom + currentScrollY;
+        
+        if (elementBottom < viewportTop) {
+          const distance = viewportTop - elementBottom;
+          if (distance < minDistance) {
+            minDistance = distance;
+            previousPlot = plotNumber;
+          }
+        }
+      }
+    });
+
+    if (previousPlot !== null) {
+      const plotElement = document.querySelector(`[data-plot-number="${previousPlot}"]`);
+      if (plotElement) {
+        const yOffset = -180;
+        const y = plotElement.getBoundingClientRect().top + window.pageYOffset + yOffset;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      }
+    }
+  };
+
   const handleStartEditing = (index: number, currentAmount: number) => {
     setEditingMemberIndex(index);
     setTempAmount(currentAmount.toFixed(2));
@@ -1251,12 +1319,18 @@ const SiteDetail = () => {
       <main className="container py-8">
         {/* Sticky Scroll Indicators */}
         {showScrollUpIndicator && (
-          <div className="fixed left-4 top-1/2 -translate-y-1/2 z-50 animate-pulse">
+          <div 
+            className="fixed left-4 top-1/3 z-50 animate-pulse cursor-pointer"
+            onClick={scrollToNextHighlightedPlotUp}
+          >
             <ArrowUp className="h-8 w-8 text-primary fill-primary" strokeWidth={0} />
           </div>
         )}
         {showScrollDownIndicator && (
-          <div className="fixed left-4 top-1/2 translate-y-1/2 z-50 animate-pulse">
+          <div 
+            className="fixed left-4 top-2/3 z-50 animate-pulse cursor-pointer"
+            onClick={scrollToNextHighlightedPlotDown}
+          >
             <ChevronDown className="h-8 w-8 text-primary fill-primary" strokeWidth={0} />
           </div>
         )}
