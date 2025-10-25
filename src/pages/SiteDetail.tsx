@@ -610,11 +610,15 @@ const SiteDetail = () => {
 
     // If phase is selected, highlight that specific cell
     if (searchPhase) {
-      const cellElement = plotElement.querySelector(`[data-lift-type="${searchPhase}"]`);
+      const cellElement = plotElement.querySelector(`[data-lift-type="${searchPhase}"]`) as HTMLElement;
       if (cellElement) {
-        cellElement.classList.add('ring-4', 'ring-primary');
+        cellElement.style.outline = '3px solid hsl(var(--primary))';
+        cellElement.style.outlineOffset = '-3px';
+        cellElement.style.borderRadius = '0.5rem';
         setTimeout(() => {
-          cellElement.classList.remove('ring-4', 'ring-primary');
+          cellElement.style.outline = '';
+          cellElement.style.outlineOffset = '';
+          cellElement.style.borderRadius = '';
         }, 2000);
       }
     }
