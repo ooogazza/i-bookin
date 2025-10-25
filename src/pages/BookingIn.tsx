@@ -88,7 +88,9 @@ const BookingIn = () => {
   const [groupedInvoices, setGroupedInvoices] = useState<GroupedInvoice[]>([]);
   const [userInvoices, setUserInvoices] = useState<UserInvoices[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedUser, setSelectedUser] = useState<UserInvoices | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<GroupedInvoice | null>(null);
+  const [userInvoicesDialogOpen, setUserInvoicesDialogOpen] = useState(false);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [unviewedCount, setUnviewedCount] = useState(0);
 
@@ -211,6 +213,11 @@ const BookingIn = () => {
     }
   };
 
+  const handleViewUserInvoices = (userGroup: UserInvoices) => {
+    setSelectedUser(userGroup);
+    setUserInvoicesDialogOpen(true);
+  };
+
   const handleViewDetails = async (invoice: GroupedInvoice) => {
     setSelectedInvoice(invoice);
     setDetailsDialogOpen(true);
@@ -233,6 +240,19 @@ const BookingIn = () => {
               : inv
           )
         );
+        
+        // Update userInvoices state
+        setUserInvoices((prev: UserInvoices[]) => 
+          prev.map((user: UserInvoices) => ({
+            ...user,
+            invoices: user.invoices.map((inv: GroupedInvoice) => 
+              inv.invoice_number === invoice.invoice_number 
+                ? { ...inv, is_viewed: true } as GroupedInvoice
+                : inv
+            )
+          }))
+        );
+        
         setUnviewedCount(prev => Math.max(0, prev - 1));
       } catch (error: any) {
         console.error("Error marking invoice as viewed:", error);
@@ -259,6 +279,18 @@ const BookingIn = () => {
             ? { ...inv, is_confirmed: true } as GroupedInvoice
             : inv
         )
+      );
+
+      // Update userInvoices state
+      setUserInvoices((prev: UserInvoices[]) => 
+        prev.map((user: UserInvoices) => ({
+          ...user,
+          invoices: user.invoices.map((inv: GroupedInvoice) => 
+            inv.invoice_number === invoice.invoice_number 
+              ? { ...inv, is_confirmed: true } as GroupedInvoice
+              : inv
+          )
+        }))
       );
 
       toast.success("Invoice confirmed successfully");
@@ -343,93 +375,56 @@ Total Allocated: £${gangDivisions.reduce((sum, m) => sum + m.amount, 0).toFixed
             <p className="text-muted-foreground">Loading bookings...</p>
           </div>
         ) : isAdmin ? (
-          <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {userInvoices.length === 0 ? (
-              <Card>
+              <Card className="col-span-full">
                 <CardContent className="text-center py-8">
                   <p className="text-muted-foreground">No bookings yet</p>
                 </CardContent>
               </Card>
             ) : (
-              userInvoices.map((userGroup) => (
-                <Card key={userGroup.user_id}>
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle>{userGroup.full_name}</CardTitle>
-                        <p className="text-sm text-muted-foreground mt-1">{maskEmail(userGroup.email)}</p>
+              userInvoices.map((userGroup) => {
+                const unviewedInvoices = userGroup.invoices.filter(inv => !inv.is_viewed && !inv.is_confirmed).length;
+                const confirmedInvoices = userGroup.invoices.filter(inv => inv.is_confirmed).length;
+                
+                return (
+                  <Card 
+                    key={userGroup.user_id} 
+                    className="cursor-pointer hover:shadow-lg transition-shadow"
+                    onClick={() => handleViewUserInvoices(userGroup)}
+                  >
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <CardTitle className="text-xl">{userGroup.full_name}</CardTitle>
+                          <p className="text-sm text-muted-foreground mt-1">{maskEmail(userGroup.email)}</p>
+                        </div>
+                        {unviewedInvoices > 0 && (
+                          <div className="flex items-center gap-1 bg-primary text-primary-foreground px-2 py-1 rounded-full text-xs font-semibold">
+                            {unviewedInvoices}
+                          </div>
+                        )}
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm text-muted-foreground">Total Value</p>
-                        <p className="text-2xl font-bold text-primary">£{userGroup.total_value.toFixed(2)}</p>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center pb-3 border-b">
+                          <span className="text-sm text-muted-foreground">Total Invoices</span>
+                          <span className="font-semibold">{userGroup.invoices.length}</span>
+                        </div>
+                        <div className="flex justify-between items-center pb-3 border-b">
+                          <span className="text-sm text-muted-foreground">Confirmed</span>
+                          <span className="font-semibold text-green-600">{confirmedInvoices}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Total Value</span>
+                          <span className="text-xl font-bold text-primary">£{userGroup.total_value.toFixed(2)}</span>
+                        </div>
                       </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <h4 className="font-semibold mb-3">Invoices</h4>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Invoice #</TableHead>
-                          <TableHead>Items</TableHead>
-                          <TableHead className="text-right">Value</TableHead>
-                          <TableHead>Date</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {userGroup.invoices.map((invoice) => (
-                          <TableRow 
-                            key={invoice.invoice_number}
-                            className={`cursor-pointer ${invoice.is_confirmed ? 'bg-green-100 dark:bg-green-900/20 hover:bg-green-200 dark:hover:bg-green-900/30' : 'hover:bg-muted/50'}`}
-                            onClick={() => handleViewDetails(invoice)}
-                          >
-                            <TableCell className="font-medium">
-                              <div className="flex items-center gap-2">
-                                {!invoice.is_viewed && !invoice.is_confirmed && (
-                                  <div className="h-2 w-2 rounded-full bg-primary" />
-                                )}
-                                {invoice.invoice_number}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="space-y-1">
-                                {invoice.items.map((item, idx) => (
-                                  <div key={idx} className="text-sm">
-                                    <span className="font-medium">Plot {item.plots.plot_number}</span>
-                                    {' - '}
-                                    <span>{LIFT_LABELS[item.lift_values.lift_type as keyof typeof LIFT_LABELS]}</span>
-                                    {' '}
-                                    <span className="text-muted-foreground">({item.percentage}%)</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-right font-bold text-primary">
-                              £{invoice.total_value.toFixed(2)}
-                            </TableCell>
-                            <TableCell>
-                              {new Date(invoice.created_at).toLocaleDateString()}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleExportInvoice(invoice);
-                                }}
-                              >
-                                <Printer className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
-              ))
+                    </CardContent>
+                  </Card>
+                );
+              })
             )}
           </div>
         ) : (
@@ -513,6 +508,102 @@ Total Allocated: £${gangDivisions.reduce((sum, m) => sum + m.amount, 0).toFixed
             </CardContent>
           </Card>
         )}
+
+        {/* User Invoices Dialog */}
+        <Dialog open={userInvoicesDialogOpen} onOpenChange={setUserInvoicesDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {selectedUser && (
+                  <div>
+                    <div className="text-2xl">{selectedUser.full_name}</div>
+                    <div className="text-sm font-normal text-muted-foreground mt-1">
+                      {maskEmail(selectedUser.email)}
+                    </div>
+                  </div>
+                )}
+              </DialogTitle>
+            </DialogHeader>
+            {selectedUser && (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Invoices</p>
+                    <p className="text-2xl font-bold">{selectedUser.invoices.length}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-muted-foreground">Total Value</p>
+                    <p className="text-2xl font-bold text-primary">£{selectedUser.total_value.toFixed(2)}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold mb-3">Invoices</h4>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Invoice #</TableHead>
+                        <TableHead>Items</TableHead>
+                        <TableHead className="text-right">Value</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {selectedUser.invoices.map((invoice) => (
+                        <TableRow 
+                          key={invoice.invoice_number}
+                          className={`cursor-pointer ${invoice.is_confirmed ? 'bg-green-100 dark:bg-green-900/20 hover:bg-green-200 dark:hover:bg-green-900/30' : 'hover:bg-muted/50'}`}
+                          onClick={() => handleViewDetails(invoice)}
+                        >
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-2">
+                              {!invoice.is_viewed && !invoice.is_confirmed && (
+                                <div className="h-2 w-2 rounded-full bg-primary" />
+                              )}
+                              {invoice.invoice_number}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              {invoice.items.map((item, idx) => (
+                                <div key={idx} className="text-sm">
+                                  <span className="font-medium">Plot {item.plots.plot_number}</span>
+                                  {' - '}
+                                  <span>{LIFT_LABELS[item.lift_values.lift_type as keyof typeof LIFT_LABELS]}</span>
+                                  {' '}
+                                  <span className="text-muted-foreground">({item.percentage}%)</span>
+                                </div>
+                              ))}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right font-bold text-primary">
+                            £{invoice.total_value.toFixed(2)}
+                          </TableCell>
+                          <TableCell>
+                            {new Date(invoice.created_at).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleExportInvoice(invoice);
+                              }}
+                            >
+                              <Printer className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
 
         {/* Invoice Details Dialog */}
         <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
