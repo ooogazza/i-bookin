@@ -142,8 +142,12 @@ const BookingIn = () => {
             items: [],
             total_value: 0,
             notes: booking.notes,
-            is_confirmed: booking.confirmed_by_admin
+            is_confirmed: booking.confirmed_by_admin || false
           };
+        }
+        // Update is_confirmed if any booking in the invoice is confirmed
+        if (booking.confirmed_by_admin) {
+          acc[booking.invoice_number].is_confirmed = true;
         }
         acc[booking.invoice_number].items.push(booking);
         acc[booking.invoice_number].total_value += booking.booked_value;
