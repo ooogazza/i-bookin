@@ -13,7 +13,7 @@ const Landing = () => {
         <img 
           src={logo} 
           alt="I-Book Logo" 
-          className="h-32 w-32 mb-8 animate-fade-in"
+          className="h-32 w-32 mb-8 animate-fade-in rounded-2xl"
         />
         
         <h1 className="text-6xl font-bold mb-4 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
