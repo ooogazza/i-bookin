@@ -142,6 +142,10 @@ const SiteDetail = () => {
   const [editingMemberIndex, setEditingMemberIndex] = useState<number | null>(null);
   const [tempAmount, setTempAmount] = useState("");
   const [savedGangMembers, setSavedGangMembers] = useState<GangMember[]>([]);
+  const [editingNotesAmount, setEditingNotesAmount] = useState(false);
+  const [tempNotesAmount, setTempNotesAmount] = useState("");
+  const [editingBookingPercentage, setEditingBookingPercentage] = useState(false);
+  const [tempBookingPercentage, setTempBookingPercentage] = useState("");
   
   const [plotSummaryDialogOpen, setPlotSummaryDialogOpen] = useState(false);
   const [selectedPlotForSummary, setSelectedPlotForSummary] = useState<Plot | null>(null);
@@ -1351,7 +1355,47 @@ const SiteDetail = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Percentage: {bookingPercentage}%</Label>
+                  <div className="flex justify-between items-center">
+                    {editingBookingPercentage ? (
+                      <Input
+                        type="number"
+                        value={tempBookingPercentage}
+                        onChange={(e) => setTempBookingPercentage(e.target.value)}
+                        onBlur={() => {
+                          const val = parseInt(tempBookingPercentage);
+                          const maxVal = 100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
+                          if (!isNaN(val) && val >= 1 && val <= maxVal) {
+                            setBookingPercentage(val);
+                          }
+                          setEditingBookingPercentage(false);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const val = parseInt(tempBookingPercentage);
+                            const maxVal = 100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
+                            if (!isNaN(val) && val >= 1 && val <= maxVal) {
+                              setBookingPercentage(val);
+                            }
+                            setEditingBookingPercentage(false);
+                          }
+                        }}
+                        className="w-32"
+                        autoFocus
+                        step="1"
+                        min="1"
+                      />
+                    ) : (
+                      <Label 
+                        className="cursor-pointer hover:text-primary transition-colors"
+                        onClick={() => {
+                          setTempBookingPercentage(bookingPercentage.toString());
+                          setEditingBookingPercentage(true);
+                        }}
+                      >
+                        Percentage: {bookingPercentage}%
+                      </Label>
+                    )}
+                  </div>
                   <Slider
                     value={[bookingPercentage]}
                     onValueChange={(value) => setBookingPercentage(value[0])}
@@ -1453,7 +1497,46 @@ const SiteDetail = () => {
                       </p>
                     </div>
                     <div className="space-y-2">
-                      <Label>Add Additional Amount: £{notesAmount.toFixed(2)}</Label>
+                      <div className="flex justify-between items-center">
+                        {editingNotesAmount ? (
+                          <Input
+                            type="number"
+                            value={tempNotesAmount}
+                            onChange={(e) => setTempNotesAmount(e.target.value)}
+                            onBlur={() => {
+                              const val = parseFloat(tempNotesAmount);
+                              if (!isNaN(val) && val >= 0 && val <= 5000) {
+                                setNotesAmount(val);
+                              }
+                              setEditingNotesAmount(false);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                const val = parseFloat(tempNotesAmount);
+                                if (!isNaN(val) && val >= 0 && val <= 5000) {
+                                  setNotesAmount(val);
+                                }
+                                setEditingNotesAmount(false);
+                              }
+                            }}
+                            className="w-40"
+                            autoFocus
+                            step="10"
+                            min="0"
+                            max="5000"
+                          />
+                        ) : (
+                          <Label 
+                            className="cursor-pointer hover:text-primary transition-colors"
+                            onClick={() => {
+                              setTempNotesAmount(notesAmount.toFixed(2));
+                              setEditingNotesAmount(true);
+                            }}
+                          >
+                            Add Additional Amount: £{notesAmount.toFixed(2)}
+                          </Label>
+                        )}
+                      </div>
                       <Slider
                         value={[notesAmount]}
                         onValueChange={(value) => setNotesAmount(value[0])}

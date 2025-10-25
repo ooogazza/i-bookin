@@ -71,6 +71,8 @@ const PlotBooking = () => {
   const [memberName, setMemberName] = useState("");
   const [memberType, setMemberType] = useState("bricklayer");
   const [memberAmount, setMemberAmount] = useState(0);
+  const [editingPercentage, setEditingPercentage] = useState(false);
+  const [tempPercentage, setTempPercentage] = useState("");
 
   useEffect(() => {
     if (id) fetchPlotData();
@@ -334,7 +336,45 @@ const PlotBooking = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Percentage: {percentage}%</Label>
+                      <div className="flex justify-between items-center">
+                        {editingPercentage ? (
+                          <Input
+                            type="number"
+                            value={tempPercentage}
+                            onChange={(e) => setTempPercentage(e.target.value)}
+                            onBlur={() => {
+                              const val = parseInt(tempPercentage);
+                              if (!isNaN(val) && val >= 1 && val <= remainingPercentageForLift) {
+                                setPercentage(val);
+                              }
+                              setEditingPercentage(false);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                const val = parseInt(tempPercentage);
+                                if (!isNaN(val) && val >= 1 && val <= remainingPercentageForLift) {
+                                  setPercentage(val);
+                                }
+                                setEditingPercentage(false);
+                              }
+                            }}
+                            className="w-32"
+                            autoFocus
+                            step="1"
+                            min="1"
+                          />
+                        ) : (
+                          <Label 
+                            className="cursor-pointer hover:text-primary transition-colors"
+                            onClick={() => {
+                              setTempPercentage(percentage.toString());
+                              setEditingPercentage(true);
+                            }}
+                          >
+                            Percentage: {percentage}%
+                          </Label>
+                        )}
+                      </div>
                       <Slider
                         value={[percentage]}
                         onValueChange={(value) => setPercentage(value[0])}
