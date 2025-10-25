@@ -277,7 +277,7 @@ const Dashboard = () => {
                         <img 
                           src={logo} 
                           alt={developer.name}
-                          className="h-16 w-auto object-contain"
+                          className="h-16 w-auto object-contain rounded-lg"
                         />
                       )}
                     </div>

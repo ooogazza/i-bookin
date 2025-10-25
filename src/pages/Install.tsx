@@ -53,7 +53,7 @@ const Install = () => {
       
       <main className="container py-8 max-w-2xl">
         <div className="text-center mb-8">
-          <img src={logo} alt="I-Book Logo" className="h-24 w-24 mx-auto mb-4" />
+          <img src={logo} alt="I-Book Logo" className="h-24 w-24 mx-auto mb-4 rounded-2xl" />
           <h1 className="text-4xl font-bold mb-2">Install I-Book</h1>
           <p className="text-muted-foreground">
             Get the full app experience on your device
