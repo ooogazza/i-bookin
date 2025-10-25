@@ -11,12 +11,14 @@ interface HeaderProps {
   showBackButton?: boolean;
   showLogout?: boolean;
   actions?: ReactNode;
+  hideTitle?: boolean;
 }
 
 export const Header = ({ 
   showBackButton = false,
   showLogout = false,
-  actions
+  actions,
+  hideTitle = false
 }: HeaderProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -42,10 +44,12 @@ export const Header = ({
             onClick={showBackButton ? () => navigate("/dashboard") : undefined}
             title={showBackButton ? "Back to Dashboard" : undefined}
           />
-          <div className="hidden sm:flex flex-col">
-            <h1 className="text-2xl font-bold leading-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">I-Book</h1>
-            <p className="text-xs text-muted-foreground leading-tight">Brickwork Manager</p>
-          </div>
+          {!hideTitle && (
+            <div className="hidden sm:flex flex-col">
+              <h1 className="text-2xl font-bold leading-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">I-Book</h1>
+              <p className="text-xs text-muted-foreground leading-tight">Brickwork Manager</p>
+            </div>
+          )}
         </div>
         
         <nav className="flex items-center gap-2 flex-wrap">

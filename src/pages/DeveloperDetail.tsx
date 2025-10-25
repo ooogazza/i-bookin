@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Building2, Trash2, MapPin } from "lucide-react";
+import { Building2, Trash2, MapPin, Plus } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { developerLogos } from "@/lib/developerLogos";
 
@@ -130,19 +130,32 @@ const DeveloperDetail = () => {
 
   return (
     <div className="min-h-screen bg-secondary/30">
-      <Header showBackButton />
+      <Header 
+        showBackButton 
+        hideTitle
+        actions={
+          <div className="flex items-center gap-3">
+            {logo && (
+              <img 
+                src={logo} 
+                alt={developer.name}
+                className="h-10 w-auto object-contain rounded-lg"
+              />
+            )}
+            {isAdmin && (
+              <Button 
+                onClick={() => navigate("/admin/sites")}
+                size="sm"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                New Site
+              </Button>
+            )}
+          </div>
+        }
+      />
       
       <main className="container py-8">
-        <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
-          {logo && (
-            <img 
-              src={logo} 
-              alt={developer.name}
-              className="h-12 w-auto object-contain rounded-lg"
-            />
-          )}
-          <p className="text-muted-foreground">Sites for this developer</p>
-        </div>
 
         {sites.length === 0 ? (
           <Card>
