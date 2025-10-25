@@ -939,120 +939,114 @@ const SiteDetail = () => {
 
 
         {/* Search Box */}
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="flex gap-3 items-end flex-wrap">
-              <div className="flex-1 min-w-[200px]">
-                <Label htmlFor="searchPlot">Plot Number</Label>
-                <Input
-                  id="searchPlot"
-                  type="number"
-                  placeholder="Enter plot number"
-                  value={searchPlotNumber}
-                  onChange={(e) => setSearchPlotNumber(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSearchPlot()}
-                />
-              </div>
-              <div className="flex-1 min-w-[200px]">
-                <Label htmlFor="searchPhase">Phase (Optional)</Label>
-                <Select value={searchPhase} onValueChange={setSearchPhase}>
-                  <SelectTrigger id="searchPhase">
-                    <SelectValue placeholder="All Phases" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(LIFT_LABELS).map(([key, label]) => (
-                      <SelectItem key={key} value={key}>{label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button onClick={() => {
-                handleSearchPlot();
-                setSearchPlotNumber("");
-                setSearchPhase("");
-              }}>Search</Button>
+        <div className="mb-6 p-6 bg-background/50 rounded-lg border">
+          <div className="flex gap-3 items-end flex-wrap">
+            <div className="flex-1 min-w-[200px]">
+              <Label htmlFor="searchPlot">Plot Number</Label>
+              <Input
+                id="searchPlot"
+                type="number"
+                placeholder="Enter plot number"
+                value={searchPlotNumber}
+                onChange={(e) => setSearchPlotNumber(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSearchPlot()}
+              />
             </div>
-          </CardContent>
-        </Card>
+            <div className="flex-1 min-w-[200px]">
+              <Label htmlFor="searchPhase">Phase (Optional)</Label>
+              <Select value={searchPhase} onValueChange={setSearchPhase}>
+                <SelectTrigger id="searchPhase">
+                  <SelectValue placeholder="All Phases" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(LIFT_LABELS).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button onClick={() => {
+              handleSearchPlot();
+              setSearchPlotNumber("");
+              setSearchPhase("");
+            }}>Search</Button>
+          </div>
+        </div>
 
-        <Card className="relative">
-          <CardHeader>
-            <CardTitle>Plot Grid</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            {plots.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8 px-6">
-                {isAdmin ? "No plots created yet" : "No plots assigned to you"}
-              </p>
-            ) : (
-              <div ref={mainScrollRef} className="overflow-auto relative max-h-[70vh]">
-                <div className="inline-block min-w-full">
-                  <table className="w-full border-collapse min-w-[800px]">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="p-2 text-left font-medium w-20">Plot</th>
-                      <th className="p-2 text-left font-medium w-32">House Type</th>
-                      {Object.values(LIFT_LABELS).map(label => (
-                        <th key={label} className="p-2 text-center font-medium whitespace-nowrap text-sm min-w-[80px]">{label}</th>
-                      ))}
-                      {isAdmin && <th className="p-2 text-center font-medium w-24">Actions</th>}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {plots.map(plot => (
-                      <tr key={plot.id} className="border-b transition-colors" data-plot-number={plot.plot_number}>
-                        <td 
-                          className="p-2 font-medium cursor-pointer hover:bg-primary/10"
-                          onClick={() => handlePlotNumberClick(plot)}
-                        >
-                          {plot.plot_number}
-                        </td>
-                        <td 
-                          className={`p-2 ${isAdmin ? 'cursor-pointer hover:bg-primary/10' : ''}`}
-                          onClick={() => isAdmin && handlePlotClick(plot)}
-                        >
-                          {plot.house_types?.name || "-"}
-                        </td>
-                        {Object.keys(LIFT_LABELS).map(liftType => {
-                          const totalBooked = getTotalBooked(plot, liftType);
-                          
-                          return (
-                            <td 
-                              key={liftType}
-                              data-lift-type={liftType}
-                              className={`p-4 text-center transition-all ${getCellColor(totalBooked)}`}
-                              onClick={() => handleLiftCellClick(plot, liftType)}
-                            >
-                              <div className="flex items-center justify-center min-h-[50px]">
-                                <span className="text-xl font-bold text-foreground">{totalBooked}%</span>
-                              </div>
-                            </td>
-                          );
-                        })}
-                        {isAdmin && (
-                          <td className="p-2 text-center">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedPlot(plot);
-                                setUserAssignDialogOpen(true);
-                              }}
-                            >
-                              <Settings className="h-4 w-4" />
-                            </Button>
-                          </td>
-                        )}
-                      </tr>
+        <div className="relative">
+          <h3 className="text-2xl font-bold tracking-tight mb-4">Plot Grid</h3>
+          {plots.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">
+              {isAdmin ? "No plots created yet" : "No plots assigned to you"}
+            </p>
+          ) : (
+            <div ref={mainScrollRef} className="overflow-auto relative max-h-[70vh] border rounded-lg">
+              <div className="inline-block min-w-full">
+                <table className="w-full border-collapse min-w-[800px]">
+                <thead>
+                  <tr className="border-b bg-muted/50">
+                    <th className="p-2 text-left font-medium w-20">Plot</th>
+                    <th className="p-2 text-left font-medium w-32">House Type</th>
+                    {Object.values(LIFT_LABELS).map(label => (
+                      <th key={label} className="p-2 text-center font-medium whitespace-nowrap text-sm min-w-[80px]">{label}</th>
                     ))}
-                  </tbody>
-                </table>
-                </div>
+                    {isAdmin && <th className="p-2 text-center font-medium w-24">Actions</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {plots.map(plot => (
+                    <tr key={plot.id} className="border-b transition-colors" data-plot-number={plot.plot_number}>
+                      <td 
+                        className="p-2 font-medium cursor-pointer hover:bg-primary/10"
+                        onClick={() => handlePlotNumberClick(plot)}
+                      >
+                        {plot.plot_number}
+                      </td>
+                      <td 
+                        className={`p-2 ${isAdmin ? 'cursor-pointer hover:bg-primary/10' : ''}`}
+                        onClick={() => isAdmin && handlePlotClick(plot)}
+                      >
+                        {plot.house_types?.name || "-"}
+                      </td>
+                      {Object.keys(LIFT_LABELS).map(liftType => {
+                        const totalBooked = getTotalBooked(plot, liftType);
+                        
+                        return (
+                          <td 
+                            key={liftType}
+                            data-lift-type={liftType}
+                            className={`p-4 text-center transition-all ${getCellColor(totalBooked)}`}
+                            onClick={() => handleLiftCellClick(plot, liftType)}
+                          >
+                            <div className="flex items-center justify-center min-h-[50px]">
+                              <span className="text-xl font-bold text-foreground">{totalBooked}%</span>
+                            </div>
+                          </td>
+                        );
+                      })}
+                      {isAdmin && (
+                        <td className="p-2 text-center">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedPlot(plot);
+                              setUserAssignDialogOpen(true);
+                            }}
+                          >
+                            <Settings className="h-4 w-4" />
+                          </Button>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </div>
+          )}
+        </div>
 
         {/* House Type Dialog */}
         <Dialog open={houseTypeDialogOpen} onOpenChange={setHouseTypeDialogOpen}>
