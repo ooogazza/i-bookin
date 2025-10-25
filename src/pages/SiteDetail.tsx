@@ -939,7 +939,7 @@ const SiteDetail = () => {
 
 
         {/* Search Box */}
-        <div className="mb-6 p-6 bg-background/50 rounded-lg border">
+        <div className="mb-6">
           <div className="flex gap-3 items-end flex-wrap">
             <div className="flex-1 min-w-[200px]">
               <Label htmlFor="searchPlot">Plot Number</Label>
@@ -980,7 +980,7 @@ const SiteDetail = () => {
               {isAdmin ? "No plots created yet" : "No plots assigned to you"}
             </p>
           ) : (
-            <div ref={mainScrollRef} className="overflow-auto relative max-h-[70vh] border rounded-lg">
+            <div ref={mainScrollRef} className="overflow-auto relative max-h-[70vh]">
               <div className="inline-block min-w-full">
                 <table className="w-full border-collapse min-w-[800px]">
                 <thead>
