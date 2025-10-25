@@ -167,6 +167,7 @@ const SiteDetail = () => {
   const [searchPlotNumber, setSearchPlotNumber] = useState("");
   const [searchPhase, setSearchPhase] = useState("");
   const [selectedUserForHighlight, setSelectedUserForHighlight] = useState<string | null>(null);
+  const [highlightedPlots, setHighlightedPlots] = useState<number[]>([]);
   
   const stickyScrollRef = useRef<HTMLDivElement>(null);
   const mainScrollRef = useRef<HTMLDivElement>(null);
@@ -694,7 +695,21 @@ const SiteDetail = () => {
     }
   };
 
+  const clearHighlights = () => {
+    highlightedPlots.forEach(plotNumber => {
+      const plotElement = document.querySelector(`[data-plot-number="${plotNumber}"]`);
+      if (plotElement) {
+        plotElement.classList.remove('bg-primary/20');
+      }
+    });
+    setHighlightedPlots([]);
+    setSelectedUserForHighlight(null);
+  };
+
   const handleUserSelect = (userId: string) => {
+    // Clear previous highlights
+    clearHighlights();
+    
     setSelectedUserForHighlight(userId);
     
     // Find all plots assigned to this user
@@ -713,19 +728,61 @@ const SiteDetail = () => {
       window.scrollTo({ top: y, behavior: 'smooth' });
     }
 
-    // Highlight all user's plots
+    // Highlight all user's plots persistently
+    const plotNumbers = userPlots.map(p => p.plot_number);
+    setHighlightedPlots(plotNumbers);
+    
     userPlots.forEach(plot => {
       const plotElement = document.querySelector(`[data-plot-number="${plot.plot_number}"]`);
       if (plotElement) {
         plotElement.classList.add('bg-primary/20');
-        setTimeout(() => {
-          plotElement.classList.remove('bg-primary/20');
-        }, 3000);
       }
     });
 
-    toast.success(`Highlighting ${userPlots.length} plot(s) for this user`);
+    toast.success(`Highlighting ${userPlots.length} plot(s). Long press to clear.`);
   };
+
+  // Long press handler
+  useEffect(() => {
+    if (highlightedPlots.length === 0) return;
+
+    let pressTimer: NodeJS.Timeout;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      pressTimer = setTimeout(() => {
+        clearHighlights();
+        toast.info("Highlights cleared");
+      }, 500); // 500ms for long press
+    };
+
+    const handleTouchEnd = () => {
+      clearTimeout(pressTimer);
+    };
+
+    const handleMouseDown = () => {
+      pressTimer = setTimeout(() => {
+        clearHighlights();
+        toast.info("Highlights cleared");
+      }, 500);
+    };
+
+    const handleMouseUp = () => {
+      clearTimeout(pressTimer);
+    };
+
+    document.addEventListener('touchstart', handleTouchStart);
+    document.addEventListener('touchend', handleTouchEnd);
+    document.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      clearTimeout(pressTimer);
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [highlightedPlots]);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
