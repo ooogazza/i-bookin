@@ -980,70 +980,68 @@ const SiteDetail = () => {
               {isAdmin ? "No plots created yet" : "No plots assigned to you"}
             </p>
           ) : (
-            <div ref={mainScrollRef} className="overflow-auto relative max-h-[70vh]">
-              <div className="inline-block min-w-full">
-                <table className="w-full border-collapse min-w-[800px]">
-                <thead>
-                  <tr className="border-b bg-muted/50">
-                    <th className="p-2 text-left font-medium w-20">Plot</th>
-                    <th className="p-2 text-left font-medium w-32">House Type</th>
-                    {Object.values(LIFT_LABELS).map(label => (
-                      <th key={label} className="p-2 text-center font-medium whitespace-nowrap text-sm min-w-[80px]">{label}</th>
-                    ))}
-                    {isAdmin && <th className="p-2 text-center font-medium w-24">Actions</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {plots.map(plot => (
-                    <tr key={plot.id} className="border-b transition-colors" data-plot-number={plot.plot_number}>
-                      <td 
-                        className="p-2 font-medium cursor-pointer hover:bg-primary/10"
-                        onClick={() => handlePlotNumberClick(plot)}
-                      >
-                        {plot.plot_number}
-                      </td>
-                      <td 
-                        className={`p-2 ${isAdmin ? 'cursor-pointer hover:bg-primary/10' : ''}`}
-                        onClick={() => isAdmin && handlePlotClick(plot)}
-                      >
-                        {plot.house_types?.name || "-"}
-                      </td>
-                      {Object.keys(LIFT_LABELS).map(liftType => {
-                        const totalBooked = getTotalBooked(plot, liftType);
-                        
-                        return (
-                          <td 
-                            key={liftType}
-                            data-lift-type={liftType}
-                            className={`p-4 text-center transition-all ${getCellColor(totalBooked)}`}
-                            onClick={() => handleLiftCellClick(plot, liftType)}
-                          >
-                            <div className="flex items-center justify-center min-h-[50px]">
-                              <span className="text-xl font-bold text-foreground">{totalBooked}%</span>
-                            </div>
-                          </td>
-                        );
-                      })}
-                      {isAdmin && (
-                        <td className="p-2 text-center">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedPlot(plot);
-                              setUserAssignDialogOpen(true);
-                            }}
-                          >
-                            <Settings className="h-4 w-4" />
-                          </Button>
-                        </td>
-                      )}
-                    </tr>
+            <div ref={mainScrollRef} className="overflow-x-auto">
+              <table className="w-full border-collapse min-w-[800px]">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="p-2 text-left font-medium w-20">Plot</th>
+                  <th className="p-2 text-left font-medium w-32">House Type</th>
+                  {Object.values(LIFT_LABELS).map(label => (
+                    <th key={label} className="p-2 text-center font-medium whitespace-nowrap text-sm min-w-[80px]">{label}</th>
                   ))}
-                </tbody>
-              </table>
-              </div>
+                  {isAdmin && <th className="p-2 text-center font-medium w-24">Actions</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {plots.map(plot => (
+                  <tr key={plot.id} className="border-b transition-colors" data-plot-number={plot.plot_number}>
+                    <td 
+                      className="p-2 font-medium cursor-pointer hover:bg-primary/10"
+                      onClick={() => handlePlotNumberClick(plot)}
+                    >
+                      {plot.plot_number}
+                    </td>
+                    <td 
+                      className={`p-2 ${isAdmin ? 'cursor-pointer hover:bg-primary/10' : ''}`}
+                      onClick={() => isAdmin && handlePlotClick(plot)}
+                    >
+                      {plot.house_types?.name || "-"}
+                    </td>
+                    {Object.keys(LIFT_LABELS).map(liftType => {
+                      const totalBooked = getTotalBooked(plot, liftType);
+                      
+                      return (
+                        <td 
+                          key={liftType}
+                          data-lift-type={liftType}
+                          className={`p-4 text-center transition-all ${getCellColor(totalBooked)}`}
+                          onClick={() => handleLiftCellClick(plot, liftType)}
+                        >
+                          <div className="flex items-center justify-center min-h-[50px]">
+                            <span className="text-xl font-bold text-foreground">{totalBooked}%</span>
+                          </div>
+                        </td>
+                      );
+                    })}
+                    {isAdmin && (
+                      <td className="p-2 text-center">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedPlot(plot);
+                            setUserAssignDialogOpen(true);
+                          }}
+                        >
+                          <Settings className="h-4 w-4" />
+                        </Button>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
             </div>
           )}
         </div>
