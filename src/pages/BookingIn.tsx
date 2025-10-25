@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/table";
 import { FileText, Printer } from "lucide-react";
 import { maskEmail } from "@/lib/emailUtils";
+import jsPDF from "jspdf";
 
 interface BookingData {
   id: string;
@@ -305,38 +306,121 @@ const BookingIn = () => {
   };
 
   const handleExportInvoice = (invoice: GroupedInvoice) => {
-    const itemsList = invoice.items.map(item => 
-      `Plot ${item.plots.plot_number} - ${LIFT_LABELS[item.lift_values.lift_type as keyof typeof LIFT_LABELS]}: ${item.percentage}% = £${item.booked_value.toFixed(2)}`
-    ).join('\n');
+    const doc = new jsPDF();
     
+    // Blue color for styling
+    const blueColor: [number, number, number] = [37, 99, 235]; // #2563EB
+    
+    // Header with blue box
+    doc.setFillColor(...blueColor);
+    doc.rect(0, 0, 210, 40, 'F');
+    
+    // White text for header
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(24);
+    doc.setFont("helvetica", "bold");
+    doc.text("I-Book", 105, 20, { align: "center" });
+    doc.setFontSize(12);
+    doc.text("Brickwork Manager", 105, 30, { align: "center" });
+    
+    // Invoice number with blue background
+    doc.setFillColor(...blueColor);
+    doc.rect(10, 50, 190, 12, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text(`INVOICE: ${invoice.invoice_number}`, 105, 58, { align: "center" });
+    
+    // Reset to black text for content
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    
+    let yPos = 75;
+    
+    // Date
+    doc.text(`Date: ${new Date(invoice.created_at).toLocaleDateString()}`, 15, yPos);
+    yPos += 10;
+    
+    // Booked by section with blue title
+    doc.setTextColor(...blueColor);
+    doc.setFont("helvetica", "bold");
+    doc.text("BOOKED BY:", 15, yPos);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont("helvetica", "normal");
+    yPos += 7;
+    doc.text(`Name: ${invoice.booked_by.full_name}`, 15, yPos);
+    yPos += 6;
+    doc.text(`Email: ${invoice.booked_by.email}`, 15, yPos);
+    yPos += 12;
+    
+    // Items section with blue title
+    doc.setTextColor(...blueColor);
+    doc.setFont("helvetica", "bold");
+    doc.text("ITEMS:", 15, yPos);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont("helvetica", "normal");
+    yPos += 7;
+    
+    invoice.items.forEach(item => {
+      if (yPos > 270) {
+        doc.addPage();
+        yPos = 20;
+      }
+      const text = `Plot ${item.plots.plot_number} - ${LIFT_LABELS[item.lift_values.lift_type as keyof typeof LIFT_LABELS]}: ${item.percentage}% = £${item.booked_value.toFixed(2)}`;
+      doc.text(text, 15, yPos);
+      yPos += 6;
+    });
+    
+    yPos += 6;
+    
+    // Notes section if exists
+    if (invoice.notes) {
+      doc.setTextColor(...blueColor);
+      doc.setFont("helvetica", "bold");
+      doc.text("NOTES:", 15, yPos);
+      doc.setTextColor(0, 0, 0);
+      doc.setFont("helvetica", "normal");
+      yPos += 7;
+      const noteLines = doc.splitTextToSize(invoice.notes, 180);
+      doc.text(noteLines, 15, yPos);
+      yPos += noteLines.length * 6 + 6;
+    }
+    
+    // Total value with blue box
+    doc.setFillColor(...blueColor);
+    doc.rect(10, yPos, 190, 10, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Total Value: £${invoice.total_value.toFixed(2)}`, 105, yPos + 7, { align: "center" });
+    yPos += 18;
+    
+    // Gang division section
     const gangDivisions = invoice.items[0]?.gang_divisions || [];
+    if (gangDivisions.length > 0) {
+      doc.setTextColor(...blueColor);
+      doc.setFont("helvetica", "bold");
+      doc.text("GANG DIVISION:", 15, yPos);
+      doc.setTextColor(0, 0, 0);
+      doc.setFont("helvetica", "normal");
+      yPos += 7;
+      
+      gangDivisions.forEach(member => {
+        if (yPos > 270) {
+          doc.addPage();
+          yPos = 20;
+        }
+        doc.text(`${member.member_name} (${member.member_type}): £${member.amount.toFixed(2)}`, 15, yPos);
+        yPos += 6;
+      });
+      
+      yPos += 4;
+      doc.setFont("helvetica", "bold");
+      doc.text(`Total Allocated: £${gangDivisions.reduce((sum, m) => sum + m.amount, 0).toFixed(2)}`, 15, yPos);
+    }
     
-    const invoiceContent = `
-INVOICE: ${invoice.invoice_number}
-Date: ${new Date(invoice.created_at).toLocaleDateString()}
-
-Booked By: ${invoice.booked_by.full_name}
-Email: ${invoice.booked_by.email}
-
-ITEMS:
-${itemsList}
-
-${invoice.notes ? `NOTES:\n${invoice.notes}\n\n` : ''}Total Value: £${invoice.total_value.toFixed(2)}
-
-GANG DIVISION:
-${gangDivisions.map(m => `${m.member_name} (${m.member_type}): £${m.amount.toFixed(2)}`).join('\n')}
-
-Total Allocated: £${gangDivisions.reduce((sum, m) => sum + m.amount, 0).toFixed(2)}
-    `.trim();
-
-    const blob = new Blob([invoiceContent], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${invoice.invoice_number}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Invoice exported");
+    doc.save(`${invoice.invoice_number}.pdf`);
+    toast.success("Invoice exported as PDF");
   };
 
   const totalValue = groupedInvoices.reduce((sum, invoice) => sum + invoice.total_value, 0);

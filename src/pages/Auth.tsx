@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect } from "react";
 import { authSchema } from "@/lib/validations";
+import logo from "@/assets/logo.png";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -103,8 +104,16 @@ const Auth = () => {
   return (
     <div className="flex min-h-screen items-center justify-center bg-secondary/30">
       <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Brickwork Manager</CardTitle>
+        <CardHeader className="text-center space-y-4">
+          <img 
+            src={logo} 
+            alt="I-Book Logo" 
+            className="h-24 w-24 mx-auto rounded-2xl"
+          />
+          <div>
+            <CardTitle className="text-3xl font-bold">I-Book</CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">Brickwork Manager</p>
+          </div>
           <CardDescription>Manage construction site payments efficiently</CardDescription>
         </CardHeader>
         <CardContent>
