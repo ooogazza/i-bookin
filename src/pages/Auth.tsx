@@ -111,7 +111,7 @@ const Auth = () => {
             className="h-24 w-24 mx-auto rounded-2xl"
           />
           <div>
-            <CardTitle className="text-3xl font-bold">I-Book</CardTitle>
+            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">I-Book</CardTitle>
             <p className="text-sm text-muted-foreground mt-1">Brickwork Manager</p>
           </div>
           <CardDescription>Manage construction site payments efficiently</CardDescription>
