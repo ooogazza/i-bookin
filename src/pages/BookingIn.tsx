@@ -462,15 +462,6 @@ const BookingIn = () => {
               background: white;
               padding: 1cm;
             }
-            .print-area, .print-area * {
-              visibility: visible;
-            }
-            .print-area {
-              position: absolute;
-              left: 0;
-              top: 0;
-              width: 100%;
-            }
             .no-print {
               display: none !important;
             }
@@ -566,7 +557,7 @@ const BookingIn = () => {
         </div>
       )}
 
-      <main className="container py-8 print-area">
+      <main className="container py-8">
         <div className="mb-8">
           <div>
             <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
