@@ -135,7 +135,7 @@ const DeveloperDetail = () => {
         hideTitle
         leftContent={
           logo && (
-            <div className="flex items-center gap-2">
+            <div className="hidden md:flex items-center gap-2">
               <img 
                 src={logo} 
                 alt={developer.name}
@@ -161,6 +161,19 @@ const DeveloperDetail = () => {
       />
       
       <main className="container py-8">
+        {/* Mobile Layout - Below Header */}
+        {logo && (
+          <div className="md:hidden mb-6 flex items-center gap-2">
+            <img 
+              src={logo} 
+              alt={developer.name}
+              className="h-10 w-auto object-contain rounded-lg"
+            />
+            <span className="text-sm text-black dark:text-white font-medium">
+              {sites.length} {sites.length === 1 ? 'site' : 'sites'}
+            </span>
+          </div>
+        )}
 
         {sites.length === 0 ? (
           <Card>
