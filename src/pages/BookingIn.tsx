@@ -434,11 +434,10 @@ const BookingIn = () => {
   };
 
   const handlePrintInvoice = (invoice: GroupedInvoice) => {
-    // Temporarily set the selected invoice for printing
+    // Set the selected invoice for printing
     setSelectedInvoice(invoice);
-    setDetailsDialogOpen(true);
     
-    // Small delay to ensure dialog is rendered before printing
+    // Small delay to ensure content is rendered before printing
     setTimeout(() => {
       window.print();
     }, 100);
@@ -452,14 +451,16 @@ const BookingIn = () => {
             body * {
               visibility: hidden;
             }
-            .print-invoice, .print-invoice * {
+            .print-invoice-section, .print-invoice-section * {
               visibility: visible !important;
             }
-            .print-invoice {
-              position: absolute;
+            .print-invoice-section {
+              position: fixed;
               left: 0;
               top: 0;
               width: 100%;
+              background: white;
+              padding: 1cm;
             }
             .print-area, .print-area * {
               visibility: visible;
@@ -477,6 +478,14 @@ const BookingIn = () => {
               margin: 1cm;
             }
           }
+          .print-invoice-section {
+            display: none;
+          }
+          @media print {
+            .print-invoice-section {
+              display: block !important;
+            }
+          }
         `}
       </style>
       <Header 
@@ -489,6 +498,74 @@ const BookingIn = () => {
         }
       />
       
+      {/* Hidden Print Section */}
+      {selectedInvoice && (
+        <div className="print-invoice-section">
+          <div style={{ backgroundColor: '#2563EB', padding: '20px', textAlign: 'center', marginBottom: '20px' }}>
+            <h1 style={{ color: 'white', fontSize: '32px', fontWeight: 'bold', margin: '0 0 10px 0' }}>I-Book</h1>
+            <p style={{ color: 'white', fontSize: '16px', margin: 0 }}>Brickwork Manager</p>
+          </div>
+          
+          <div style={{ backgroundColor: '#2563EB', padding: '10px', textAlign: 'center', marginBottom: '30px' }}>
+            <h2 style={{ color: 'white', fontSize: '18px', fontWeight: 'bold', margin: 0 }}>
+              INVOICE: {selectedInvoice.invoice_number}
+            </h2>
+          </div>
+
+          <div style={{ marginBottom: '20px' }}>
+            <p style={{ fontSize: '14px', marginBottom: '5px' }}>
+              <strong>Date:</strong> {new Date(selectedInvoice.created_at).toLocaleDateString()}
+            </p>
+          </div>
+
+          <div style={{ marginBottom: '30px' }}>
+            <h3 style={{ color: '#2563EB', fontSize: '16px', fontWeight: 'bold', marginBottom: '10px' }}>BOOKED BY:</h3>
+            <p style={{ fontSize: '14px', margin: '5px 0' }}>
+              <strong>Name:</strong> {selectedInvoice.booked_by.full_name}
+            </p>
+            <p style={{ fontSize: '14px', margin: '5px 0' }}>
+              <strong>Email:</strong> {selectedInvoice.booked_by.email}
+            </p>
+          </div>
+
+          <div style={{ marginBottom: '30px' }}>
+            <h3 style={{ color: '#2563EB', fontSize: '16px', fontWeight: 'bold', marginBottom: '10px' }}>ITEMS:</h3>
+            {selectedInvoice.items.map((item, index) => (
+              <p key={index} style={{ fontSize: '14px', marginBottom: '8px' }}>
+                Plot {item.plots.plot_number} - {LIFT_LABELS[item.lift_values.lift_type as keyof typeof LIFT_LABELS]}: {item.percentage}% = £{item.booked_value.toFixed(2)}
+              </p>
+            ))}
+          </div>
+
+          {selectedInvoice.notes && (
+            <div style={{ marginBottom: '30px' }}>
+              <h3 style={{ color: '#2563EB', fontSize: '16px', fontWeight: 'bold', marginBottom: '10px' }}>NOTES:</h3>
+              <p style={{ fontSize: '14px', whiteSpace: 'pre-wrap' }}>{selectedInvoice.notes}</p>
+            </div>
+          )}
+
+          <div style={{ backgroundColor: '#2563EB', padding: '10px', textAlign: 'center', marginBottom: '30px' }}>
+            <p style={{ color: 'white', fontSize: '18px', fontWeight: 'bold', margin: 0 }}>
+              Total Value: £{selectedInvoice.total_value.toFixed(2)}
+            </p>
+          </div>
+
+          {selectedInvoice.items[0]?.gang_divisions && selectedInvoice.items[0].gang_divisions.length > 0 && (
+            <div>
+              <h3 style={{ color: '#2563EB', fontSize: '16px', fontWeight: 'bold', marginBottom: '10px' }}>GANG DIVISION:</h3>
+              {selectedInvoice.items[0].gang_divisions.map((member, index) => (
+                <p key={index} style={{ fontSize: '14px', marginBottom: '8px' }}>
+                  {member.member_name} ({member.member_type}): £{member.amount.toFixed(2)}
+                </p>
+              ))}
+              <p style={{ fontSize: '14px', fontWeight: 'bold', marginTop: '15px' }}>
+                Total Allocated: £{selectedInvoice.items[0].gang_divisions.reduce((sum, m) => sum + m.amount, 0).toFixed(2)}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       <main className="container py-8 print-area">
         <div className="mb-8">
           <div>
