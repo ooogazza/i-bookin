@@ -316,18 +316,56 @@ const BookingIn = () => {
     // Blue color for styling
     const blueColor: [number, number, number] = [37, 99, 235]; // #2563EB
     
-    // Add logo at top with rounded corners effect
-    try {
-      doc.addImage(logo, 'PNG', 90, 10, 30, 20);
-    } catch (e) {
-      console.error('Failed to add logo to PDF', e);
-    }
+    // Create rounded logo
+    const img = new Image();
+    img.src = logo;
+    img.onload = () => {
+      // Create canvas for rounded image
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const width = 300;
+      const height = 200;
+      const radius = 20;
+      
+      canvas.width = width;
+      canvas.height = height;
+      
+      if (ctx) {
+        // Draw rounded rectangle
+        ctx.beginPath();
+        ctx.moveTo(radius, 0);
+        ctx.lineTo(width - radius, 0);
+        ctx.quadraticCurveTo(width, 0, width, radius);
+        ctx.lineTo(width, height - radius);
+        ctx.quadraticCurveTo(width, height, width - radius, height);
+        ctx.lineTo(radius, height);
+        ctx.quadraticCurveTo(0, height, 0, height - radius);
+        ctx.lineTo(0, radius);
+        ctx.quadraticCurveTo(0, 0, radius, 0);
+        ctx.closePath();
+        ctx.clip();
+        
+        // Draw image
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Add rounded logo to PDF
+        const roundedLogo = canvas.toDataURL('image/png');
+        try {
+          doc.addImage(roundedLogo, 'PNG', 90, 10, 30, 20);
+        } catch (e) {
+          console.error('Failed to add logo to PDF', e);
+        }
+        
+        generateRestOfPDF();
+      }
+    };
     
-    // Black text for Brickwork Manager
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(14);
-    doc.setFont("helvetica", "normal");
-    doc.text("Brickwork Manager", 105, 38, { align: "center" });
+    const generateRestOfPDF = () => {
+      // Black text for Brickwork Manager
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "normal");
+      doc.text("Brickwork Manager", 105, 38, { align: "center" });
     
     // Invoice number with blue background
     doc.setFillColor(...blueColor);
@@ -427,6 +465,7 @@ const BookingIn = () => {
     
     doc.save(`${invoice.invoice_number}.pdf`);
     toast.success("Invoice exported as PDF");
+    };
   };
 
   const totalValue = groupedInvoices.reduce((sum, invoice) => sum + invoice.total_value, 0);
