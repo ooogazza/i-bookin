@@ -166,6 +166,7 @@ const SiteDetail = () => {
   
   const [searchPlotNumber, setSearchPlotNumber] = useState("");
   const [searchPhase, setSearchPhase] = useState("");
+  const [selectedUserForHighlight, setSelectedUserForHighlight] = useState<string | null>(null);
   
   const stickyScrollRef = useRef<HTMLDivElement>(null);
   const mainScrollRef = useRef<HTMLDivElement>(null);
@@ -670,7 +671,7 @@ const SiteDetail = () => {
         
         // Fetch profiles for all users in history
         if (data && data.length > 0) {
-          const userIds = data.map(h => h.user_id);
+          const userIds = [...new Set(data.map(h => h.user_id))];
           const { data: profilesData } = await supabase
             .from('profiles')
             .select('id, email, full_name')
@@ -691,6 +692,39 @@ const SiteDetail = () => {
         setPlotAssignmentHistory([]);
       }
     }
+  };
+
+  const handleUserSelect = (userId: string) => {
+    setSelectedUserForHighlight(userId);
+    
+    // Find all plots assigned to this user
+    const userPlots = plots.filter(p => p.assigned_to === userId);
+    
+    if (userPlots.length === 0) {
+      toast.info("No plots assigned to this user");
+      return;
+    }
+
+    // Scroll to first plot
+    const firstPlotElement = document.querySelector(`[data-plot-number="${userPlots[0].plot_number}"]`);
+    if (firstPlotElement) {
+      const yOffset = -180;
+      const y = firstPlotElement.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    }
+
+    // Highlight all user's plots
+    userPlots.forEach(plot => {
+      const plotElement = document.querySelector(`[data-plot-number="${plot.plot_number}"]`);
+      if (plotElement) {
+        plotElement.classList.add('bg-primary/20');
+        setTimeout(() => {
+          plotElement.classList.remove('bg-primary/20');
+        }, 3000);
+      }
+    });
+
+    toast.success(`Highlighting ${userPlots.length} plot(s) for this user`);
   };
 
   const scrollToTop = () => {
@@ -1055,7 +1089,8 @@ const SiteDetail = () => {
                   {users.map((u) => (
                     <DropdownMenuItem 
                       key={u.user_id} 
-                      className="flex items-center justify-between p-3 cursor-default focus:bg-muted"
+                      className="flex items-center justify-between p-3 cursor-pointer hover:bg-muted"
+                      onClick={() => handleUserSelect(u.user_id)}
                       onSelect={(e) => e.preventDefault()}
                     >
                       <div className="flex-1">
