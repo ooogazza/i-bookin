@@ -11,8 +11,9 @@ import { Slider } from "@/components/ui/slider";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Settings, Plus, Users, Trash2, ShoppingCart, FileText, X, ArrowUp } from "lucide-react";
+import { Settings, Plus, Users, Trash2, ShoppingCart, FileText, X, ArrowUp, ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import jsPDF from "jspdf";
 import { developerLogos } from "@/lib/developerLogos";
 import { maskEmail } from "@/lib/emailUtils";
@@ -865,30 +866,44 @@ const SiteDetail = () => {
         )}
 
         {isAdmin && users.length > 0 && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Invited Users</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
+          <div className="mb-6">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="w-full sm:w-auto">
+                  <Users className="mr-2 h-4 w-4" />
+                  Invited Users ({users.length})
+                  <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent 
+                align="start" 
+                className="w-80 max-h-96 overflow-y-auto bg-background z-50"
+              >
                 {users.map((u) => (
-                  <div key={u.user_id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                    <div>
+                  <DropdownMenuItem 
+                    key={u.user_id} 
+                    className="flex items-center justify-between p-3 cursor-default focus:bg-muted"
+                    onSelect={(e) => e.preventDefault()}
+                  >
+                    <div className="flex-1">
                       <p className="font-medium">{u.profiles.full_name}</p>
                       <p className="text-sm text-muted-foreground">{maskEmail(u.profiles.email)}</p>
                     </div>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleRemoveUser(u.user_id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveUser(u.user_id);
+                      }}
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
-                  </div>
+                  </DropdownMenuItem>
                 ))}
-              </div>
-            </CardContent>
-          </Card>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         )}
 
         {/* Search Box */}
