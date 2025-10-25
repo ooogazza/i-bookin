@@ -168,6 +168,9 @@ const SiteDetail = () => {
   const [searchPhase, setSearchPhase] = useState("");
   const [selectedUserForHighlight, setSelectedUserForHighlight] = useState<string | null>(null);
   const [highlightedPlots, setHighlightedPlots] = useState<number[]>([]);
+  const [showScrollUpIndicator, setShowScrollUpIndicator] = useState(false);
+  const [showScrollDownIndicator, setShowScrollDownIndicator] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   
   const stickyScrollRef = useRef<HTMLDivElement>(null);
   const mainScrollRef = useRef<HTMLDivElement>(null);
@@ -704,11 +707,16 @@ const SiteDetail = () => {
     });
     setHighlightedPlots([]);
     setSelectedUserForHighlight(null);
+    setShowScrollUpIndicator(false);
+    setShowScrollDownIndicator(false);
   };
 
   const handleUserSelect = (userId: string) => {
     // Clear previous highlights
     clearHighlights();
+    
+    // Close the dropdown
+    setDropdownOpen(false);
     
     setSelectedUserForHighlight(userId);
     
@@ -751,6 +759,7 @@ const SiteDetail = () => {
     const handleTouchStart = (e: TouchEvent) => {
       pressTimer = setTimeout(() => {
         clearHighlights();
+        setDropdownOpen(false);
         toast.info("Highlights cleared");
       }, 500); // 500ms for long press
     };
@@ -762,6 +771,7 @@ const SiteDetail = () => {
     const handleMouseDown = () => {
       pressTimer = setTimeout(() => {
         clearHighlights();
+        setDropdownOpen(false);
         toast.info("Highlights cleared");
       }, 500);
     };
@@ -781,6 +791,47 @@ const SiteDetail = () => {
       document.removeEventListener('touchend', handleTouchEnd);
       document.removeEventListener('mousedown', handleMouseDown);
       document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [highlightedPlots]);
+
+  // Scroll indicator handler
+  useEffect(() => {
+    if (highlightedPlots.length === 0) return;
+
+    const checkScrollIndicators = () => {
+      const viewportTop = window.scrollY;
+      const viewportBottom = window.scrollY + window.innerHeight;
+
+      let hasPlotAbove = false;
+      let hasPlotBelow = false;
+
+      highlightedPlots.forEach(plotNumber => {
+        const plotElement = document.querySelector(`[data-plot-number="${plotNumber}"]`);
+        if (plotElement) {
+          const rect = plotElement.getBoundingClientRect();
+          const elementTop = rect.top + window.scrollY;
+          const elementBottom = elementTop + rect.height;
+
+          if (elementBottom < viewportTop) {
+            hasPlotAbove = true;
+          }
+          if (elementTop > viewportBottom) {
+            hasPlotBelow = true;
+          }
+        }
+      });
+
+      setShowScrollUpIndicator(hasPlotAbove);
+      setShowScrollDownIndicator(hasPlotBelow);
+    };
+
+    checkScrollIndicators();
+    window.addEventListener('scroll', checkScrollIndicators);
+    window.addEventListener('resize', checkScrollIndicators);
+
+    return () => {
+      window.removeEventListener('scroll', checkScrollIndicators);
+      window.removeEventListener('resize', checkScrollIndicators);
     };
   }, [highlightedPlots]);
 
@@ -1130,7 +1181,7 @@ const SiteDetail = () => {
         actions={
           <>
             {isAdmin && users.length > 0 && (
-              <DropdownMenu>
+              <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="gap-1" title="View Invited Users">
                     <Users className="h-4 w-4" />
@@ -1198,6 +1249,18 @@ const SiteDetail = () => {
       />
       
       <main className="container py-8">
+        {/* Sticky Scroll Indicators */}
+        {showScrollUpIndicator && (
+          <div className="fixed left-4 top-1/2 -translate-y-1/2 z-50 animate-pulse">
+            <ArrowUp className="h-8 w-8 text-primary fill-primary" strokeWidth={0} />
+          </div>
+        )}
+        {showScrollDownIndicator && (
+          <div className="fixed left-4 top-1/2 translate-y-1/2 z-50 animate-pulse">
+            <ChevronDown className="h-8 w-8 text-primary fill-primary" strokeWidth={0} />
+          </div>
+        )}
+        
         {/* Mobile Layout - Below Header */}
         <div className="md:hidden mb-6 flex items-center gap-2">
           {developerLogo && (
