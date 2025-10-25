@@ -63,6 +63,14 @@ interface GroupedInvoice {
   is_confirmed?: boolean;
 }
 
+interface UserInvoices {
+  user_id: string;
+  full_name: string;
+  email: string;
+  invoices: GroupedInvoice[];
+  total_value: number;
+}
+
 const LIFT_LABELS = {
   lift_1: "Lift 1",
   lift_2: "Lift 2",
@@ -78,6 +86,7 @@ const BookingIn = () => {
   const { user, isAdmin } = useAuth();
   const [bookings, setBookings] = useState<BookingData[]>([]);
   const [groupedInvoices, setGroupedInvoices] = useState<GroupedInvoice[]>([]);
+  const [userInvoices, setUserInvoices] = useState<UserInvoices[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedInvoice, setSelectedInvoice] = useState<GroupedInvoice | null>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
@@ -173,6 +182,27 @@ const BookingIn = () => {
       }
       
       setGroupedInvoices(invoices);
+
+      // Group invoices by user for admin view
+      if (isAdmin) {
+        const userGroups = invoices.reduce((acc: { [key: string]: UserInvoices }, invoice: GroupedInvoice) => {
+          const userEmail = invoice.booked_by.email;
+          if (!acc[userEmail]) {
+            acc[userEmail] = {
+              user_id: userEmail,
+              full_name: invoice.booked_by.full_name,
+              email: invoice.booked_by.email,
+              invoices: [],
+              total_value: 0
+            };
+          }
+          acc[userEmail].invoices.push(invoice);
+          acc[userEmail].total_value += invoice.total_value;
+          return acc;
+        }, {});
+        
+        setUserInvoices(Object.values(userGroups));
+      }
     } catch (error: any) {
       toast.error("Failed to load bookings");
       console.error("Error:", error);
@@ -312,10 +342,100 @@ Total Allocated: £${gangDivisions.reduce((sum, m) => sum + m.amount, 0).toFixed
           <div className="text-center py-12">
             <p className="text-muted-foreground">Loading bookings...</p>
           </div>
+        ) : isAdmin ? (
+          <div className="space-y-6">
+            {userInvoices.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-8">
+                  <p className="text-muted-foreground">No bookings yet</p>
+                </CardContent>
+              </Card>
+            ) : (
+              userInvoices.map((userGroup) => (
+                <Card key={userGroup.user_id}>
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle>{userGroup.full_name}</CardTitle>
+                        <p className="text-sm text-muted-foreground mt-1">{maskEmail(userGroup.email)}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-muted-foreground">Total Value</p>
+                        <p className="text-2xl font-bold text-primary">£{userGroup.total_value.toFixed(2)}</p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <h4 className="font-semibold mb-3">Invoices</h4>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Invoice #</TableHead>
+                          <TableHead>Items</TableHead>
+                          <TableHead className="text-right">Value</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {userGroup.invoices.map((invoice) => (
+                          <TableRow 
+                            key={invoice.invoice_number}
+                            className={`cursor-pointer ${invoice.is_confirmed ? 'bg-green-100 dark:bg-green-900/20 hover:bg-green-200 dark:hover:bg-green-900/30' : 'hover:bg-muted/50'}`}
+                            onClick={() => handleViewDetails(invoice)}
+                          >
+                            <TableCell className="font-medium">
+                              <div className="flex items-center gap-2">
+                                {!invoice.is_viewed && !invoice.is_confirmed && (
+                                  <div className="h-2 w-2 rounded-full bg-primary" />
+                                )}
+                                {invoice.invoice_number}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="space-y-1">
+                                {invoice.items.map((item, idx) => (
+                                  <div key={idx} className="text-sm">
+                                    <span className="font-medium">Plot {item.plots.plot_number}</span>
+                                    {' - '}
+                                    <span>{LIFT_LABELS[item.lift_values.lift_type as keyof typeof LIFT_LABELS]}</span>
+                                    {' '}
+                                    <span className="text-muted-foreground">({item.percentage}%)</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right font-bold text-primary">
+                              £{invoice.total_value.toFixed(2)}
+                            </TableCell>
+                            <TableCell>
+                              {new Date(invoice.created_at).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleExportInvoice(invoice);
+                                }}
+                              >
+                                <Printer className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
         ) : (
           <Card>
             <CardHeader>
-              <CardTitle>Work Completed</CardTitle>
+              <CardTitle>Invoices</CardTitle>
             </CardHeader>
             <CardContent>
               {groupedInvoices.length === 0 ? (
@@ -327,7 +447,6 @@ Total Allocated: £${gangDivisions.reduce((sum, m) => sum + m.amount, 0).toFixed
                   <TableHeader>
                     <TableRow>
                       <TableHead>Invoice #</TableHead>
-                      <TableHead>Booked By</TableHead>
                       <TableHead>Items</TableHead>
                       <TableHead className="text-right">Total Value</TableHead>
                       <TableHead>Date</TableHead>
@@ -338,22 +457,11 @@ Total Allocated: £${gangDivisions.reduce((sum, m) => sum + m.amount, 0).toFixed
                     {groupedInvoices.map((invoice) => (
                       <TableRow 
                         key={invoice.invoice_number}
-                        className={`cursor-pointer ${isAdmin && invoice.is_confirmed ? 'bg-green-100 dark:bg-green-900/20 hover:bg-green-200 dark:hover:bg-green-900/30' : 'hover:bg-muted/50'}`}
+                        className="cursor-pointer hover:bg-muted/50"
                         onClick={() => handleViewDetails(invoice)}
                       >
                         <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
-                            {isAdmin && !invoice.is_viewed && !invoice.is_confirmed && (
-                              <div className="h-2 w-2 rounded-full bg-primary" />
-                            )}
-                            {invoice.invoice_number}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{invoice.booked_by.full_name}</p>
-                            <p className="text-sm text-muted-foreground">{maskEmail(invoice.booked_by.email)}</p>
-                          </div>
+                          {invoice.invoice_number}
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">
@@ -391,11 +499,11 @@ Total Allocated: £${gangDivisions.reduce((sum, m) => sum + m.amount, 0).toFixed
                   </TableBody>
                   <TableFooter>
                     <TableRow>
-                      <TableCell colSpan={3} className="text-right font-bold">
+                      <TableCell colSpan={2} className="text-right font-bold">
                         Total
                       </TableCell>
                       <TableCell className="text-right font-bold text-lg">
-                        £{totalValue.toFixed(2)}
+                        £{groupedInvoices.reduce((sum, inv) => sum + inv.total_value, 0).toFixed(2)}
                       </TableCell>
                       <TableCell colSpan={2}></TableCell>
                     </TableRow>
