@@ -316,36 +316,33 @@ const BookingIn = () => {
     // Blue color for styling
     const blueColor: [number, number, number] = [37, 99, 235]; // #2563EB
     
-    // Header with blue box
-    doc.setFillColor(...blueColor);
-    doc.rect(0, 0, 210, 40, 'F');
-    
-    // Add logo with proper aspect ratio and rounded corners
+    // Add logo at top with rounded corners effect
     try {
       doc.addImage(logo, 'PNG', 90, 10, 30, 20);
     } catch (e) {
       console.error('Failed to add logo to PDF', e);
     }
     
-    // White text for header
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(12);
-    doc.text("Brickwork Manager", 105, 33, { align: "center" });
+    // Black text for Brickwork Manager
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "normal");
+    doc.text("Brickwork Manager", 105, 38, { align: "center" });
     
     // Invoice number with blue background
     doc.setFillColor(...blueColor);
-    doc.rect(10, 50, 190, 12, 'F');
+    doc.rect(10, 45, 190, 12, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
-    doc.text(`INVOICE: ${invoice.invoice_number}`, 105, 58, { align: "center" });
+    doc.text(`INVOICE: ${invoice.invoice_number}`, 105, 53, { align: "center" });
     
     // Reset to black text for content
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     
-    let yPos = 75;
+    let yPos = 68;
     
     // Date
     doc.text(`Date: ${new Date(invoice.created_at).toLocaleDateString()}`, 15, yPos);
