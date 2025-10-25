@@ -334,7 +334,7 @@ Total Allocated: £${gangDivisions.reduce((sum, m) => sum + m.amount, 0).toFixed
                     {groupedInvoices.map((invoice) => (
                       <TableRow 
                         key={invoice.invoice_number}
-                        className={`cursor-pointer hover:bg-muted/50 ${isAdmin && invoice.is_confirmed ? 'bg-green-500/10' : ''}`}
+                        className={`cursor-pointer ${isAdmin && invoice.is_confirmed ? 'bg-green-100 dark:bg-green-900/20 hover:bg-green-200 dark:hover:bg-green-900/30' : 'hover:bg-muted/50'}`}
                         onClick={() => handleViewDetails(invoice)}
                       >
                         <TableCell className="font-medium">
