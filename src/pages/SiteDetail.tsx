@@ -1021,6 +1021,21 @@ const SiteDetail = () => {
       
       <Header 
         showBackButton
+        hideTitle
+        leftContent={
+          <div className="flex items-center gap-2">
+            {developerLogo && (
+              <img 
+                src={developerLogo} 
+                alt={developer?.name || "Developer"}
+                className="h-10 w-auto object-contain rounded-lg"
+              />
+            )}
+            <span className="text-sm text-black dark:text-white font-medium">
+              {site.name}
+            </span>
+          </div>
+        }
         actions={
           <>
             {isAdmin && users.length > 0 && (
@@ -1091,21 +1106,11 @@ const SiteDetail = () => {
       />
       
       <main className="container py-8">
-        <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          {developerLogo && (
-            <img 
-              src={developerLogo} 
-              alt={developer?.name || "Developer"}
-              className="h-12 w-auto object-contain rounded-lg"
-            />
-          )}
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">{site.name}</h2>
-            {site.description && (
-              <p className="text-muted-foreground">{site.description}</p>
-            )}
+        {site.description && (
+          <div className="mb-8">
+            <p className="text-muted-foreground">{site.description}</p>
           </div>
-        </div>
+        )}
 
         <div className="mb-6 flex gap-4 justify-between items-center">
           <div className="flex gap-4">
