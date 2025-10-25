@@ -134,12 +134,14 @@ const DeveloperDetail = () => {
       <Header showBackButton />
       
       <main className="container py-8">
-        <div className="mb-8 flex items-center gap-4">
+        <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
           {logo && (
             <img 
               src={logo} 
               alt={developer.name}
-              className="h-12 w-auto object-contain rounded-lg"
+              className="h-12 w-auto object-contain rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => navigate(-1)}
+              title="Go back"
             />
           )}
           <p className="text-muted-foreground">Sites for this developer</p>
