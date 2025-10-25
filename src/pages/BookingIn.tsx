@@ -294,8 +294,12 @@ const BookingIn = () => {
         }))
       );
 
+      // Update selectedInvoice state to show green immediately
+      setSelectedInvoice((prev: GroupedInvoice | null) => 
+        prev ? { ...prev, is_confirmed: true } as GroupedInvoice : prev
+      );
+
       toast.success("Invoice confirmed successfully");
-      setDetailsDialogOpen(false);
       
       // Refetch to ensure state is synchronized
       await fetchBookings();
@@ -802,19 +806,27 @@ const BookingIn = () => {
                   </div>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 print:hidden">
                   <Button 
-                    onClick={() => window.print()} 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      window.print();
+                    }} 
                     className="flex-1"
                     variant="outline"
+                    type="button"
                   >
                     <Printer className="mr-2 h-4 w-4" />
                     Print
                   </Button>
                   <Button 
-                    onClick={() => handleExportInvoice(selectedInvoice)} 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleExportInvoice(selectedInvoice);
+                    }} 
                     className="flex-1"
                     variant="default"
+                    type="button"
                   >
                     <FileText className="mr-2 h-4 w-4" />
                     Export PDF
