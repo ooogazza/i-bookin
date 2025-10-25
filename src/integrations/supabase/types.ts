@@ -266,6 +266,47 @@ export type Database = {
           },
         ]
       }
+      plot_assignment_history: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          created_at: string
+          id: string
+          plot_id: string
+          removed_at: string | null
+          removed_by: string | null
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          created_at?: string
+          id?: string
+          plot_id: string
+          removed_at?: string | null
+          removed_by?: string | null
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          created_at?: string
+          id?: string
+          plot_id?: string
+          removed_at?: string | null
+          removed_by?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plot_assignment_history_plot_id_fkey"
+            columns: ["plot_id"]
+            isOneToOne: false
+            referencedRelation: "plots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plots: {
         Row: {
           assigned_to: string | null

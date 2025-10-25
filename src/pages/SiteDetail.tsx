@@ -64,6 +64,17 @@ interface User {
   };
 }
 
+interface AssignmentHistory {
+  id: string;
+  user_id: string;
+  assigned_at: string;
+  removed_at: string | null;
+  profiles: {
+    email: string;
+    full_name: string;
+  } | null;
+}
+
 interface AvailableUser {
   id: string;
   full_name: string;
@@ -149,6 +160,7 @@ const SiteDetail = () => {
   
   const [plotSummaryDialogOpen, setPlotSummaryDialogOpen] = useState(false);
   const [selectedPlotForSummary, setSelectedPlotForSummary] = useState<Plot | null>(null);
+  const [plotAssignmentHistory, setPlotAssignmentHistory] = useState<AssignmentHistory[]>([]);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [showStickyHeader, setShowStickyHeader] = useState(false);
   
@@ -632,9 +644,49 @@ const SiteDetail = () => {
     setTempAmount("");
   };
 
-  const handlePlotNumberClick = (plot: Plot) => {
+  const handlePlotNumberClick = async (plot: Plot) => {
     setSelectedPlotForSummary(plot);
     setPlotSummaryDialogOpen(true);
+    
+    // Fetch assignment history for this plot
+    if (isAdmin) {
+      try {
+        const { data, error } = await supabase
+          .from('plot_assignment_history')
+          .select(`
+            id,
+            user_id,
+            assigned_at,
+            removed_at
+          `)
+          .eq('plot_id', plot.id)
+          .order('assigned_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        // Fetch profiles for all users in history
+        if (data && data.length > 0) {
+          const userIds = data.map(h => h.user_id);
+          const { data: profilesData } = await supabase
+            .from('profiles')
+            .select('id, email, full_name')
+            .in('id', userIds);
+          
+          // Merge profiles with history
+          const historyWithProfiles = data.map(h => ({
+            ...h,
+            profiles: profilesData?.find(p => p.id === h.user_id) || null
+          }));
+          
+          setPlotAssignmentHistory(historyWithProfiles);
+        } else {
+          setPlotAssignmentHistory([]);
+        }
+      } catch (error) {
+        console.error('Error fetching assignment history:', error);
+        setPlotAssignmentHistory([]);
+      }
+    }
   };
 
   const scrollToTop = () => {
@@ -972,7 +1024,7 @@ const SiteDetail = () => {
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="gap-1" title="View Invited Users">
                     <Users className="h-4 w-4" />
-                    <span className="hidden md:inline">Invited Users</span>
+                    <span className="hidden md:inline">Invited Bricklayers</span>
                     <span className="hidden sm:inline md:hidden">({users.length})</span>
                     <ChevronDown className="h-4 w-4 hidden md:inline" />
                   </Button>
@@ -1015,7 +1067,7 @@ const SiteDetail = () => {
                 <Button onClick={() => setInviteUserDialogOpen(true)} variant="outline" size="sm" title="Invite Users" className="gap-1">
                   <Plus className="h-3 w-3" />
                   <Users className="h-4 w-4" />
-                  <span className="hidden md:inline ml-1">Invite Users</span>
+                  <span className="hidden md:inline ml-1">Invite Bricklayers</span>
                 </Button>
               </>
             )}
@@ -1306,7 +1358,7 @@ const SiteDetail = () => {
         <Dialog open={inviteUserDialogOpen} onOpenChange={setInviteUserDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Invite User to Site</DialogTitle>
+              <DialogTitle>Invite Bricklayer to Site</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
@@ -1749,24 +1801,41 @@ const SiteDetail = () => {
 
                 {isAdmin && (
                   <div className="border-t pt-4">
-                    <p className="text-sm text-muted-foreground mb-1">Assigned User</p>
-                    {selectedPlotForSummary.assigned_to ? (
-                      <div className="bg-muted p-3 rounded-lg">
-                        {users.find(u => u.user_id === selectedPlotForSummary.assigned_to) ? (
-                          <>
-                            <p className="font-semibold">
-                              {users.find(u => u.user_id === selectedPlotForSummary.assigned_to)?.profiles.full_name}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {maskEmail(users.find(u => u.user_id === selectedPlotForSummary.assigned_to)?.profiles.email || '')}
-                            </p>
-                          </>
-                        ) : (
-                          <p className="text-sm text-muted-foreground">User details not available</p>
-                        )}
+                    <p className="text-sm text-muted-foreground mb-3">Assignment History</p>
+                    {plotAssignmentHistory.length > 0 ? (
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {plotAssignmentHistory.map((history) => (
+                          <div 
+                            key={history.id} 
+                            className={`p-3 rounded-lg ${history.removed_at ? 'bg-muted/50' : 'bg-muted'}`}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <p className="font-semibold">
+                                  {history.profiles?.full_name || 'Unknown'}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  {maskEmail(history.profiles?.email || '')}
+                                </p>
+                                <div className="mt-1 text-xs text-muted-foreground">
+                                  <p>Assigned: {new Date(history.assigned_at).toLocaleDateString()}</p>
+                                  {history.removed_at && (
+                                    <p>Removed: {new Date(history.removed_at).toLocaleDateString()}</p>
+                                  )}
+                                </div>
+                              </div>
+                              {!history.removed_at && (
+                                <Badge variant="default" className="ml-2">Current</Badge>
+                              )}
+                              {history.removed_at && (
+                                <Badge variant="secondary" className="ml-2">Past</Badge>
+                              )}
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     ) : (
-                      <p className="text-sm text-muted-foreground">No user assigned</p>
+                      <p className="text-sm text-muted-foreground">No bricklayer has been assigned to this plot yet</p>
                     )}
                   </div>
                 )}
