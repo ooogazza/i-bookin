@@ -716,9 +716,9 @@ const SiteDetail = () => {
     doc.setFillColor(...blueColor);
     doc.rect(0, 0, 210, 40, 'F');
     
-    // Add logo
+    // Add logo with proper aspect ratio and rounded corners
     try {
-      doc.addImage(logo, 'PNG', 85, 8, 40, 20);
+      doc.addImage(logo, 'PNG', 90, 10, 30, 20);
     } catch (e) {
       console.error('Failed to add logo to PDF', e);
     }

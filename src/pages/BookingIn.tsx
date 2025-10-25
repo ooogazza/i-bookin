@@ -320,9 +320,9 @@ const BookingIn = () => {
     doc.setFillColor(...blueColor);
     doc.rect(0, 0, 210, 40, 'F');
     
-    // Add logo
+    // Add logo with proper aspect ratio and rounded corners
     try {
-      doc.addImage(logo, 'PNG', 85, 8, 40, 20);
+      doc.addImage(logo, 'PNG', 90, 10, 30, 20);
     } catch (e) {
       console.error('Failed to add logo to PDF', e);
     }
@@ -499,7 +499,17 @@ const BookingIn = () => {
       {selectedInvoice && (
         <div className="print-invoice-section">
           <div style={{ backgroundColor: '#2563EB', padding: '15px', textAlign: 'center', marginBottom: '15px' }}>
-            <img src={logo} alt="I-Book" style={{ height: '50px', margin: '0 auto', display: 'block' }} />
+            <img 
+              src={logo} 
+              alt="I-Book" 
+              style={{ 
+                height: '50px', 
+                width: 'auto',
+                margin: '0 auto', 
+                display: 'block',
+                borderRadius: '8px'
+              }} 
+            />
             <p style={{ color: 'white', fontSize: '14px', margin: '5px 0 0 0' }}>Brickwork Manager</p>
           </div>
           
