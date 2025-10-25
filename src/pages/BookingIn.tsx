@@ -433,6 +433,17 @@ const BookingIn = () => {
     window.print();
   };
 
+  const handlePrintInvoice = (invoice: GroupedInvoice) => {
+    // Temporarily set the selected invoice for printing
+    setSelectedInvoice(invoice);
+    setDetailsDialogOpen(true);
+    
+    // Small delay to ensure dialog is rendered before printing
+    setTimeout(() => {
+      window.print();
+    }, 100);
+  };
+
   return (
     <div className="min-h-screen bg-secondary/30">
       <style>
@@ -440,6 +451,15 @@ const BookingIn = () => {
           @media print {
             body * {
               visibility: hidden;
+            }
+            .print-invoice, .print-invoice * {
+              visibility: visible !important;
+            }
+            .print-invoice {
+              position: absolute;
+              left: 0;
+              top: 0;
+              width: 100%;
             }
             .print-area, .print-area * {
               visibility: visible;
@@ -618,14 +638,15 @@ const BookingIn = () => {
                         <TableCell>
                           {new Date(invoice.created_at).toLocaleDateString()}
                         </TableCell>
-                        <TableCell className="text-right">
+                          <TableCell className="text-right">
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleExportInvoice(invoice);
+                              handlePrintInvoice(invoice);
                             }}
+                            title="Print"
                           >
                             <Printer className="h-4 w-4" />
                           </Button>
@@ -729,7 +750,7 @@ const BookingIn = () => {
                                 size="sm"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  window.print();
+                                  handlePrintInvoice(invoice);
                                 }}
                                 title="Print"
                               >
@@ -761,11 +782,11 @@ const BookingIn = () => {
         {/* Invoice Details Dialog */}
         <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
           <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
+            <DialogHeader className="no-print">
               <DialogTitle>Invoice Details</DialogTitle>
             </DialogHeader>
             {selectedInvoice && (
-              <div className="space-y-4">
+              <div className="space-y-4 print-invoice">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-muted-foreground">Invoice Number</p>
