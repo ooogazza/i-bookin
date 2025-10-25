@@ -15,6 +15,7 @@ import { Settings, Plus, Users, Trash2, ShoppingCart, FileText, X, ArrowUp } fro
 import { Badge } from "@/components/ui/badge";
 import jsPDF from "jspdf";
 import { developerLogos } from "@/lib/developerLogos";
+import { maskEmail } from "@/lib/emailUtils";
 
 interface Site {
   id: string;
@@ -874,7 +875,7 @@ const SiteDetail = () => {
                   <div key={u.user_id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                     <div>
                       <p className="font-medium">{u.profiles.full_name}</p>
-                      <p className="text-sm text-muted-foreground">{u.profiles.email}</p>
+                      <p className="text-sm text-muted-foreground">{maskEmail(u.profiles.email)}</p>
                     </div>
                     <Button
                       variant="ghost"
@@ -1081,7 +1082,7 @@ const SiteDetail = () => {
                     
                     {users.map(u => (
                       <SelectItem key={u.user_id} value={u.user_id}>
-                        {u.profiles.full_name} ({u.profiles.email})
+                        {u.profiles.full_name} ({maskEmail(u.profiles.email)})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1447,7 +1448,7 @@ const SiteDetail = () => {
                               {users.find(u => u.user_id === selectedPlotForSummary.assigned_to)?.profiles.full_name}
                             </p>
                             <p className="text-sm text-muted-foreground">
-                              {users.find(u => u.user_id === selectedPlotForSummary.assigned_to)?.profiles.email}
+                              {maskEmail(users.find(u => u.user_id === selectedPlotForSummary.assigned_to)?.profiles.email || '')}
                             </p>
                           </>
                         ) : (

@@ -16,6 +16,7 @@ import {
   TableFooter,
 } from "@/components/ui/table";
 import { FileText, Printer } from "lucide-react";
+import { maskEmail } from "@/lib/emailUtils";
 
 interface BookingData {
   id: string;
@@ -228,6 +229,9 @@ const BookingIn = () => {
 
       toast.success("Invoice confirmed successfully");
       setDetailsDialogOpen(false);
+      
+      // Refetch to ensure state is synchronized
+      await fetchBookings();
     } catch (error: any) {
       toast.error("Failed to confirm invoice");
       console.error("Error:", error);
@@ -344,7 +348,7 @@ Total Allocated: £${gangDivisions.reduce((sum, m) => sum + m.amount, 0).toFixed
                         <TableCell>
                           <div>
                             <p className="font-medium">{invoice.booked_by.full_name}</p>
-                            <p className="text-sm text-muted-foreground">{invoice.booked_by.email}</p>
+                            <p className="text-sm text-muted-foreground">{maskEmail(invoice.booked_by.email)}</p>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -418,7 +422,7 @@ Total Allocated: £${gangDivisions.reduce((sum, m) => sum + m.amount, 0).toFixed
                   <div className="col-span-2">
                     <p className="text-sm text-muted-foreground">Booked By</p>
                     <p className="font-semibold">{selectedInvoice.booked_by.full_name}</p>
-                    <p className="text-sm text-muted-foreground">{selectedInvoice.booked_by.email}</p>
+                    <p className="text-sm text-muted-foreground">{maskEmail(selectedInvoice.booked_by.email)}</p>
                   </div>
                 </div>
 

@@ -12,12 +12,12 @@ const Landing = () => {
       <div className="container flex flex-col items-center justify-center min-h-screen text-center px-4">
         <img 
           src={logo} 
-          alt="E-Build Logo" 
+          alt="I-Book Logo" 
           className="h-32 w-32 mb-8 animate-fade-in"
         />
         
         <h1 className="text-6xl font-bold mb-4 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-          E-Build
+          I-Book
         </h1>
         
         <p className="text-2xl text-muted-foreground mb-12">
