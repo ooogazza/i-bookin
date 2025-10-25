@@ -946,7 +946,6 @@ const SiteDetail = () => {
         <Card className="relative">
           <CardHeader>
             <CardTitle>Plot Grid</CardTitle>
-            <p className="text-sm text-muted-foreground mt-1 md:hidden">👉 Swipe left/right to view all columns</p>
           </CardHeader>
           <CardContent className="p-0">
             {plots.length === 0 ? (
@@ -954,7 +953,7 @@ const SiteDetail = () => {
                 {isAdmin ? "No plots created yet" : "No plots assigned to you"}
               </p>
             ) : (
-              <div className="overflow-auto touch-pan-x overscroll-x-contain relative max-h-[70vh]">
+              <div className="overflow-auto relative max-h-[70vh]">
                 <div className="inline-block min-w-full">
                   <table className="w-full border-collapse min-w-[800px]">
                   <thead>
