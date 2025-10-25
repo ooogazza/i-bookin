@@ -1250,6 +1250,7 @@ const SiteDetail = () => {
                   value={houseTypeName}
                   onChange={(e) => setHouseTypeName(e.target.value)}
                   placeholder="e.g., Type A"
+                  autoFocus={false}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -1262,6 +1263,7 @@ const SiteDetail = () => {
                       placeholder="0.00"
                       value={liftValues[key] === 0 ? "" : liftValues[key]}
                       onChange={(e) => setLiftValues({ ...liftValues, [key]: parseFloat(e.target.value) || 0 })}
+                      autoFocus={false}
                     />
                   </div>
                 ))}
@@ -1368,6 +1370,7 @@ const SiteDetail = () => {
                   placeholder="user@example.com"
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
+                  autoFocus={false}
                 />
               </div>
               <Button onClick={handleInviteUser} className="w-full" disabled={!inviteEmail.trim()}>
@@ -1432,7 +1435,7 @@ const SiteDetail = () => {
                           }
                         }}
                         className="w-32"
-                        autoFocus
+                        autoFocus={false}
                         step="1"
                         min="1"
                       />
@@ -1676,7 +1679,7 @@ const SiteDetail = () => {
                                       }
                                     }}
                                     className="w-32"
-                                    autoFocus
+                                    autoFocus={false}
                                     step="0.01"
                                     min="0"
                                   />
@@ -1759,6 +1762,7 @@ const SiteDetail = () => {
                   value={memberName}
                   onChange={(e) => setMemberName(e.target.value)}
                   placeholder="Enter name"
+                  autoFocus={false}
                 />
               </div>
               <div className="space-y-2">

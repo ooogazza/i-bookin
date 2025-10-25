@@ -235,6 +235,7 @@ const Sites = () => {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Site A"
+                  autoFocus={false}
                   required
                 />
               </div>
@@ -245,6 +246,7 @@ const Sites = () => {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Optional description"
+                  autoFocus={false}
                   rows={3}
                 />
               </div>
@@ -256,8 +258,10 @@ const Sites = () => {
                     type="number"
                     min="0"
                     placeholder="0"
-                    value={numberOfPlots === 0 ? "" : numberOfPlots}
-                    onChange={(e) => setNumberOfPlots(parseInt(e.target.value) || 0)}
+                    value={numberOfPlots}
+                    onChange={(e) => setNumberOfPlots(e.target.value === "" ? 0 : parseInt(e.target.value))}
+                    onFocus={(e) => e.target.select()}
+                    autoFocus={false}
                     required
                   />
                 </div>
@@ -268,8 +272,10 @@ const Sites = () => {
                     type="number"
                     min="0"
                     placeholder="0"
-                    value={numberOfHouseTypes === 0 ? "" : numberOfHouseTypes}
-                    onChange={(e) => setNumberOfHouseTypes(parseInt(e.target.value) || 0)}
+                    value={numberOfHouseTypes}
+                    onChange={(e) => setNumberOfHouseTypes(e.target.value === "" ? 0 : parseInt(e.target.value))}
+                    onFocus={(e) => e.target.select()}
+                    autoFocus={false}
                     required
                   />
                 </div>

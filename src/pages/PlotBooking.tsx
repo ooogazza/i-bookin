@@ -479,6 +479,7 @@ const PlotBooking = () => {
                   value={memberName}
                   onChange={(e) => setMemberName(e.target.value)}
                   placeholder="Enter name"
+                  autoFocus={false}
                 />
               </div>
               <div className="space-y-2">
