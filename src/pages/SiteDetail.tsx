@@ -1028,7 +1028,7 @@ const SiteDetail = () => {
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="gap-1" title="View Invited Users">
                     <Users className="h-4 w-4" />
-                    <span className="hidden md:inline">Invited Bricklayers</span>
+                    <span className="hidden md:inline">Bricklayers</span>
                     <span className="hidden sm:inline md:hidden">({users.length})</span>
                     <ChevronDown className="h-4 w-4 hidden md:inline" />
                   </Button>
