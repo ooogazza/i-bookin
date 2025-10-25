@@ -15,7 +15,7 @@ import {
   TableRow,
   TableFooter,
 } from "@/components/ui/table";
-import { FileText, Printer } from "lucide-react";
+import { FileText, Printer, Trash2 } from "lucide-react";
 import { maskEmail } from "@/lib/emailUtils";
 import jsPDF from "jspdf";
 
@@ -474,8 +474,7 @@ const BookingIn = () => {
                 return (
                   <Card 
                     key={userGroup.user_id} 
-                    className="cursor-pointer hover:shadow-lg transition-shadow"
-                    onClick={() => handleViewUserInvoices(userGroup)}
+                    className="hover:shadow-lg transition-shadow"
                   >
                     <CardHeader>
                       <div className="flex items-start justify-between">
@@ -500,9 +499,41 @@ const BookingIn = () => {
                           <span className="text-sm text-muted-foreground">Confirmed</span>
                           <span className="font-semibold text-green-600">{confirmedInvoices}</span>
                         </div>
-                        <div className="flex justify-between items-center">
+                        <div className="flex justify-between items-center pb-3 border-b">
                           <span className="text-sm text-muted-foreground">Total Value</span>
                           <span className="text-xl font-bold text-primary">£{userGroup.total_value.toFixed(2)}</span>
+                        </div>
+                        <div className="flex gap-2 pt-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => handleViewUserInvoices(userGroup)}
+                          >
+                            View Invoices
+                          </Button>
+                          <Button 
+                            variant="destructive" 
+                            size="sm"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (!confirm(`Delete all invoices for ${userGroup.full_name}?`)) return;
+                              try {
+                                const invoiceNumbers = userGroup.invoices.map(inv => inv.invoice_number);
+                                await supabase
+                                  .from("bookings")
+                                  .delete()
+                                  .in("invoice_number", invoiceNumbers);
+                                toast.success("User invoices deleted");
+                                fetchBookings();
+                              } catch (error: any) {
+                                toast.error("Failed to delete invoices");
+                                console.error("Error:", error);
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
                     </CardContent>
@@ -773,11 +804,19 @@ const BookingIn = () => {
 
                 <div className="flex gap-2">
                   <Button 
+                    onClick={() => window.print()} 
+                    className="flex-1"
+                    variant="outline"
+                  >
+                    <Printer className="mr-2 h-4 w-4" />
+                    Print
+                  </Button>
+                  <Button 
                     onClick={() => handleExportInvoice(selectedInvoice)} 
                     className="flex-1"
                     variant="default"
                   >
-                    <Printer className="mr-2 h-4 w-4" />
+                    <FileText className="mr-2 h-4 w-4" />
                     Export PDF
                   </Button>
                   {isAdmin && !selectedInvoice.is_confirmed && (

@@ -255,7 +255,8 @@ const Sites = () => {
                     id="plots"
                     type="number"
                     min="0"
-                    value={numberOfPlots}
+                    placeholder="0"
+                    value={numberOfPlots === 0 ? "" : numberOfPlots}
                     onChange={(e) => setNumberOfPlots(parseInt(e.target.value) || 0)}
                     required
                   />
@@ -266,7 +267,8 @@ const Sites = () => {
                     id="houseTypes"
                     type="number"
                     min="0"
-                    value={numberOfHouseTypes}
+                    placeholder="0"
+                    value={numberOfHouseTypes === 0 ? "" : numberOfHouseTypes}
                     onChange={(e) => setNumberOfHouseTypes(parseInt(e.target.value) || 0)}
                     required
                   />

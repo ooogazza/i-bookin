@@ -798,15 +798,55 @@ const SiteDetail = () => {
       
       <Header 
         showBackButton
+        developerLogo={developerLogo}
+        developerName={developer?.name}
         actions={
           <>
+            {isAdmin && users.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Users className="mr-2 h-4 w-4" />
+                    Invited Users ({users.length})
+                    <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent 
+                  align="end" 
+                  className="w-80 max-h-96 overflow-y-auto bg-background z-50"
+                >
+                  {users.map((u) => (
+                    <DropdownMenuItem 
+                      key={u.user_id} 
+                      className="flex items-center justify-between p-3 cursor-default focus:bg-muted"
+                      onSelect={(e) => e.preventDefault()}
+                    >
+                      <div className="flex-1">
+                        <p className="font-medium">{u.profiles.full_name}</p>
+                        <p className="text-sm text-muted-foreground">{maskEmail(u.profiles.email)}</p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveUser(u.user_id);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             {isAdmin && (
               <>
-                <Button onClick={() => openHouseTypeDialog()}>
+                <Button onClick={() => openHouseTypeDialog()} size="sm">
                   <Plus className="mr-2 h-4 w-4" />
                   Add House Type
                 </Button>
-                <Button onClick={() => setInviteUserDialogOpen(true)} variant="outline">
+                <Button onClick={() => setInviteUserDialogOpen(true)} variant="outline" size="sm">
                   <Users className="mr-2 h-4 w-4" />
                   Invite Users
                 </Button>
@@ -816,6 +856,7 @@ const SiteDetail = () => {
               <Button 
                 onClick={() => setInvoiceDialogOpen(true)}
                 variant="default"
+                size="sm"
               >
                 <FileText className="mr-2 h-4 w-4" />
                 View Invoice
@@ -865,46 +906,6 @@ const SiteDetail = () => {
           </div>
         )}
 
-        {isAdmin && users.length > 0 && (
-          <div className="mb-6">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="w-full sm:w-auto">
-                  <Users className="mr-2 h-4 w-4" />
-                  Invited Users ({users.length})
-                  <ChevronDown className="ml-2 h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent 
-                align="start" 
-                className="w-80 max-h-96 overflow-y-auto bg-background z-50"
-              >
-                {users.map((u) => (
-                  <DropdownMenuItem 
-                    key={u.user_id} 
-                    className="flex items-center justify-between p-3 cursor-default focus:bg-muted"
-                    onSelect={(e) => e.preventDefault()}
-                  >
-                    <div className="flex-1">
-                      <p className="font-medium">{u.profiles.full_name}</p>
-                      <p className="text-sm text-muted-foreground">{maskEmail(u.profiles.email)}</p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRemoveUser(u.user_id);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        )}
 
         {/* Search Box */}
         <Card className="mb-6">
@@ -1040,15 +1041,40 @@ const SiteDetail = () => {
                     <Input
                       type="number"
                       step="0.01"
-                      value={liftValues[key] || 0}
+                      placeholder="0.00"
+                      value={liftValues[key] === 0 ? "" : liftValues[key]}
                       onChange={(e) => setLiftValues({ ...liftValues, [key]: parseFloat(e.target.value) || 0 })}
                     />
                   </div>
                 ))}
               </div>
-              <Button onClick={handleSaveHouseType} className="w-full">
-                Save House Type
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={handleSaveHouseType} className="flex-1">
+                  Save House Type
+                </Button>
+                {editingHouseType && (
+                  <Button 
+                    variant="destructive" 
+                    onClick={async () => {
+                      if (!confirm("Delete this house type?")) return;
+                      try {
+                        await supabase
+                          .from("house_types")
+                          .delete()
+                          .eq("id", editingHouseType.id);
+                        toast.success("House type deleted");
+                        setHouseTypeDialogOpen(false);
+                        fetchSiteData();
+                      } catch (error: any) {
+                        toast.error("Failed to delete house type");
+                        console.error("Error:", error);
+                      }
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </div>
           </DialogContent>
         </Dialog>
