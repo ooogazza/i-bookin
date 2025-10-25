@@ -460,13 +460,14 @@ const BookingIn = () => {
               top: 0;
               width: 100%;
               background: white;
-              padding: 1cm;
+              padding: 0.5cm;
             }
             .no-print {
               display: none !important;
             }
             @page {
-              margin: 1cm;
+              margin: 0.5cm;
+              size: A4;
             }
           }
           .print-invoice-section {
@@ -492,64 +493,64 @@ const BookingIn = () => {
       {/* Hidden Print Section */}
       {selectedInvoice && (
         <div className="print-invoice-section">
-          <div style={{ backgroundColor: '#2563EB', padding: '20px', textAlign: 'center', marginBottom: '20px' }}>
-            <h1 style={{ color: 'white', fontSize: '32px', fontWeight: 'bold', margin: '0 0 10px 0' }}>I-Book</h1>
-            <p style={{ color: 'white', fontSize: '16px', margin: 0 }}>Brickwork Manager</p>
+          <div style={{ backgroundColor: '#2563EB', padding: '15px', textAlign: 'center', marginBottom: '15px' }}>
+            <h1 style={{ color: 'white', fontSize: '28px', fontWeight: 'bold', margin: '0 0 5px 0' }}>I-Book</h1>
+            <p style={{ color: 'white', fontSize: '14px', margin: 0 }}>Brickwork Manager</p>
           </div>
           
-          <div style={{ backgroundColor: '#2563EB', padding: '10px', textAlign: 'center', marginBottom: '30px' }}>
-            <h2 style={{ color: 'white', fontSize: '18px', fontWeight: 'bold', margin: 0 }}>
+          <div style={{ backgroundColor: '#2563EB', padding: '8px', textAlign: 'center', marginBottom: '20px' }}>
+            <h2 style={{ color: 'white', fontSize: '16px', fontWeight: 'bold', margin: 0 }}>
               INVOICE: {selectedInvoice.invoice_number}
             </h2>
           </div>
 
-          <div style={{ marginBottom: '20px' }}>
-            <p style={{ fontSize: '14px', marginBottom: '5px' }}>
+          <div style={{ marginBottom: '15px' }}>
+            <p style={{ fontSize: '13px', marginBottom: '0' }}>
               <strong>Date:</strong> {new Date(selectedInvoice.created_at).toLocaleDateString()}
             </p>
           </div>
 
-          <div style={{ marginBottom: '30px' }}>
-            <h3 style={{ color: '#2563EB', fontSize: '16px', fontWeight: 'bold', marginBottom: '10px' }}>BOOKED BY:</h3>
-            <p style={{ fontSize: '14px', margin: '5px 0' }}>
+          <div style={{ marginBottom: '20px' }}>
+            <h3 style={{ color: '#2563EB', fontSize: '15px', fontWeight: 'bold', marginBottom: '8px' }}>BOOKED BY:</h3>
+            <p style={{ fontSize: '13px', margin: '3px 0' }}>
               <strong>Name:</strong> {selectedInvoice.booked_by.full_name}
             </p>
-            <p style={{ fontSize: '14px', margin: '5px 0' }}>
+            <p style={{ fontSize: '13px', margin: '3px 0' }}>
               <strong>Email:</strong> {selectedInvoice.booked_by.email}
             </p>
           </div>
 
-          <div style={{ marginBottom: '30px' }}>
-            <h3 style={{ color: '#2563EB', fontSize: '16px', fontWeight: 'bold', marginBottom: '10px' }}>ITEMS:</h3>
+          <div style={{ marginBottom: '20px' }}>
+            <h3 style={{ color: '#2563EB', fontSize: '15px', fontWeight: 'bold', marginBottom: '8px' }}>ITEMS:</h3>
             {selectedInvoice.items.map((item, index) => (
-              <p key={index} style={{ fontSize: '14px', marginBottom: '8px' }}>
+              <p key={index} style={{ fontSize: '13px', marginBottom: '5px' }}>
                 Plot {item.plots.plot_number} - {LIFT_LABELS[item.lift_values.lift_type as keyof typeof LIFT_LABELS]}: {item.percentage}% = £{item.booked_value.toFixed(2)}
               </p>
             ))}
           </div>
 
           {selectedInvoice.notes && (
-            <div style={{ marginBottom: '30px' }}>
-              <h3 style={{ color: '#2563EB', fontSize: '16px', fontWeight: 'bold', marginBottom: '10px' }}>NOTES:</h3>
-              <p style={{ fontSize: '14px', whiteSpace: 'pre-wrap' }}>{selectedInvoice.notes}</p>
+            <div style={{ marginBottom: '20px' }}>
+              <h3 style={{ color: '#2563EB', fontSize: '15px', fontWeight: 'bold', marginBottom: '8px' }}>NOTES:</h3>
+              <p style={{ fontSize: '13px', whiteSpace: 'pre-wrap', margin: 0 }}>{selectedInvoice.notes}</p>
             </div>
           )}
 
-          <div style={{ backgroundColor: '#2563EB', padding: '10px', textAlign: 'center', marginBottom: '30px' }}>
-            <p style={{ color: 'white', fontSize: '18px', fontWeight: 'bold', margin: 0 }}>
+          <div style={{ backgroundColor: '#2563EB', padding: '8px', textAlign: 'center', marginBottom: '20px' }}>
+            <p style={{ color: 'white', fontSize: '16px', fontWeight: 'bold', margin: 0 }}>
               Total Value: £{selectedInvoice.total_value.toFixed(2)}
             </p>
           </div>
 
           {selectedInvoice.items[0]?.gang_divisions && selectedInvoice.items[0].gang_divisions.length > 0 && (
             <div>
-              <h3 style={{ color: '#2563EB', fontSize: '16px', fontWeight: 'bold', marginBottom: '10px' }}>GANG DIVISION:</h3>
+              <h3 style={{ color: '#2563EB', fontSize: '15px', fontWeight: 'bold', marginBottom: '8px' }}>GANG DIVISION:</h3>
               {selectedInvoice.items[0].gang_divisions.map((member, index) => (
-                <p key={index} style={{ fontSize: '14px', marginBottom: '8px' }}>
+                <p key={index} style={{ fontSize: '13px', marginBottom: '5px' }}>
                   {member.member_name} ({member.member_type}): £{member.amount.toFixed(2)}
                 </p>
               ))}
-              <p style={{ fontSize: '14px', fontWeight: 'bold', marginTop: '15px' }}>
+              <p style={{ fontSize: '13px', fontWeight: 'bold', marginTop: '10px', marginBottom: 0 }}>
                 Total Allocated: £{selectedInvoice.items[0].gang_divisions.reduce((sum, m) => sum + m.amount, 0).toFixed(2)}
               </p>
             </div>
