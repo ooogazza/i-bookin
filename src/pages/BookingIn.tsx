@@ -18,6 +18,7 @@ import {
 import { FileText, Printer, Trash2 } from "lucide-react";
 import { maskEmail } from "@/lib/emailUtils";
 import jsPDF from "jspdf";
+import logo from "@/assets/logo.png";
 
 interface BookingData {
   id: string;
@@ -319,13 +320,17 @@ const BookingIn = () => {
     doc.setFillColor(...blueColor);
     doc.rect(0, 0, 210, 40, 'F');
     
+    // Add logo
+    try {
+      doc.addImage(logo, 'PNG', 85, 8, 40, 20);
+    } catch (e) {
+      console.error('Failed to add logo to PDF', e);
+    }
+    
     // White text for header
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(24);
-    doc.setFont("helvetica", "bold");
-    doc.text("I-Book", 105, 20, { align: "center" });
     doc.setFontSize(12);
-    doc.text("Brickwork Manager", 105, 30, { align: "center" });
+    doc.text("Brickwork Manager", 105, 33, { align: "center" });
     
     // Invoice number with blue background
     doc.setFillColor(...blueColor);
@@ -494,8 +499,8 @@ const BookingIn = () => {
       {selectedInvoice && (
         <div className="print-invoice-section">
           <div style={{ backgroundColor: '#2563EB', padding: '15px', textAlign: 'center', marginBottom: '15px' }}>
-            <h1 style={{ color: 'white', fontSize: '28px', fontWeight: 'bold', margin: '0 0 5px 0' }}>I-Book</h1>
-            <p style={{ color: 'white', fontSize: '14px', margin: 0 }}>Brickwork Manager</p>
+            <img src={logo} alt="I-Book" style={{ height: '50px', margin: '0 auto', display: 'block' }} />
+            <p style={{ color: 'white', fontSize: '14px', margin: '5px 0 0 0' }}>Brickwork Manager</p>
           </div>
           
           <div style={{ backgroundColor: '#2563EB', padding: '8px', textAlign: 'center', marginBottom: '20px' }}>
