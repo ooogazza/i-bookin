@@ -272,12 +272,12 @@ const Dashboard = () => {
                   onClick={() => navigate(`/developer/${developer.id}`)}
                 >
                   <CardHeader>
-                    <div className="flex items-center justify-center min-h-[80px]">
+                    <div className="flex items-center justify-center h-[120px] w-full p-4">
                       {logo && (
                         <img 
                           src={logo} 
                           alt={developer.name}
-                          className="h-12 w-auto max-w-[200px] object-contain rounded-lg"
+                          className="h-full w-full object-contain rounded-lg"
                         />
                       )}
                     </div>
