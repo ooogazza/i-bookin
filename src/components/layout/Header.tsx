@@ -41,14 +41,14 @@ export const Header = ({
         <div className="flex items-center gap-3">
           <img 
             src={logo} 
-            alt="I-Book Logo" 
+            alt="I-Bookin Logo" 
             className={`h-10 w-10 rounded-lg ${showBackButton ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
             onClick={showBackButton ? () => navigate("/dashboard") : undefined}
             title={showBackButton ? "Back to Dashboard" : undefined}
           />
           {!hideTitle && (
             <div className="hidden sm:flex flex-col">
-              <h1 className="text-2xl font-bold leading-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">I-Book</h1>
+              <h1 className="text-2xl font-bold leading-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">I-Bookin</h1>
               <p className="text-xs text-muted-foreground leading-tight">Brickwork Manager</p>
             </div>
           )}

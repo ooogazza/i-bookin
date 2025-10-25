@@ -53,8 +53,8 @@ const Install = () => {
       
       <main className="container py-8 max-w-2xl">
         <div className="text-center mb-8">
-          <img src={logo} alt="I-Book Logo" className="h-24 w-24 mx-auto mb-4 rounded-2xl" />
-          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">Install I-Book</h1>
+          <img src={logo} alt="I-Bookin Logo" className="h-24 w-24 mx-auto mb-4 rounded-2xl" />
+          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">Install I-Bookin</h1>
           <p className="text-muted-foreground">
             Get the full app experience on your device
           </p>
@@ -68,7 +68,7 @@ const Install = () => {
                 App Already Installed
               </CardTitle>
               <CardDescription>
-                I-Book is already installed on your device. You can access it from your home screen.
+                I-Bookin is already installed on your device. You can access it from your home screen.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -81,7 +81,7 @@ const Install = () => {
                   Install as App
                 </CardTitle>
                 <CardDescription>
-                  Install I-Book on your device for quick access and offline functionality
+                  Install I-Bookin on your device for quick access and offline functionality
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">

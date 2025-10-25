@@ -537,7 +537,7 @@ const BookingIn = () => {
           <div style={{ backgroundColor: '#2563EB', padding: '15px', textAlign: 'center', marginBottom: '15px' }}>
             <img 
               src={logo} 
-              alt="I-Book" 
+              alt="I-Bookin"
               style={{ 
                 height: '50px', 
                 width: 'auto',

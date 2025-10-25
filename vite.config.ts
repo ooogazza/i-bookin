@@ -17,8 +17,8 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       includeAssets: ["favicon.png", "apple-touch-icon.png"],
       manifest: {
-        name: "I-Book - Brickwork Manager",
-        short_name: "I-Book",
+        name: "I-Bookin - Brickwork Manager",
+        short_name: "I-Bookin",
         description: "Professional construction payment management system for tracking lifts, managing bookings, and streamlining payments for building projects.",
         theme_color: "#2563EB",
         background_color: "#ffffff",

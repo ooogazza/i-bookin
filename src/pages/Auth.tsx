@@ -107,11 +107,11 @@ const Auth = () => {
         <CardHeader className="text-center space-y-4">
           <img 
             src={logo} 
-            alt="I-Book Logo" 
+            alt="I-Bookin Logo" 
             className="h-24 w-24 mx-auto rounded-2xl"
           />
           <div>
-            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">I-Book</CardTitle>
+            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">I-Bookin</CardTitle>
             <p className="text-base font-bold text-foreground mt-2">Brickwork Manager</p>
           </div>
           <CardDescription>Manage construction site payments efficiently</CardDescription>
