@@ -801,10 +801,11 @@ const SiteDetail = () => {
             {isAdmin && users.length > 0 && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Users className="mr-2 h-4 w-4" />
-                    Invited Users ({users.length})
-                    <ChevronDown className="ml-2 h-4 w-4" />
+                  <Button variant="outline" size="sm" className="gap-1">
+                    <Users className="h-4 w-4" />
+                    <span className="hidden sm:inline">Invited Users ({users.length})</span>
+                    <span className="sm:hidden">({users.length})</span>
+                    <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent 
@@ -838,13 +839,13 @@ const SiteDetail = () => {
             )}
             {isAdmin && (
               <>
-                <Button onClick={() => openHouseTypeDialog()} size="sm">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add House Type
+                <Button onClick={() => openHouseTypeDialog()} size="sm" title="Add House Type">
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden md:inline ml-2">Add House Type</span>
                 </Button>
-                <Button onClick={() => setInviteUserDialogOpen(true)} variant="outline" size="sm">
-                  <Users className="mr-2 h-4 w-4" />
-                  Invite Users
+                <Button onClick={() => setInviteUserDialogOpen(true)} variant="outline" size="sm" title="Invite Users">
+                  <Users className="h-4 w-4" />
+                  <span className="hidden md:inline ml-2">Invite Users</span>
                 </Button>
               </>
             )}
@@ -853,9 +854,10 @@ const SiteDetail = () => {
                 onClick={() => setInvoiceDialogOpen(true)}
                 variant="default"
                 size="sm"
+                title="View Invoice"
               >
-                <FileText className="mr-2 h-4 w-4" />
-                View Invoice
+                <FileText className="h-4 w-4" />
+                <span className="hidden md:inline ml-2">View Invoice</span>
               </Button>
             )}
           </>
@@ -936,18 +938,20 @@ const SiteDetail = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="relative">
           <CardHeader>
             <CardTitle>Plot Grid</CardTitle>
+            <p className="text-sm text-muted-foreground mt-1 md:hidden">👉 Swipe left/right to view all columns</p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             {plots.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">
+              <p className="text-center text-muted-foreground py-8 px-6">
                 {isAdmin ? "No plots created yet" : "No plots assigned to you"}
               </p>
             ) : (
-              <div className="overflow-x-auto -mx-6 px-6">
-                <table className="w-full border-collapse min-w-[800px]">
+              <div className="overflow-x-auto touch-pan-x overscroll-x-contain relative">
+                <div className="inline-block min-w-full">
+                  <table className="w-full border-collapse min-w-[800px]">
                   <thead>
                     <tr className="border-b">
                       <th className="p-2 text-left font-medium w-20">Plot</th>
@@ -1008,6 +1012,7 @@ const SiteDetail = () => {
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             )}
           </CardContent>
