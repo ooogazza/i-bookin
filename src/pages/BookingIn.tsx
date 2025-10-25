@@ -703,16 +703,30 @@ const BookingIn = () => {
                             {new Date(invoice.created_at).toLocaleDateString()}
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleExportInvoice(invoice);
-                              }}
-                            >
-                              <Printer className="h-4 w-4" />
-                            </Button>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  window.print();
+                                }}
+                                title="Print"
+                              >
+                                <Printer className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleExportInvoice(invoice);
+                                }}
+                                title="Export PDF"
+                              >
+                                <FileText className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
