@@ -1023,7 +1023,7 @@ const SiteDetail = () => {
         showBackButton
         hideTitle
         leftContent={
-          <div className="flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-2">
             {developerLogo && (
               <img 
                 src={developerLogo} 
@@ -1106,6 +1106,20 @@ const SiteDetail = () => {
       />
       
       <main className="container py-8">
+        {/* Mobile Layout - Below Header */}
+        <div className="md:hidden mb-6 flex items-center gap-2">
+          {developerLogo && (
+            <img 
+              src={developerLogo} 
+              alt={developer?.name || "Developer"}
+              className="h-10 w-auto object-contain rounded-lg"
+            />
+          )}
+          <span className="text-sm text-black dark:text-white font-medium">
+            {site.name}
+          </span>
+        </div>
+
         {site.description && (
           <div className="mb-8">
             <p className="text-muted-foreground">{site.description}</p>
