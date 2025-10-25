@@ -435,17 +435,41 @@ const BookingIn = () => {
 
   return (
     <div className="min-h-screen bg-secondary/30">
+      <style>
+        {`
+          @media print {
+            body * {
+              visibility: hidden;
+            }
+            .print-area, .print-area * {
+              visibility: visible;
+            }
+            .print-area {
+              position: absolute;
+              left: 0;
+              top: 0;
+              width: 100%;
+            }
+            .no-print {
+              display: none !important;
+            }
+            @page {
+              margin: 1cm;
+            }
+          }
+        `}
+      </style>
       <Header 
         showBackButton
         actions={
-          <Button onClick={handlePrint} variant="outline" size="sm" title="Print">
+          <Button onClick={handlePrint} variant="outline" size="sm" title="Print" className="no-print">
             <Printer className="h-4 w-4" />
             <span className="hidden md:inline ml-2">Print</span>
           </Button>
         }
       />
       
-      <main className="container py-8">
+      <main className="container py-8 print-area">
         <div className="mb-8">
           <div>
             <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">

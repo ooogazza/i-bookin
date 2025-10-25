@@ -140,6 +140,7 @@ const SiteDetail = () => {
   const [notesAmount, setNotesAmount] = useState(0);
   const [editingMemberIndex, setEditingMemberIndex] = useState<number | null>(null);
   const [tempAmount, setTempAmount] = useState("");
+  const [savedGangMembers, setSavedGangMembers] = useState<GangMember[]>([]);
   
   const [plotSummaryDialogOpen, setPlotSummaryDialogOpen] = useState(false);
   const [selectedPlotForSummary, setSelectedPlotForSummary] = useState<Plot | null>(null);
@@ -195,6 +196,15 @@ const SiteDetail = () => {
     if (id) {
       fetchSiteData();
       if (isAdmin) fetchAvailableUsers();
+    }
+    // Load saved gang members from localStorage
+    const saved = localStorage.getItem('savedGangMembers');
+    if (saved) {
+      try {
+        setSavedGangMembers(JSON.parse(saved));
+      } catch (e) {
+        console.error('Failed to load saved gang members:', e);
+      }
     }
   }, [id, isAdmin]);
 
@@ -509,20 +519,45 @@ const SiteDetail = () => {
   };
 
   const handleAddGangMember = () => {
-    if (!memberName) {
+    if (!memberName.trim()) {
       toast.error("Please enter a name");
       return;
     }
-    
-    setGangMembers([...gangMembers, {
-      name: memberName,
+
+    const newMember = {
+      name: memberName.trim(),
       type: memberType,
       amount: 0
-    }]);
+    };
+
+    // Add to both current gang members and saved gang members
+    const updatedSaved = [...savedGangMembers, newMember];
+    setSavedGangMembers(updatedSaved);
+    localStorage.setItem('savedGangMembers', JSON.stringify(updatedSaved));
     
+    setGangMembers([...gangMembers, newMember]);
     setMemberName("");
+    setMemberType("bricklayer");
     setMemberAmount(0);
     setGangDialogOpen(false);
+    toast.success("Gang member added and saved");
+  };
+
+  const handleDeleteSavedMember = (index: number) => {
+    const updatedSaved = savedGangMembers.filter((_, i) => i !== index);
+    setSavedGangMembers(updatedSaved);
+    localStorage.setItem('savedGangMembers', JSON.stringify(updatedSaved));
+    toast.success("Gang member removed");
+  };
+
+  const handleLoadSavedMembers = () => {
+    if (savedGangMembers.length === 0) {
+      toast.error("No saved gang members");
+      return;
+    }
+    const membersWithZeroAmount = savedGangMembers.map(m => ({ ...m, amount: 0 }));
+    setGangMembers(membersWithZeroAmount);
+    toast.success("Saved gang members loaded");
   };
 
   const handleRemoveGangMember = (index: number) => {
@@ -658,7 +693,8 @@ const SiteDetail = () => {
 
       toast.success("Invoice sent to admin successfully");
       setInvoiceItems([]);
-      setGangMembers([]);
+      // Reset gang members amounts but keep them for next invoice
+      setGangMembers(gangMembers.map(m => ({ ...m, amount: 0 })));
       setInvoiceNotes("");
       setNotesAmount(0);
       setInvoiceDialogOpen(false);
@@ -672,56 +708,114 @@ const SiteDetail = () => {
   const handleExportPDF = () => {
     const doc = new jsPDF();
     
-    doc.setFontSize(18);
-    doc.text("Invoice", 20, 20);
+    // Blue color for styling
+    const blueColor: [number, number, number] = [37, 99, 235]; // #2563EB
     
+    // Header with blue box
+    doc.setFillColor(...blueColor);
+    doc.rect(0, 0, 210, 40, 'F');
+    
+    // White text for header
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(24);
+    doc.setFont("helvetica", "bold");
+    doc.text("I-Book", 105, 20, { align: "center" });
+    doc.setFontSize(12);
+    doc.text("Brickwork Manager", 105, 30, { align: "center" });
+    
+    // Invoice number with blue background
+    doc.setFillColor(...blueColor);
+    doc.rect(10, 50, 190, 12, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text(`INVOICE: INV-${Date.now()}`, 105, 58, { align: "center" });
+    
+    // Reset to black text for content
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    
+    let yPos = 75;
+    
+    // Date
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, 15, yPos);
+    yPos += 10;
+    
+    // Site section with blue title
     if (site) {
-      doc.setFontSize(12);
-      doc.text(`Site: ${site.name}`, 20, 30);
+      doc.setTextColor(...blueColor);
+      doc.setFont("helvetica", "bold");
+      doc.text("SITE:", 15, yPos);
+      doc.setTextColor(0, 0, 0);
+      doc.setFont("helvetica", "normal");
+      yPos += 7;
+      doc.text(`${site.name}`, 15, yPos);
+      yPos += 12;
     }
     
-    doc.setFontSize(12);
-    let y = 45;
+    // Items section with blue title
+    doc.setTextColor(...blueColor);
+    doc.setFont("helvetica", "bold");
+    doc.text("ITEMS:", 15, yPos);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont("helvetica", "normal");
+    yPos += 7;
     
-    doc.text("Invoice Items:", 20, y);
-    y += 10;
-    
-    invoiceItems.forEach((item, index) => {
-      doc.setFontSize(10);
-      doc.text(`${index + 1}. Plot ${item.plot.plot_number} - ${LIFT_LABELS[item.liftType as keyof typeof LIFT_LABELS]}`, 25, y);
-      y += 6;
-      doc.text(`   ${item.percentage}% of £${item.liftValue.toFixed(2)} = £${item.bookedValue.toFixed(2)}`, 25, y);
-      y += 10;
+    invoiceItems.forEach((item) => {
+      if (yPos > 270) {
+        doc.addPage();
+        yPos = 20;
+      }
+      const text = `Plot ${item.plot.plot_number} - ${LIFT_LABELS[item.liftType as keyof typeof LIFT_LABELS]}: ${item.percentage}% = £${item.bookedValue.toFixed(2)}`;
+      doc.text(text, 15, yPos);
+      yPos += 6;
     });
     
-    y += 5;
-    doc.setFontSize(12);
-    doc.text(`Total Value: £${totalInvoiceValue.toFixed(2)}`, 20, y);
-    y += 15;
+    yPos += 6;
     
+    // Notes section if exists
     if (invoiceNotes) {
-      doc.text("Notes:", 20, y);
-      y += 8;
-      doc.setFontSize(10);
-      const splitNotes = doc.splitTextToSize(invoiceNotes, 170);
-      doc.text(splitNotes, 25, y);
-      y += (splitNotes.length * 6) + 10;
+      doc.setTextColor(...blueColor);
+      doc.setFont("helvetica", "bold");
+      doc.text("NOTES:", 15, yPos);
+      doc.setTextColor(0, 0, 0);
+      doc.setFont("helvetica", "normal");
+      yPos += 7;
+      const noteLines = doc.splitTextToSize(invoiceNotes, 180);
+      doc.text(noteLines, 15, yPos);
+      yPos += noteLines.length * 6 + 6;
     }
     
+    // Total value with blue box
+    doc.setFillColor(...blueColor);
+    doc.rect(10, yPos, 190, 10, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Total Value: £${totalInvoiceValue.toFixed(2)}`, 105, yPos + 7, { align: "center" });
+    yPos += 18;
+    
+    // Gang division section
     if (gangMembers.length > 0) {
-      doc.setFontSize(12);
-      doc.text("Gang Division:", 20, y);
-      y += 10;
+      doc.setTextColor(...blueColor);
+      doc.setFont("helvetica", "bold");
+      doc.text("GANG DIVISION:", 15, yPos);
+      doc.setTextColor(0, 0, 0);
+      doc.setFont("helvetica", "normal");
+      yPos += 7;
       
       gangMembers.forEach((member) => {
-        doc.setFontSize(10);
-        doc.text(`${member.name} (${member.type}): £${member.amount.toFixed(2)}`, 25, y);
-        y += 8;
+        if (yPos > 270) {
+          doc.addPage();
+          yPos = 20;
+        }
+        doc.text(`${member.name} (${member.type}): £${member.amount.toFixed(2)}`, 15, yPos);
+        yPos += 6;
       });
       
-      y += 5;
-      doc.setFontSize(12);
-      doc.text(`Total Allocated: £${totalGangAllocated.toFixed(2)}`, 20, y);
+      yPos += 4;
+      doc.setFont("helvetica", "bold");
+      doc.text(`Total Allocated: £${totalGangAllocated.toFixed(2)}`, 15, yPos);
     }
     
     doc.save(`invoice-${Date.now()}.pdf`);
@@ -1342,17 +1436,48 @@ const SiteDetail = () => {
                   <CardHeader>
                     <div className="flex justify-between items-center">
                       <CardTitle>Gang Division - Who Gets Paid</CardTitle>
-                      <Button onClick={() => setGangDialogOpen(true)} size="sm">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Member
-                      </Button>
+                      <div className="flex gap-2">
+                        {savedGangMembers.length > 0 && gangMembers.length === 0 && (
+                          <Button onClick={handleLoadSavedMembers} variant="outline" size="sm">
+                            Load Saved Members
+                          </Button>
+                        )}
+                        <Button onClick={() => setGangDialogOpen(true)} size="sm">
+                          <Plus className="mr-2 h-4 w-4" />
+                          Add Member
+                        </Button>
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent>
                     {gangMembers.length === 0 ? (
-                      <p className="text-center text-muted-foreground py-4">
-                        No gang members added yet - add members to allocate payment
-                      </p>
+                      <div className="space-y-4">
+                        <p className="text-center text-muted-foreground py-4">
+                          No gang members added yet - add members to allocate payment
+                        </p>
+                        {savedGangMembers.length > 0 && (
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium">Saved Gang Members:</p>
+                            <div className="space-y-2">
+                              {savedGangMembers.map((member, index) => (
+                                <div key={index} className="flex justify-between items-center p-2 bg-muted/50 rounded">
+                                  <div>
+                                    <p className="font-medium text-sm">{member.name}</p>
+                                    <p className="text-xs text-muted-foreground capitalize">{member.type}</p>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDeleteSavedMember(index)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     ) : (
                       <div className="space-y-3">
                         {gangMembers.map((member, index) => (
