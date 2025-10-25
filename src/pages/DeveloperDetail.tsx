@@ -139,9 +139,7 @@ const DeveloperDetail = () => {
             <img 
               src={logo} 
               alt={developer.name}
-              className="h-12 w-auto object-contain rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={() => navigate(-1)}
-              title="Go back"
+              className="h-12 w-auto object-contain rounded-lg"
             />
           )}
           <p className="text-muted-foreground">Sites for this developer</p>

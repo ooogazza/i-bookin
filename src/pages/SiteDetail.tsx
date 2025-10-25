@@ -154,8 +154,9 @@ const SiteDetail = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      setShowBackToTop(window.scrollY > 1000);
-      setShowStickyHeader(window.scrollY > 800);
+      const shouldShow = window.scrollY > 800;
+      setShowBackToTop(shouldShow);
+      setShowStickyHeader(shouldShow);
     };
 
     window.addEventListener('scroll', handleScroll);
