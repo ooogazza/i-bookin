@@ -980,7 +980,7 @@ const SiteDetail = () => {
               {isAdmin ? "No plots created yet" : "No plots assigned to you"}
             </p>
           ) : (
-            <div ref={mainScrollRef} className="overflow-x-auto">
+            <div ref={mainScrollRef} className="overflow-x-auto border rounded-lg">
               <table className="w-full border-collapse min-w-[800px]">
               <thead>
                 <tr className="border-b bg-muted/50">
