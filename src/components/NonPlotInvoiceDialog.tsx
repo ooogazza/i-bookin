@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, X, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { DialogClose } from "@radix-ui/react-dialog";
 
 interface GangMember {
   name: string;
@@ -42,6 +43,7 @@ export const NonPlotInvoiceDialog = ({
   const [memberName, setMemberName] = useState("");
   const [memberType, setMemberType] = useState("bricklayer");
 
+  // Generate invoice number + prevent page background scroll
   useEffect(() => {
     if (open) {
       setInvoiceNumber(`NPINV-${Date.now()}`);
@@ -54,18 +56,18 @@ export const NonPlotInvoiceDialog = ({
   const totalAllocated = gangMembers.reduce((sum, m) => sum + m.amount, 0);
   const remainingToAllocate = invoiceAmount - totalAllocated;
 
-  // ============= Independent Slider Logic ============= //
+  // Independent slider logic
   const handleUpdateMemberAmount = (index: number, newAmount: number) => {
     const current = gangMembers[index].amount;
 
     // Increasing
     if (newAmount > current) {
-      if (remainingToAllocate <= 0) return; // can't go up
+      if (remainingToAllocate <= 0) return;
       const maxIncrease = current + remainingToAllocate;
       newAmount = Math.min(newAmount, maxIncrease);
     }
 
-    // Decreasing allowed always
+    // Decreasing always allowed
     const updated = [...gangMembers];
     updated[index].amount = Math.max(0, newAmount);
     setGangMembers(updated);
@@ -85,15 +87,7 @@ export const NonPlotInvoiceDialog = ({
 
   const handleAddMember = () => {
     if (!memberName.trim()) return toast.error("Name required");
-    setGangMembers([
-      ...gangMembers,
-      {
-        name: memberName.trim(),
-        type: memberType,
-        amount: 0,
-        editing: false,
-      },
-    ]);
+    setGangMembers([...gangMembers, { name: memberName.trim(), type: memberType, amount: 0, editing: false }]);
     setMemberName("");
     setDialogOpen(false);
   };
@@ -109,23 +103,29 @@ export const NonPlotInvoiceDialog = ({
     gangMembers,
   });
 
-  // Flexible callback support
+  // Callback-safe
   const safeSend = () => {
+    const payload = buildInvoice();
     try {
-      handleSendToAdmin(buildInvoice());
+      if (handleSendToAdmin.length === 0) handleSendToAdmin();
+      else handleSendToAdmin(payload);
       toast.success("Invoice sent to admin");
       onOpenChange(false);
-    } catch {
-      handleSendToAdmin();
+    } catch (err) {
+      console.error(err);
+      toast.error("Send callback failed");
     }
   };
 
   const safeExport = () => {
+    const payload = buildInvoice();
     try {
-      handleExportPDF(buildInvoice());
-      toast.success("PDF created");
-    } catch {
-      handleExportPDF();
+      if (handleExportPDF.length === 0) handleExportPDF();
+      else handleExportPDF(payload);
+      toast.success("PDF exported");
+    } catch (err) {
+      console.error(err);
+      toast.error("Export callback failed");
     }
   };
 
@@ -285,16 +285,28 @@ export const NonPlotInvoiceDialog = ({
               </Card>
             )}
 
-            {/* ACTIONS SIDE BY SIDE */}
+            {/* ACTIONS — side-by-side */}
             {invoiceAmount > 0 && gangMembers.length > 0 && (
-              <div className="flex gap-3">
-                <Button variant="outline" className="flex-1" disabled={remainingToAllocate !== 0} onClick={safeExport}>
+              <div className="flex gap-3" onClick={(e) => e.stopPropagation()}>
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  disabled={remainingToAllocate !== 0}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    safeExport();
+                  }}
+                >
                   Export PDF
                 </Button>
+
                 <Button
                   className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
                   disabled={remainingToAllocate !== 0}
-                  onClick={safeSend}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    safeSend();
+                  }}
                 >
                   Send to Admin
                 </Button>
