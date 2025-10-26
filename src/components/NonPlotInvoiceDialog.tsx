@@ -181,7 +181,7 @@ export const NonPlotInvoiceDialog = ({
                                     }
                                   }}
                                   className="w-24 h-8"
-                                  step="10"
+                                  step={10}
                                   min="0"
                                   max={maxForThisMember}
                                 />
