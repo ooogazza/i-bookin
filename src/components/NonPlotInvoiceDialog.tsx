@@ -11,7 +11,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Plus, X } from "lucide-react";
-import { gangMemberSchema } from "@/lib/validations";
 
 interface GangMember {
   name: string;
@@ -41,7 +40,6 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
 
   const [memberName, setMemberName] = useState("");
   const [memberType, setMemberType] = useState("bricklayer");
-  const [memberAmount, setMemberAmount] = useState(0);
 
   const totalAllocated = gangMembers.reduce((sum, m) => sum + m.amount, 0);
   const remainingToAllocate = invoiceAmount - totalAllocated;
@@ -58,7 +56,6 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
     }
   }, []);
 
-  // Save gang members to localStorage
   const saveGangMember = (member: SavedGangMember) => {
     const existing = savedGangMembers.find((m) => m.name === member.name && m.type === member.type);
     if (!existing) {
@@ -73,8 +70,6 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
       toast.error("Please enter member name");
       return;
     }
-
-    // Only validate name & type here; amount will be allocated on the invoice list
     setGangMembers([...gangMembers, { name: memberName.trim(), type: memberType, amount: 0 }]);
     saveGangMember({ name: memberName.trim(), type: memberType });
     setMemberName("");
@@ -88,7 +83,6 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
   const handleUpdateMemberAmount = (index: number, newAmount: number) => {
     const member = gangMembers[index];
     const otherMembersTotal = gangMembers.filter((_, i) => i !== index).reduce((sum, m) => sum + m.amount, 0);
-
     const maxAllowed = invoiceAmount - otherMembersTotal;
     const finalAmount = Math.min(newAmount, maxAllowed);
 
@@ -102,17 +96,14 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
       toast.error("Please set an invoice amount");
       return;
     }
-
     if (!notes.trim()) {
       toast.error("Please add notes describing the work");
       return;
     }
-
     if (gangMembers.length === 0) {
       toast.error("Please add at least one gang member");
       return;
     }
-
     if (Math.abs(remainingToAllocate) > 0.01) {
       toast.error("Please allocate the full invoice amount to gang members");
       return;
@@ -128,7 +119,7 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
           booked_value: invoiceAmount,
           percentage: 100,
           invoice_number: invoiceNumber,
-          notes: notes,
+          notes,
           status: "confirmed",
           plot_id: null,
           lift_value_id: null,
@@ -146,7 +137,6 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
       }));
 
       const { error: gangError } = await supabase.from("gang_divisions").insert(gangDivisions);
-
       if (gangError) throw gangError;
 
       toast.success("Invoice created successfully");
@@ -318,7 +308,13 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Remaining:</span>
                           <span
-                            className={`font-semibold ${remainingToAllocate < 0 ? "text-destructive" : remainingToAllocate > 0 ? "text-orange-500" : "text-green-600"}`}
+                            className={`font-semibold ${
+                              remainingToAllocate < 0
+                                ? "text-destructive"
+                                : remainingToAllocate > 0
+                                  ? "text-orange-500"
+                                  : "text-green-600"
+                            }`}
                           >
                             £{remainingToAllocate.toFixed(2)}
                           </span>
@@ -330,13 +326,16 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
               </Card>
             )}
 
-            <Button
-              onClick={handleCreateInvoice}
-              className="w-full"
-              disabled={invoiceAmount === 0 || gangMembers.length === 0 || !notes.trim()}
-            >
-              Create Invoice
-            </Button>
+            {invoiceAmount > 0 && gangMembers.length > 0 && (
+              <Button
+                onClick={handleCreateInvoice}
+                className="w-full"
+                size="lg"
+                disabled={Math.abs(remainingToAllocate) > 0.01}
+              >
+                Create Invoice
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>
@@ -395,6 +394,7 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
                 </SelectContent>
               </Select>
             </div>
+
             <Button onClick={handleAddMember} className="w-full">
               Add Member
             </Button>
