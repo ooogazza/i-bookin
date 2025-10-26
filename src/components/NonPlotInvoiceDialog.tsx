@@ -16,12 +16,13 @@ interface GangMember {
 }
 
 const NonPlotBooking = () => {
+  const [invoiceAmount, setInvoiceAmount] = useState(1000); // Set manually
   const [gangMembers, setGangMembers] = useState<GangMember[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [memberName, setMemberName] = useState("");
   const [memberType, setMemberType] = useState("bricklayer");
   const [memberAmount, setMemberAmount] = useState(0);
-  const [invoiceAmount, setInvoiceAmount] = useState(1000); // Set manually
+
   const totalAllocated = gangMembers.reduce((sum, m) => sum + m.amount, 0);
   const remainingToAllocate = invoiceAmount - totalAllocated;
 
@@ -63,6 +64,7 @@ const NonPlotBooking = () => {
             <FileText className="h-8 w-8 text-primary" />
             Create Invoice
           </h2>
+          <p className="text-muted-foreground">Non-Plot Invoice</p>
         </div>
 
         <div className="grid gap-6">
