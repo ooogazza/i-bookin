@@ -541,7 +541,7 @@ const PlotBooking = () => {
                   <SelectContent>
                     <SelectItem value="bricklayer">Bricklayer</SelectItem>
                     <SelectItem value="laborer">Laborer</SelectItem>
-                    <SelectItem value="hod carrier">Hod Carrier</SelectItem>
+                    <SelectItem value="apprentice">Apprentice</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

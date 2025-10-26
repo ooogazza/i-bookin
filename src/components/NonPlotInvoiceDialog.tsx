@@ -41,6 +41,7 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
   
   const [memberName, setMemberName] = useState("");
   const [memberType, setMemberType] = useState("bricklayer");
+  const [memberAmount, setMemberAmount] = useState(0);
 
   const totalAllocated = gangMembers.reduce((sum, m) => sum + m.amount, 0);
   const remainingToAllocate = invoiceAmount - totalAllocated;
@@ -70,26 +71,29 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
   };
 
   const handleAddMember = () => {
-    if (!memberName.trim()) {
-      toast.error("Please enter member name");
-      return;
-    }
-
     try {
+      // Validate input
       gangMemberSchema.parse({
         name: memberName,
         type: memberType,
-        amount: 0
+        amount: memberAmount,
       });
 
-      setGangMembers([...gangMembers, { name: memberName, type: memberType, amount: 0 }]);
+      setGangMembers([...gangMembers, {
+        name: memberName.trim(),
+        type: memberType,
+        amount: memberAmount
+      }]);
+      
       saveGangMember({ name: memberName, type: memberType });
       setMemberName("");
-      setMemberType("bricklayer");
+      setMemberAmount(0);
       setGangDialogOpen(false);
     } catch (error: any) {
       if (error.errors?.[0]?.message) {
         toast.error(error.errors[0].message);
+      } else {
+        toast.error("Invalid input. Please check all fields.");
       }
     }
   };
@@ -411,12 +415,21 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="bricklayer">Bricklayer</SelectItem>
-                  <SelectItem value="labourer">Labourer</SelectItem>
-                  <SelectItem value="hod_carrier">HOD Carrier</SelectItem>
+                  <SelectItem value="laborer">Laborer</SelectItem>
+                  <SelectItem value="apprentice">Apprentice</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-
+            <div className="space-y-2">
+              <Label>Amount: £{memberAmount.toFixed(2)} (£{remainingToAllocate.toFixed(2)} remaining)</Label>
+              <Slider
+                value={[memberAmount]}
+                onValueChange={(value) => setMemberAmount(value[0])}
+                max={remainingToAllocate}
+                step={10}
+                className="w-full"
+              />
+            </div>
             <Button onClick={handleAddMember} className="w-full">
               Add Member
             </Button>
