@@ -134,7 +134,7 @@ export const NonPlotInvoiceDialog = ({
               </CardContent>
             </Card>
 
-            {/* Gang Division (exactly like PlotBooking) */}
+            {/* Gang Division (copied from PlotBooking) */}
             {invoiceAmount > 0 && (
               <Card>
                 <CardHeader>
