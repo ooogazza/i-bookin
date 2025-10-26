@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Plus, X } from "lucide-react";
-import { gangMemberSchema } from "@/lib/validations";
+import { gangMemberSchema, bookingSchema } from "@/lib/validations";
 
 interface GangMember {
   name: string;
@@ -29,6 +29,12 @@ interface NonPlotInvoiceDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+interface Booking {
+  id: string;
+  lift_value_id: string;
+  percentage: number;
+}
+
 export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialogProps) => {
   const { user } = useAuth();
   const [invoiceAmount, setInvoiceAmount] = useState(0);
@@ -38,7 +44,7 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
   const [gangDialogOpen, setGangDialogOpen] = useState(false);
   const [editingAmount, setEditingAmount] = useState(false);
   const [tempAmount, setTempAmount] = useState("");
-  
+
   const [memberName, setMemberName] = useState("");
   const [memberType, setMemberType] = useState("bricklayer");
   const [memberAmount, setMemberAmount] = useState(0);
@@ -48,25 +54,23 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
 
   // Load saved gang members from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem('savedGangMembers');
+    const saved = localStorage.getItem("savedGangMembers");
     if (saved) {
       try {
         setSavedGangMembers(JSON.parse(saved));
       } catch (e) {
-        console.error('Failed to load saved gang members:', e);
+        console.error("Failed to load saved gang members:", e);
       }
     }
   }, []);
 
   // Save gang members to localStorage
   const saveGangMember = (member: SavedGangMember) => {
-    const existing = savedGangMembers.find(
-      m => m.name === member.name && m.type === member.type
-    );
+    const existing = savedGangMembers.find((m) => m.name === member.name && m.type === member.type);
     if (!existing) {
       const updated = [...savedGangMembers, member];
       setSavedGangMembers(updated);
-      localStorage.setItem('savedGangMembers', JSON.stringify(updated));
+      localStorage.setItem("savedGangMembers", JSON.stringify(updated));
     }
   };
 
@@ -77,10 +81,7 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
     }
 
     // Only validate name & type here; amount will be allocated on the invoice list
-    setGangMembers([
-      ...gangMembers,
-      { name: memberName.trim(), type: memberType, amount: 0 },
-    ]);
+    setGangMembers([...gangMembers, { name: memberName.trim(), type: memberType, amount: 0 }]);
     saveGangMember({ name: memberName.trim(), type: memberType });
     setMemberName("");
     setGangDialogOpen(false);
@@ -92,10 +93,8 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
 
   const handleUpdateMemberAmount = (index: number, newAmount: number) => {
     const member = gangMembers[index];
-    const otherMembersTotal = gangMembers
-      .filter((_, i) => i !== index)
-      .reduce((sum, m) => sum + m.amount, 0);
-    
+    const otherMembersTotal = gangMembers.filter((_, i) => i !== index).reduce((sum, m) => sum + m.amount, 0);
+
     const maxAllowed = invoiceAmount - otherMembersTotal;
     const finalAmount = Math.min(newAmount, maxAllowed);
 
@@ -127,7 +126,7 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
 
     try {
       const invoiceNumber = `INV-${Date.now()}`;
-      
+
       const { data: booking, error: bookingError } = await supabase
         .from("bookings")
         .insert({
@@ -138,28 +137,26 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
           notes: notes,
           status: "confirmed",
           plot_id: null,
-          lift_value_id: null
+          lift_value_id: null,
         })
         .select()
         .single();
 
       if (bookingError) throw bookingError;
 
-      const gangDivisions = gangMembers.map(m => ({
+      const gangDivisions = gangMembers.map((m) => ({
         booking_id: booking.id,
         member_name: m.name,
         member_type: m.type,
-        amount: m.amount
+        amount: m.amount,
       }));
 
-      const { error: gangError } = await supabase
-        .from("gang_divisions")
-        .insert(gangDivisions);
+      const { error: gangError } = await supabase.from("gang_divisions").insert(gangDivisions);
 
       if (gangError) throw gangError;
 
       toast.success("Invoice created successfully");
-      
+
       // Reset form
       setInvoiceAmount(0);
       setNotes("");
@@ -203,7 +200,7 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
                             setEditingAmount(false);
                           }}
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
+                            if (e.key === "Enter") {
                               const val = parseFloat(tempAmount);
                               if (!isNaN(val) && val >= 0 && val <= 15000) {
                                 setInvoiceAmount(val);
@@ -217,7 +214,7 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
                           min="0"
                         />
                       ) : (
-                        <Label 
+                        <Label
                           className="cursor-pointer hover:text-primary transition-colors"
                           onClick={() => {
                             setTempAmount(invoiceAmount.toString());
@@ -265,9 +262,7 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
                 </CardHeader>
                 <CardContent>
                   {gangMembers.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-4">
-                      No gang members added yet
-                    </p>
+                    <p className="text-center text-muted-foreground py-4">No gang members added yet</p>
                   ) : (
                     <div className="space-y-3">
                       {gangMembers.map((member, index) => {
@@ -283,11 +278,7 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
                                 <p className="font-semibold text-base">{member.name}</p>
                                 <p className="text-sm text-muted-foreground capitalize">{member.type}</p>
                               </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleRemoveMember(index)}
-                              >
+                              <Button variant="ghost" size="sm" onClick={() => handleRemoveMember(index)}>
                                 <X className="h-5 w-5" />
                               </Button>
                             </div>
@@ -320,7 +311,7 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
                           </div>
                         );
                       })}
-                      
+
                       <div className="mt-4 pt-4 border-t space-y-1">
                         <div className="flex justify-between text-sm text-muted-foreground">
                           <span>Invoice Total:</span>
@@ -332,7 +323,9 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Remaining:</span>
-                          <span className={`font-semibold ${remainingToAllocate < 0 ? "text-destructive" : remainingToAllocate > 0 ? "text-orange-500" : "text-green-600"}`}>
+                          <span
+                            className={`font-semibold ${remainingToAllocate < 0 ? "text-destructive" : remainingToAllocate > 0 ? "text-orange-500" : "text-green-600"}`}
+                          >
                             £{remainingToAllocate.toFixed(2)}
                           </span>
                         </div>
@@ -394,7 +387,7 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
                 placeholder="Enter member name"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label>Type</Label>
               <Select value={memberType} onValueChange={setMemberType}>
