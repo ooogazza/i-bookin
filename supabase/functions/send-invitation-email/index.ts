@@ -70,10 +70,8 @@ const handler = async (req: Request): Promise<Response> => {
                 <table role="presentation" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
                   <!-- Header with Logo -->
                   <tr>
-                    <td style="padding: 40px 40px 20px; text-align: center; background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%); border-radius: 8px 8px 0 0;">
-                      <img src="${appUrl}/logo.svg" alt="I-Bookin Logo" style="width: 80px; height: 80px; margin-bottom: 20px;" />
-                      <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: bold;">I-Bookin</h1>
-                      <p style="margin: 10px 0 0; color: #E0E7FF; font-size: 16px;">Brickwork Manager</p>
+                    <td style="padding: 40px 40px 20px; text-align: center; border-bottom: 1px solid #E5E7EB;">
+                      <img src="${appUrl}/apple-touch-icon.png" alt="I-Bookin Logo" style="width: 100px; height: 100px; margin-bottom: 10px;" />
                     </td>
                   </tr>
                   
