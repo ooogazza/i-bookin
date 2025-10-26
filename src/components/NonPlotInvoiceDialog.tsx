@@ -14,7 +14,7 @@ interface GangMember {
   name: string;
   type: string;
   amount: number;
-  editing?: boolean; // NEW
+  editing?: boolean;
 }
 
 interface NonPlotInvoiceDialogProps {
@@ -41,7 +41,6 @@ export const NonPlotInvoiceDialog = ({
 
   const [memberName, setMemberName] = useState("");
   const [memberType, setMemberType] = useState("bricklayer");
-  const [memberAmount, setMemberAmount] = useState(0);
 
   useEffect(() => {
     if (open) {
@@ -61,13 +60,9 @@ export const NonPlotInvoiceDialog = ({
       return;
     }
 
-    setGangMembers([
-      ...gangMembers,
-      { name: memberName.trim(), type: memberType, amount: memberAmount, editing: false },
-    ]);
+    setGangMembers([...gangMembers, { name: memberName.trim(), type: memberType, amount: 0, editing: false }]);
 
     setMemberName("");
-    setMemberAmount(0);
     setDialogOpen(false);
   };
 
@@ -88,14 +83,14 @@ export const NonPlotInvoiceDialog = ({
   };
 
   const handleUpdateMemberAmount = (index: number, newAmount: number) => {
-    const member = gangMembers[index];
-    const otherMembersTotal = gangMembers.filter((_, i) => i !== index).reduce((sum, m) => sum + m.amount, 0);
-
-    const maxAllowed = invoiceAmount - otherMembersTotal;
-    const finalAmount = Math.min(newAmount, maxAllowed);
-
     const updated = [...gangMembers];
-    updated[index] = { ...member, amount: finalAmount };
+
+    // Prevent exceeding invoice
+    const sumOthers = gangMembers.filter((_, i) => i !== index).reduce((sum, m) => sum + m.amount, 0);
+
+    const max = invoiceAmount - sumOthers;
+    updated[index].amount = Math.min(newAmount, max);
+
     setGangMembers(updated);
   };
 
@@ -107,21 +102,29 @@ export const NonPlotInvoiceDialog = ({
   });
 
   const onExportClick = () => {
-    handleExportPDF(buildInvoicePayload()); // always works
-    toast.success("PDF exported");
+    try {
+      handleExportPDF(buildInvoicePayload());
+      toast.success("PDF exported");
+    } catch {
+      toast.error("PDF export callback failed");
+    }
   };
 
   const onSendClick = () => {
-    handleSendToAdmin(buildInvoicePayload());
-    toast.success("Invoice sent");
-    onOpenChange(false);
+    try {
+      handleSendToAdmin(buildInvoicePayload());
+      toast.success("Sent to admin");
+      onOpenChange(false);
+    } catch {
+      toast.error("Send callback failed");
+    }
   };
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl p-0 overflow-hidden">
-          <div className="max-h-[85vh] overflow-y-auto px-6 py-8 space-y-6">
+        <DialogContent className="max-w-3xl p-0 overflow-hidden">
+          <div className="max-h-[75vh] overflow-y-auto px-6 py-6 space-y-6">
             <div className="flex items-center gap-2">
               <FileText className="h-7 w-7 text-primary" />
               <h2 className="text-2xl font-bold tracking-tight">Create Non-Plot Invoice</h2>
@@ -135,55 +138,44 @@ export const NonPlotInvoiceDialog = ({
 
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    {editingAmount ? (
-                      <Input
-                        type="number"
-                        value={tempAmount}
-                        onChange={(e) => setTempAmount(e.target.value)}
-                        onBlur={() => {
-                          const val = parseFloat(tempAmount);
-                          if (!isNaN(val) && val >= 0) setInvoiceAmount(val);
+                  {!editingAmount ? (
+                    <Label
+                      className="cursor-pointer hover:text-primary text-lg"
+                      onClick={() => {
+                        setTempAmount(invoiceAmount.toString());
+                        setEditingAmount(true);
+                      }}
+                    >
+                      £{invoiceAmount.toFixed(2)}
+                    </Label>
+                  ) : (
+                    <Input
+                      autoFocus
+                      value={tempAmount}
+                      onChange={(e) => setTempAmount(e.target.value)}
+                      onBlur={() => {
+                        const v = parseFloat(tempAmount);
+                        if (!isNaN(v)) setInvoiceAmount(v);
+                        setEditingAmount(false);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          const v = parseFloat(tempAmount);
+                          if (!isNaN(v)) setInvoiceAmount(v);
                           setEditingAmount(false);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            const val = parseFloat(tempAmount);
-                            if (!isNaN(val) && val >= 0) setInvoiceAmount(val);
-                            setEditingAmount(false);
-                          }
-                        }}
-                        className="w-32"
-                        autoFocus
-                      />
-                    ) : (
-                      <Label
-                        className="cursor-pointer hover:text-primary transition-colors text-lg"
-                        onClick={() => {
-                          setTempAmount(invoiceAmount.toString());
-                          setEditingAmount(true);
-                        }}
-                      >
-                        £{invoiceAmount.toFixed(2)}
-                      </Label>
-                    )}
-                  </div>
-
-                  <Slider
-                    value={[invoiceAmount]}
-                    onValueChange={(value) => setInvoiceAmount(value[0])}
-                    max={20000}
-                    step={50}
-                  />
-
-                  <div className="space-y-2">
-                    <Label>Notes *</Label>
-                    <Textarea
-                      placeholder="Describe the non-plot work performed"
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
+                        }
+                      }}
+                      className="w-32"
                     />
-                  </div>
+                  )}
+
+                  <Slider value={[invoiceAmount]} onValueChange={(v) => setInvoiceAmount(v[0])} max={20000} step={50} />
+
+                  <Textarea
+                    placeholder="Describe non-plot work"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -194,136 +186,122 @@ export const NonPlotInvoiceDialog = ({
                 <CardHeader>
                   <div className="flex justify-between items-center">
                     <CardTitle>Gang Division</CardTitle>
-                    <Button onClick={() => setDialogOpen(true)} size="sm">
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add Member
+                    <Button size="sm" onClick={() => setDialogOpen(true)}>
+                      <Plus className="mr-2 h-4 w-4" /> Add Member
                     </Button>
                   </div>
                 </CardHeader>
 
                 <CardContent>
-                  {gangMembers.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-4">No gang members added yet</p>
-                  ) : (
-                    <div className="space-y-3">
-                      {gangMembers.map((member, index) => {
-                        const otherTotal = gangMembers
-                          .filter((_, i) => i !== index)
-                          .reduce((sum, m) => sum + m.amount, 0);
+                  {gangMembers.length === 0 && <p className="text-center text-muted-foreground py-4">No members yet</p>}
 
-                        const maxForThisMember = invoiceAmount - otherTotal;
+                  <div className="space-y-3">
+                    {gangMembers.map((m, i) => {
+                      const sumOthers = gangMembers.filter((_, x) => x !== i).reduce((s, a) => s + a.amount, 0);
+                      const max = invoiceAmount - sumOthers;
 
-                        return (
-                          <div key={index} className="p-4 bg-muted rounded-lg space-y-2">
-                            <div className="flex justify-between">
-                              <div>
-                                <p className="font-semibold">{member.name}</p>
-                                <p className="text-sm text-muted-foreground capitalize">{member.type}</p>
-                              </div>
-                              <Button variant="ghost" size="sm" onClick={() => handleRemoveMember(index)}>
-                                <X className="h-5 w-5" />
-                              </Button>
+                      return (
+                        <div key={i} className="p-4 bg-muted rounded-lg space-y-2">
+                          <div className="flex justify-between">
+                            <div>
+                              <p className="font-semibold">{m.name}</p>
+                              <p className="text-sm text-muted-foreground capitalize">{m.type}</p>
                             </div>
-
-                            <div className="space-y-1">
-                              {/* CLICK TO START EDIT */}
-                              {!member.editing ? (
-                                <span
-                                  className="font-medium cursor-pointer hover:text-primary text-sm"
-                                  onClick={() => startEditingMember(index)}
-                                >
-                                  £{member.amount.toFixed(2)}
-                                </span>
-                              ) : (
-                                <Input
-                                  autoFocus
-                                  type="number"
-                                  value={member.amount}
-                                  onBlur={() => stopEditingMember(index)}
-                                  onChange={(e) => {
-                                    const val = parseFloat(e.target.value) || 0;
-                                    if (val <= maxForThisMember) {
-                                      handleUpdateMemberAmount(index, val);
-                                    }
-                                  }}
-                                  className="w-24 h-8"
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter") stopEditingMember(index);
-                                  }}
-                                />
-                              )}
-
-                              <Slider
-                                value={[member.amount]}
-                                onValueChange={(value) => handleUpdateMemberAmount(index, value[0])}
-                                max={maxForThisMember}
-                                step={10}
-                              />
-                            </div>
+                            <Button variant="ghost" size="sm" onClick={() => handleRemoveMember(i)}>
+                              <X />
+                            </Button>
                           </div>
-                        );
-                      })}
 
-                      <div className="mt-4 pt-4 border-t space-y-1">
-                        <div className="flex justify-between text-sm">
-                          <span>Invoice Total:</span>
-                          <span className="font-semibold">£{invoiceAmount.toFixed(2)}</span>
-                        </div>
+                          {/* Inline edit */}
+                          {!m.editing ? (
+                            <span
+                              className="cursor-pointer hover:text-primary font-medium text-sm"
+                              onClick={() => startEditingMember(i)}
+                            >
+                              Amount: £{m.amount.toFixed(2)}
+                            </span>
+                          ) : (
+                            <Input
+                              autoFocus
+                              value={m.amount}
+                              onBlur={() => stopEditingMember(i)}
+                              onChange={(e) => {
+                                const v = parseFloat(e.target.value) || 0;
+                                handleUpdateMemberAmount(i, v);
+                              }}
+                              onKeyDown={(e) => e.key === "Enter" && stopEditingMember(i)}
+                              className="w-20 h-8"
+                            />
+                          )}
 
-                        <div className="flex justify-between text-sm">
-                          <span>Allocated:</span>
-                          <span className="font-semibold">£{totalAllocated.toFixed(2)}</span>
+                          {/* Sliders DO NOT follow each other */}
+                          <Slider
+                            value={[m.amount]}
+                            onValueChange={(v) => handleUpdateMemberAmount(i, v[0])}
+                            max={max}
+                            step={10}
+                          />
                         </div>
+                      );
+                    })}
+                  </div>
 
-                        <div className="flex justify-between text-sm">
-                          <span>Remaining:</span>
-                          <span
-                            className={`font-semibold ${
-                              remainingToAllocate < 0
-                                ? "text-destructive"
-                                : remainingToAllocate > 0
-                                  ? "text-orange-500"
-                                  : "text-green-600"
-                            }`}
-                          >
-                            £{remainingToAllocate.toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
+                  <div className="mt-4 pt-4 border-t space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span>Total:</span>
+                      <span className="font-semibold">£{invoiceAmount.toFixed(2)}</span>
                     </div>
-                  )}
+
+                    <div className="flex justify-between text-sm">
+                      <span>Allocated:</span>
+                      <span className="font-semibold">£{totalAllocated.toFixed(2)}</span>
+                    </div>
+
+                    <div className="flex justify-between text-sm">
+                      <span>Remaining:</span>
+                      <span
+                        className={`font-semibold ${
+                          remainingToAllocate < 0
+                            ? "text-destructive"
+                            : remainingToAllocate > 0
+                              ? "text-orange-500"
+                              : "text-green-600"
+                        }`}
+                      >
+                        £{remainingToAllocate.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             )}
 
-            {/* ACTIONS */}
+            {/* ACTIONS — SIDE BY SIDE */}
             {invoiceAmount > 0 && gangMembers.length > 0 && (
-              <Button
-                onClick={onSendClick}
-                size="lg"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                disabled={remainingToAllocate !== 0}
-              >
-                Send to Admin
-              </Button>
-            )}
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  disabled={remainingToAllocate !== 0}
+                  onClick={onExportClick}
+                >
+                  Export PDF
+                </Button>
 
-            {invoiceAmount > 0 && gangMembers.length > 0 && (
-              <Button
-                onClick={onExportClick}
-                variant="outline"
-                size="lg"
-                className="w-full"
-                disabled={remainingToAllocate !== 0}
-              >
-                Export PDF
-              </Button>
+                <Button
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                  disabled={remainingToAllocate !== 0}
+                  onClick={onSendClick}
+                >
+                  Send to Admin
+                </Button>
+              </div>
             )}
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* MEMBER DIALOG */}
+      {/* Add Member */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -331,36 +309,18 @@ export const NonPlotInvoiceDialog = ({
           </DialogHeader>
 
           <div className="space-y-4">
-            <div>
-              <Label>Name</Label>
-              <Input value={memberName} onChange={(e) => setMemberName(e.target.value)} />
-            </div>
+            <Input placeholder="Name" value={memberName} onChange={(e) => setMemberName(e.target.value)} />
 
-            <div>
-              <Label>Type</Label>
-              <Select value={memberType} onValueChange={setMemberType}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="bricklayer">Bricklayer</SelectItem>
-                  <SelectItem value="laborer">Laborer</SelectItem>
-                  <SelectItem value="apprentice">Apprentice</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label>
-                Amount: £{memberAmount.toFixed(2)} (£{remainingToAllocate.toFixed(2)} remaining)
-              </Label>
-              <Slider
-                value={[memberAmount]}
-                onValueChange={(value) => setMemberAmount(value[0])}
-                max={remainingToAllocate}
-                step={10}
-              />
-            </div>
+            <Select value={memberType} onValueChange={setMemberType}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="bricklayer">Bricklayer</SelectItem>
+                <SelectItem value="laborer">Laborer</SelectItem>
+                <SelectItem value="apprentice">Apprentice</SelectItem>
+              </SelectContent>
+            </Select>
 
             <Button className="w-full" onClick={handleAddMember}>
               Add Member
