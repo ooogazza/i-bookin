@@ -14,6 +14,7 @@ interface GangMember {
   name: string;
   type: string;
   amount: number;
+  editing?: boolean; // NEW
 }
 
 interface NonPlotInvoiceDialogProps {
@@ -45,7 +46,7 @@ export const NonPlotInvoiceDialog = ({
   useEffect(() => {
     if (open) {
       setInvoiceNumber(`NPINV-${Date.now()}`);
-      document.body.style.overflow = "hidden"; // stop background scrolling
+      document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "auto";
     }
@@ -60,7 +61,10 @@ export const NonPlotInvoiceDialog = ({
       return;
     }
 
-    setGangMembers([...gangMembers, { name: memberName.trim(), type: memberType, amount: memberAmount }]);
+    setGangMembers([
+      ...gangMembers,
+      { name: memberName.trim(), type: memberType, amount: memberAmount, editing: false },
+    ]);
 
     setMemberName("");
     setMemberAmount(0);
@@ -69,6 +73,18 @@ export const NonPlotInvoiceDialog = ({
 
   const handleRemoveMember = (index: number) => {
     setGangMembers(gangMembers.filter((_, i) => i !== index));
+  };
+
+  const startEditingMember = (index: number) => {
+    const updated = [...gangMembers];
+    updated[index].editing = true;
+    setGangMembers(updated);
+  };
+
+  const stopEditingMember = (index: number) => {
+    const updated = [...gangMembers];
+    updated[index].editing = false;
+    setGangMembers(updated);
   };
 
   const handleUpdateMemberAmount = (index: number, newAmount: number) => {
@@ -91,23 +107,21 @@ export const NonPlotInvoiceDialog = ({
   });
 
   const onExportClick = () => {
-    handleExportPDF(buildInvoicePayload());
+    handleExportPDF(buildInvoicePayload()); // always works
     toast.success("PDF exported");
   };
 
   const onSendClick = () => {
     handleSendToAdmin(buildInvoicePayload());
-    toast.success("Invoice sent to admin");
+    toast.success("Invoice sent");
     onOpenChange(false);
   };
 
   return (
     <>
-      {/* ENTIRE CONTENT NOW SCROLLS LIKE PlotBooking */}
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-4xl p-0 overflow-hidden">
           <div className="max-h-[85vh] overflow-y-auto px-6 py-8 space-y-6">
-            {/* Header */}
             <div className="flex items-center gap-2">
               <FileText className="h-7 w-7 text-primary" />
               <h2 className="text-2xl font-bold tracking-tight">Create Non-Plot Invoice</h2>
@@ -144,7 +158,7 @@ export const NonPlotInvoiceDialog = ({
                       />
                     ) : (
                       <Label
-                        className="cursor-pointer hover:text-primary transition-colors"
+                        className="cursor-pointer hover:text-primary transition-colors text-lg"
                         onClick={() => {
                           setTempAmount(invoiceAmount.toString());
                           setEditingAmount(true);
@@ -174,7 +188,7 @@ export const NonPlotInvoiceDialog = ({
               </CardContent>
             </Card>
 
-            {/* Gang Division */}
+            {/* Gang */}
             {invoiceAmount > 0 && (
               <Card>
                 <CardHeader>
@@ -212,11 +226,20 @@ export const NonPlotInvoiceDialog = ({
                             </div>
 
                             <div className="space-y-1">
-                              <div className="flex gap-2 items-center">
-                                <span className="text-sm">Amount:</span>
+                              {/* CLICK TO START EDIT */}
+                              {!member.editing ? (
+                                <span
+                                  className="font-medium cursor-pointer hover:text-primary text-sm"
+                                  onClick={() => startEditingMember(index)}
+                                >
+                                  £{member.amount.toFixed(2)}
+                                </span>
+                              ) : (
                                 <Input
+                                  autoFocus
                                   type="number"
                                   value={member.amount}
+                                  onBlur={() => stopEditingMember(index)}
                                   onChange={(e) => {
                                     const val = parseFloat(e.target.value) || 0;
                                     if (val <= maxForThisMember) {
@@ -224,8 +247,11 @@ export const NonPlotInvoiceDialog = ({
                                     }
                                   }}
                                   className="w-24 h-8"
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") stopEditingMember(index);
+                                  }}
                                 />
-                              </div>
+                              )}
 
                               <Slider
                                 value={[member.amount]}
@@ -270,7 +296,7 @@ export const NonPlotInvoiceDialog = ({
               </Card>
             )}
 
-            {/* ACTION BUTTONS LIKE PLOT BOOKING */}
+            {/* ACTIONS */}
             {invoiceAmount > 0 && gangMembers.length > 0 && (
               <Button
                 onClick={onSendClick}
@@ -297,7 +323,7 @@ export const NonPlotInvoiceDialog = ({
         </DialogContent>
       </Dialog>
 
-      {/* ADD MEMBER DIALOG */}
+      {/* MEMBER DIALOG */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
