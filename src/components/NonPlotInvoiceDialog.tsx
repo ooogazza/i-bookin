@@ -38,8 +38,6 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
   
   const [memberName, setMemberName] = useState("");
   const [memberType, setMemberType] = useState("bricklayer");
-  const [memberAmount, setMemberAmount] = useState(0);
-  const [editingMemberIndex, setEditingMemberIndex] = useState<number | null>(null);
 
   const totalAllocated = gangMembers.reduce((sum, m) => sum + m.amount, 0);
   const remainingToAllocate = invoiceAmount - totalAllocated;
@@ -74,30 +72,18 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
       return;
     }
 
-    if (memberAmount <= 0) {
-      toast.error("Please set an amount greater than 0");
-      return;
-    }
-
     try {
       gangMemberSchema.parse({
         name: memberName,
         type: memberType,
-        amount: memberAmount
+        amount: 0
       });
 
-      if (memberAmount > remainingToAllocate) {
-        toast.error(`Cannot allocate more than £${remainingToAllocate.toFixed(2)}`);
-        return;
-      }
-
-      setGangMembers([...gangMembers, { name: memberName, type: memberType, amount: memberAmount }]);
+      setGangMembers([...gangMembers, { name: memberName, type: memberType, amount: 0 }]);
       saveGangMember({ name: memberName, type: memberType });
       setMemberName("");
       setMemberType("bricklayer");
-      setMemberAmount(0);
       setGangDialogOpen(false);
-      toast.success("Gang member added");
     } catch (error: any) {
       if (error.errors?.[0]?.message) {
         toast.error(error.errors[0].message);
@@ -240,7 +226,11 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
                 </Button>
               </div>
 
-              {gangMembers.length > 0 && (
+              {gangMembers.length === 0 ? (
+                <p className="text-center text-muted-foreground py-4">
+                  No gang members added yet
+                </p>
+              ) : (
                 <div className="space-y-3">
                   {gangMembers.map((member, index) => {
                     const otherMembersTotal = gangMembers
@@ -271,7 +261,9 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
                               value={member.amount}
                               onChange={(e) => {
                                 const val = parseFloat(e.target.value) || 0;
-                                handleUpdateMemberAmount(index, val);
+                                if (val <= maxForThisMember) {
+                                  handleUpdateMemberAmount(index, val);
+                                }
                               }}
                               className="w-24 h-8"
                               step="10"
@@ -290,8 +282,8 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
                       </div>
                     );
                   })}
-
-                  <div className="pt-2 border-t space-y-1">
+                  
+                  <div className="mt-4 pt-4 border-t space-y-1">
                     <div className="flex justify-between text-sm text-muted-foreground">
                       <span>Invoice Total:</span>
                       <span className="font-semibold">£{invoiceAmount.toFixed(2)}</span>
@@ -375,17 +367,6 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
                   <SelectItem value="hod_carrier">HOD Carrier</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Amount: £{memberAmount.toFixed(2)} (£{remainingToAllocate.toFixed(2)} remaining)</Label>
-              <Slider
-                value={[memberAmount]}
-                onValueChange={(value) => setMemberAmount(value[0])}
-                max={remainingToAllocate}
-                step={10}
-                className="w-full"
-              />
             </div>
 
             <Button onClick={handleAddMember} className="w-full">
