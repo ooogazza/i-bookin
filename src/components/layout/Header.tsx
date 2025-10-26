@@ -3,11 +3,12 @@ import { signOut } from "@/lib/supabase";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { LogOut, ArrowLeft, Plus, FileText } from "lucide-react";
+import { LogOut, Plus, FileText } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { ReactNode, useState } from "react";
 import { NonPlotInvoiceDialog } from "@/components/NonPlotInvoiceDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { handleExportPDF, handleSendToAdmin } from "@/lib/invoiceUtils";
 
 interface HeaderProps {
   showBackButton?: boolean;
@@ -17,7 +18,7 @@ interface HeaderProps {
   leftContent?: ReactNode;
 }
 
-export const Header = ({ 
+export const Header = ({
   showBackButton = false,
   showLogout = false,
   actions,
@@ -28,6 +29,7 @@ export const Header = ({
   const location = useLocation();
   const { user, isAdmin } = useAuth();
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
+  const [currentInvoiceId, setCurrentInvoiceId] = useState<string | null>(null);
   const isMobile = useIsMobile();
   
   const isSiteDetailPage = location.pathname.startsWith('/site/');
@@ -40,6 +42,12 @@ export const Header = ({
       toast.success("Logged out successfully");
       navigate("/auth");
     }
+  };
+
+  // Example function to open the dialog for a specific invoice
+  const openInvoiceDialog = (invoiceId: string) => {
+    setCurrentInvoiceId(invoiceId);
+    setInvoiceDialogOpen(true);
   };
 
   return (
@@ -64,10 +72,11 @@ export const Header = ({
         
         <nav className="flex items-center gap-2 flex-wrap">
           {actions}
+
           {!isAdmin && user && isSiteDetailPage && (
             <Button 
               variant="default" 
-              onClick={() => setInvoiceDialogOpen(true)} 
+              onClick={() => openInvoiceDialog("example-invoice-id")} // replace with real invoice id
               size="sm" 
               className="whitespace-nowrap"
             >
@@ -84,6 +93,7 @@ export const Header = ({
               )}
             </Button>
           )}
+
           {showLogout && (
             <Button variant="outline" onClick={handleLogout} size="sm" className="whitespace-nowrap">
               <LogOut className="mr-2 h-4 w-4" />
@@ -93,7 +103,13 @@ export const Header = ({
         </nav>
       </div>
 
-      <NonPlotInvoiceDialog open={invoiceDialogOpen} onOpenChange={setInvoiceDialogOpen} />
+      <NonPlotInvoiceDialog
+        open={invoiceDialogOpen}
+        onOpenChange={setInvoiceDialogOpen}
+        handleExportPDF={() => currentInvoiceId && handleExportPDF(currentInvoiceId)}
+        handleSendToAdmin={() => currentInvoiceId && handleSendToAdmin(currentInvoiceId)}
+      />
     </header>
   );
 };
+
