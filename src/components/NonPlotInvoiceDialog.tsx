@@ -35,19 +35,21 @@ export const NonPlotInvoiceDialog = ({
   const [notes, setNotes] = useState("");
 
   const [gangMembers, setGangMembers] = useState<GangMember[]>([]);
-  const [savedGangMembers, setSavedGangMembers] = useState<GangMember[]>([]);
-  const [gangDialogOpen, setGangDialogOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
   const [memberName, setMemberName] = useState("");
   const [memberType, setMemberType] = useState("bricklayer");
+  const [memberAmount, setMemberAmount] = useState(0);
 
   const totalAllocated = gangMembers.reduce((sum, m) => sum + m.amount, 0);
   const remainingToAllocate = invoiceAmount - totalAllocated;
 
   const handleAddMember = () => {
     if (!memberName.trim()) return;
-    setGangMembers([...gangMembers, { name: memberName.trim(), type: memberType, amount: 0 }]);
+    setGangMembers([...gangMembers, { name: memberName.trim(), type: memberType, amount: memberAmount }]);
     setMemberName("");
-    setGangDialogOpen(false);
+    setMemberAmount(0);
+    setDialogOpen(false);
   };
 
   const handleRemoveMember = (index: number) => {
@@ -56,9 +58,9 @@ export const NonPlotInvoiceDialog = ({
 
   const handleUpdateMemberAmount = (index: number, newAmount: number) => {
     const member = gangMembers[index];
-    const otherTotal = gangMembers.filter((_, i) => i !== index).reduce((sum, m) => sum + m.amount, 0);
-    const maxAllowed = Math.max(0, invoiceAmount - otherTotal);
-    const finalAmount = Math.max(0, Math.min(newAmount, maxAllowed));
+    const otherMembersTotal = gangMembers.filter((_, i) => i !== index).reduce((sum, m) => sum + m.amount, 0);
+    const maxAllowed = invoiceAmount - otherMembersTotal;
+    const finalAmount = Math.min(newAmount, maxAllowed);
 
     const updated = [...gangMembers];
     updated[index] = { ...member, amount: finalAmount };
@@ -134,13 +136,13 @@ export const NonPlotInvoiceDialog = ({
               </CardContent>
             </Card>
 
-            {/* Gang Division (copied from PlotBooking) */}
+            {/* Gang Division (exactly like PlotBooking) */}
             {invoiceAmount > 0 && (
               <Card>
                 <CardHeader>
                   <div className="flex justify-between items-center">
                     <CardTitle>Gang Division</CardTitle>
-                    <Button onClick={() => setGangDialogOpen(true)} size="sm">
+                    <Button onClick={() => setDialogOpen(true)} size="sm">
                       <Plus className="mr-2 h-4 w-4" />
                       Add Member
                     </Button>
@@ -152,10 +154,10 @@ export const NonPlotInvoiceDialog = ({
                   ) : (
                     <div className="space-y-3">
                       {gangMembers.map((member, index) => {
-                        const otherTotal = gangMembers
+                        const otherMembersTotal = gangMembers
                           .filter((_, i) => i !== index)
                           .reduce((sum, m) => sum + m.amount, 0);
-                        const maxForThisMember = invoiceAmount - otherTotal;
+                        const maxForThisMember = invoiceAmount - otherMembersTotal;
 
                         return (
                           <div key={index} className="p-4 bg-muted rounded-lg space-y-2">
@@ -211,11 +213,7 @@ export const NonPlotInvoiceDialog = ({
                           <span className="text-muted-foreground">Remaining:</span>
                           <span
                             className={`font-semibold ${
-                              remainingToAllocate < 0
-                                ? "text-destructive"
-                                : remainingToAllocate > 0
-                                  ? "text-orange-500"
-                                  : "text-green-600"
+                              remainingToAllocate < 0 ? "text-orange-500" : "text-green-600"
                             }`}
                           >
                             £{remainingToAllocate.toFixed(2)}
@@ -228,7 +226,7 @@ export const NonPlotInvoiceDialog = ({
               </Card>
             )}
 
-            {/* Bottom Action Buttons (same as PlotBooking) */}
+            {/* Bottom Action Buttons */}
             {invoiceAmount > 0 && gangMembers.length > 0 && (
               <div className="flex gap-3">
                 <Button
@@ -253,47 +251,17 @@ export const NonPlotInvoiceDialog = ({
         </DialogContent>
       </Dialog>
 
-      {/* Add Gang Member Dialog (same as PlotBooking) */}
-      <Dialog open={gangDialogOpen} onOpenChange={setGangDialogOpen}>
+      {/* Add Gang Member Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add Gang Member</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            {savedGangMembers.length > 0 && (
-              <div className="space-y-2">
-                <Label>Saved Members</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {savedGangMembers.map((saved, idx) => (
-                    <Button
-                      key={idx}
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setMemberName(saved.name);
-                        setMemberType(saved.type);
-                      }}
-                      className="text-left justify-start"
-                    >
-                      <div>
-                        <p className="font-medium text-sm">{saved.name}</p>
-                        <p className="text-xs text-muted-foreground capitalize">{saved.type}</p>
-                      </div>
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            )}
-
             <div className="space-y-2">
               <Label>Name</Label>
-              <Input
-                value={memberName}
-                onChange={(e) => setMemberName(e.target.value)}
-                placeholder="Enter member name"
-              />
+              <Input value={memberName} onChange={(e) => setMemberName(e.target.value)} placeholder="Enter name" />
             </div>
-
             <div className="space-y-2">
               <Label>Type</Label>
               <Select value={memberType} onValueChange={setMemberType}>
@@ -307,7 +275,18 @@ export const NonPlotInvoiceDialog = ({
                 </SelectContent>
               </Select>
             </div>
-
+            <div className="space-y-2">
+              <Label>
+                Amount: £{memberAmount.toFixed(2)} (£{remainingToAllocate.toFixed(2)} remaining)
+              </Label>
+              <Slider
+                value={[memberAmount]}
+                onValueChange={(value) => setMemberAmount(value[0])}
+                max={remainingToAllocate}
+                step={10}
+                className="w-full"
+              />
+            </div>
             <Button onClick={handleAddMember} className="w-full">
               Add Member
             </Button>
