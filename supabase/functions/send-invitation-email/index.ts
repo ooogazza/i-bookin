@@ -100,6 +100,9 @@ const handler = async (req: Request): Promise<Response> => {
                       </table>
                       
                       <p style="margin: 30px 0 0; color: #6B7280; font-size: 14px; line-height: 1.6;">
+                        <strong>Important:</strong> Please ensure you sign up using this email address (<strong>${email}</strong>) to access your assigned site.
+                      </p>
+                      <p style="margin: 10px 0 0; color: #6B7280; font-size: 14px; line-height: 1.6;">
                         If you didn't expect this invitation, you can safely ignore this email.
                       </p>
                     </td>
