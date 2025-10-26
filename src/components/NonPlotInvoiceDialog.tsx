@@ -18,8 +18,8 @@ interface GangMember {
 interface NonPlotInvoiceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  handleExportPDF: () => void; // reuse from PlotBooking
-  handleSendToAdmin: () => void; // reuse from PlotBooking
+  handleExportPDF: () => void; // same handlers you use in PlotBooking
+  handleSendToAdmin: () => void;
 }
 
 export const NonPlotInvoiceDialog = ({
@@ -76,44 +76,46 @@ export const NonPlotInvoiceDialog = ({
           </DialogHeader>
 
           <div className="space-y-6">
-            {/* Invoice Amount */}
+            {/* Invoice Amount (replaces lift selection) */}
             <Card>
               <CardHeader>
                 <CardTitle>Invoice amount</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {editingAmount ? (
-                    <Input
-                      type="number"
-                      value={tempAmount}
-                      onChange={(e) => setTempAmount(e.target.value)}
-                      onBlur={() => {
-                        const val = parseFloat(tempAmount);
-                        if (!isNaN(val) && val >= 0) setInvoiceAmount(val);
-                        setEditingAmount(false);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
+                  <div className="flex justify-between items-center">
+                    {editingAmount ? (
+                      <Input
+                        type="number"
+                        value={tempAmount}
+                        onChange={(e) => setTempAmount(e.target.value)}
+                        onBlur={() => {
                           const val = parseFloat(tempAmount);
                           if (!isNaN(val) && val >= 0) setInvoiceAmount(val);
                           setEditingAmount(false);
-                        }
-                      }}
-                      className="w-40"
-                      autoFocus
-                    />
-                  ) : (
-                    <Label
-                      className="cursor-pointer hover:text-primary transition-colors"
-                      onClick={() => {
-                        setTempAmount(invoiceAmount.toString());
-                        setEditingAmount(true);
-                      }}
-                    >
-                      Amount: £{invoiceAmount.toFixed(2)}
-                    </Label>
-                  )}
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            const val = parseFloat(tempAmount);
+                            if (!isNaN(val) && val >= 0) setInvoiceAmount(val);
+                            setEditingAmount(false);
+                          }
+                        }}
+                        className="w-40"
+                        autoFocus
+                      />
+                    ) : (
+                      <Label
+                        className="cursor-pointer hover:text-primary transition-colors"
+                        onClick={() => {
+                          setTempAmount(invoiceAmount.toString());
+                          setEditingAmount(true);
+                        }}
+                      >
+                        Amount: £{invoiceAmount.toFixed(2)}
+                      </Label>
+                    )}
+                  </div>
 
                   <Slider
                     value={[invoiceAmount]}
@@ -136,7 +138,7 @@ export const NonPlotInvoiceDialog = ({
               </CardContent>
             </Card>
 
-            {/* Gang Division (exactly like PlotBooking) */}
+            {/* Gang Division (unchanged from PlotBooking) */}
             {invoiceAmount > 0 && (
               <Card>
                 <CardHeader>
@@ -213,7 +215,11 @@ export const NonPlotInvoiceDialog = ({
                           <span className="text-muted-foreground">Remaining:</span>
                           <span
                             className={`font-semibold ${
-                              remainingToAllocate < 0 ? "text-orange-500" : "text-green-600"
+                              remainingToAllocate < 0
+                                ? "text-destructive"
+                                : remainingToAllocate > 0
+                                  ? "text-orange-500"
+                                  : "text-green-600"
                             }`}
                           >
                             £{remainingToAllocate.toFixed(2)}
@@ -226,7 +232,7 @@ export const NonPlotInvoiceDialog = ({
               </Card>
             )}
 
-            {/* Bottom Action Buttons */}
+            {/* Bottom Buttons (unchanged from PlotBooking) */}
             {invoiceAmount > 0 && gangMembers.length > 0 && (
               <div className="flex gap-3">
                 <Button
@@ -251,7 +257,7 @@ export const NonPlotInvoiceDialog = ({
         </DialogContent>
       </Dialog>
 
-      {/* Add Gang Member Dialog */}
+      {/* Add Gang Member Dialog (unchanged from PlotBooking) */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
