@@ -394,8 +394,6 @@ const BookingIn = () => {
     doc.setFont("helvetica", "normal");
     yPos += 7;
     doc.text(`Name: ${invoice.booked_by.full_name}`, 15, yPos);
-    yPos += 6;
-    doc.text(`Email: ${invoice.booked_by.email}`, 15, yPos);
     yPos += 12;
     
     // Items section with blue title
@@ -565,9 +563,6 @@ const BookingIn = () => {
             <h3 style={{ color: '#2563EB', fontSize: '15px', fontWeight: 'bold', marginBottom: '8px' }}>BOOKED BY:</h3>
             <p style={{ fontSize: '13px', margin: '3px 0' }}>
               <strong>Name:</strong> {selectedInvoice.booked_by.full_name}
-            </p>
-            <p style={{ fontSize: '13px', margin: '3px 0' }}>
-              <strong>Email:</strong> {selectedInvoice.booked_by.email}
             </p>
           </div>
 
@@ -919,7 +914,6 @@ const BookingIn = () => {
                   <div className="col-span-2">
                     <p className="text-sm text-muted-foreground">Booked By</p>
                     <p className="font-semibold">{selectedInvoice.booked_by.full_name}</p>
-                    <p className="text-sm text-muted-foreground">{maskEmail(selectedInvoice.booked_by.email)}</p>
                   </div>
                 </div>
 
