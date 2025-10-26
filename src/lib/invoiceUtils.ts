@@ -1,25 +1,25 @@
 import { toast } from "sonner";
 
-// Replace with your actual export logic
-export const handleExportPDF = async (invoiceId: string) => {
+// Export PDF logic
+export const handleExportPDF = async (invoice: any) => {
   try {
-    console.log("Exporting PDF for invoice", invoiceId);
-    // TODO: Replace this with actual PDF export logic
+    console.log("Exporting PDF for invoice:", invoice);
+    // TODO: Replace with actual PDF generation logic
     toast.success("PDF exported successfully");
-  } catch (error) {
-    console.error(error);
+  } catch (err) {
+    console.error(err);
     toast.error("Failed to export PDF");
   }
 };
 
-// Replace with your actual send to admin logic
-export const handleSendToAdmin = async (invoiceId: string) => {
+// Send to Admin logic
+export const handleSendToAdmin = async (invoice: any) => {
   try {
-    console.log("Sending invoice to admin", invoiceId);
-    // TODO: Replace this with actual send logic
+    console.log("Sending invoice to admin:", invoice);
+    // TODO: Replace with actual send logic (e.g., supabase function)
     toast.success("Invoice sent to admin");
-  } catch (error) {
-    console.error(error);
+  } catch (err) {
+    console.error(err);
     toast.error("Failed to send invoice");
   }
 };

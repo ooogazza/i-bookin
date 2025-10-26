@@ -23,7 +23,7 @@ export const Header = ({
   showLogout = false,
   actions,
   hideTitle = false,
-  leftContent
+  leftContent,
 }: HeaderProps) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -31,20 +31,19 @@ export const Header = ({
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [currentInvoiceId, setCurrentInvoiceId] = useState<string | null>(null);
   const isMobile = useIsMobile();
-  
-  const isSiteDetailPage = location.pathname.startsWith('/site/');
+
+  const isSiteDetailPage = location.pathname.startsWith("/site/");
 
   const handleLogout = async () => {
     const { error } = await signOut();
-    if (error) {
-      toast.error("Error logging out");
-    } else {
+    if (error) toast.error("Error logging out");
+    else {
       toast.success("Logged out successfully");
       navigate("/auth");
     }
   };
 
-  // Example function to open the dialog for a specific invoice
+  // Opens the invoice dialog with a unique ID for the invoice
   const openInvoiceDialog = (invoiceId: string) => {
     setCurrentInvoiceId(invoiceId);
     setInvoiceDialogOpen(true);
@@ -54,30 +53,32 @@ export const Header = ({
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-3">
-          <img 
-            src={logo} 
-            alt="I-Bookin Logo" 
-            className={`h-10 w-10 rounded-lg ${showBackButton ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
+          <img
+            src={logo}
+            alt="I-Bookin Logo"
+            className={`h-10 w-10 rounded-lg ${showBackButton ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}`}
             onClick={showBackButton ? () => navigate("/dashboard") : undefined}
             title={showBackButton ? "Back to Dashboard" : undefined}
           />
           {!hideTitle && (
             <div className="hidden sm:flex flex-col">
-              <h1 className="text-2xl font-bold leading-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">I-Bookin</h1>
+              <h1 className="text-2xl font-bold leading-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                I-Bookin
+              </h1>
               <p className="text-xs text-muted-foreground leading-tight">Brickwork Manager</p>
             </div>
           )}
           {leftContent}
         </div>
-        
+
         <nav className="flex items-center gap-2 flex-wrap">
           {actions}
 
           {!isAdmin && user && isSiteDetailPage && (
-            <Button 
-              variant="default" 
-              onClick={() => openInvoiceDialog("example-invoice-id")} // replace with real invoice id
-              size="sm" 
+            <Button
+              variant="default"
+              onClick={() => openInvoiceDialog(`NPINV-${Date.now()}`)} // unique invoice ID
+              size="sm"
               className="whitespace-nowrap"
             >
               {isMobile ? (
@@ -106,10 +107,9 @@ export const Header = ({
       <NonPlotInvoiceDialog
         open={invoiceDialogOpen}
         onOpenChange={setInvoiceDialogOpen}
-        handleExportPDF={() => currentInvoiceId && handleExportPDF(currentInvoiceId)}
-        handleSendToAdmin={() => currentInvoiceId && handleSendToAdmin(currentInvoiceId)}
+        handleExportPDF={(invoice) => currentInvoiceId && handleExportPDF(invoice)}
+        handleSendToAdmin={(invoice) => currentInvoiceId && handleSendToAdmin(invoice)}
       />
     </header>
   );
 };
-
