@@ -1136,7 +1136,7 @@ const SiteDetail = () => {
 
     try {
       // Create an invitation record
-      const { error } = await supabase
+      const { error: inviteError } = await supabase
         .from("invitations")
         .insert({
           email: inviteEmail.trim().toLowerCase(),
@@ -1144,14 +1144,37 @@ const SiteDetail = () => {
           invited_by: user.id
         });
 
-      if (error) {
-        if (error.code === '23505') {
+      if (inviteError) {
+        if (inviteError.code === '23505') {
           toast.error("This user has already been invited to this site");
         } else {
-          throw error;
+          throw inviteError;
         }
+        return;
+      }
+
+      // Get user's full name
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user.id)
+        .single();
+
+      // Send invitation email
+      const { data, error: emailError } = await supabase.functions.invoke('send-invitation-email', {
+        body: {
+          email: inviteEmail.trim().toLowerCase(),
+          siteName: site.name,
+          invitedBy: profile?.full_name || user.email || "An administrator",
+          customDomain: window.location.origin
+        }
+      });
+
+      if (emailError) {
+        console.error("Email error:", emailError);
+        toast.success("Invitation created! (Email notification may be delayed)");
       } else {
-        toast.success("Invitation sent! User can now sign up and will automatically get access to this site.");
+        toast.success("Invitation sent! User will receive an email and automatically get access when they sign up.");
       }
 
       setInviteUserDialogOpen(false);
