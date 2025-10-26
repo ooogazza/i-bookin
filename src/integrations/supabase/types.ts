@@ -22,7 +22,7 @@ export type Database = {
           created_at: string
           id: string
           invoice_number: string | null
-          lift_value_id: string
+          lift_value_id: string | null
           notes: string | null
           percentage: number
           plot_id: string | null
@@ -35,7 +35,7 @@ export type Database = {
           created_at?: string
           id?: string
           invoice_number?: string | null
-          lift_value_id: string
+          lift_value_id?: string | null
           notes?: string | null
           percentage: number
           plot_id?: string | null
@@ -48,7 +48,7 @@ export type Database = {
           created_at?: string
           id?: string
           invoice_number?: string | null
-          lift_value_id?: string
+          lift_value_id?: string | null
           notes?: string | null
           percentage?: number
           plot_id?: string | null

@@ -3,9 +3,10 @@ import { signOut } from "@/lib/supabase";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { LogOut, ArrowLeft } from "lucide-react";
+import { LogOut, ArrowLeft, FileText } from "lucide-react";
 import logo from "@/assets/logo.png";
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
+import { NonPlotInvoiceDialog } from "@/components/NonPlotInvoiceDialog";
 
 interface HeaderProps {
   showBackButton?: boolean;
@@ -23,7 +24,8 @@ export const Header = ({
   leftContent
 }: HeaderProps) => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
+  const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
 
   const handleLogout = async () => {
     const { error } = await signOut();
@@ -57,6 +59,12 @@ export const Header = ({
         
         <nav className="flex items-center gap-2 flex-wrap">
           {actions}
+          {!isAdmin && user && (
+            <Button variant="default" onClick={() => setInvoiceDialogOpen(true)} size="sm" className="whitespace-nowrap">
+              <FileText className="mr-2 h-4 w-4" />
+              <span className="hidden sm:inline">Create Invoice</span>
+            </Button>
+          )}
           {showLogout && (
             <Button variant="outline" onClick={handleLogout} size="sm" className="whitespace-nowrap">
               <LogOut className="mr-2 h-4 w-4" />
@@ -65,6 +73,8 @@ export const Header = ({
           )}
         </nav>
       </div>
+
+      <NonPlotInvoiceDialog open={invoiceDialogOpen} onOpenChange={setInvoiceDialogOpen} />
     </header>
   );
 };
