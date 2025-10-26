@@ -247,7 +247,7 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
               <Card>
                 <CardHeader>
                   <div className="flex justify-between items-center">
-                   <CardTitle>Gang Division</CardTitle>
+                    <CardTitle>Gang Division</CardTitle>
                   <Button onClick={() => setDialogOpen(true)} size="sm">
                     <Plus className="mr-2 h-4 w-4" />
                     Add Member
@@ -396,4 +396,3 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
 };
 
 export default PlotBooking;
-
