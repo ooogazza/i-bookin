@@ -30,21 +30,23 @@ interface NonPlotInvoiceDialogProps {
 
 export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialogProps) => {
   const { user } = useAuth();
+
   const [invoiceAmount, setInvoiceAmount] = useState(0);
+  const [percentage, setPercentage] = useState(100);
   const [notes, setNotes] = useState("");
   const [gangMembers, setGangMembers] = useState<GangMember[]>([]);
   const [savedGangMembers, setSavedGangMembers] = useState<SavedGangMember[]>([]);
   const [gangDialogOpen, setGangDialogOpen] = useState(false);
-  const [editingAmount, setEditingAmount] = useState(false);
-  const [tempAmount, setTempAmount] = useState("");
 
   const [memberName, setMemberName] = useState("");
   const [memberType, setMemberType] = useState("bricklayer");
 
+  // Derived values
+  const bookingValue = (invoiceAmount * percentage) / 100;
   const totalAllocated = gangMembers.reduce((sum, m) => sum + m.amount, 0);
-  const remainingToAllocate = invoiceAmount - totalAllocated;
+  const remainingToAllocate = bookingValue - totalAllocated;
 
-  // Load saved gang members from localStorage
+  // Load saved gang members
   useEffect(() => {
     const saved = localStorage.getItem("savedGangMembers");
     if (saved) {
@@ -83,7 +85,7 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
   const handleUpdateMemberAmount = (index: number, newAmount: number) => {
     const member = gangMembers[index];
     const otherMembersTotal = gangMembers.filter((_, i) => i !== index).reduce((sum, m) => sum + m.amount, 0);
-    const maxAllowed = invoiceAmount - otherMembersTotal;
+    const maxAllowed = bookingValue - otherMembersTotal;
     const finalAmount = Math.min(newAmount, maxAllowed);
 
     const updated = [...gangMembers];
@@ -105,7 +107,7 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
       return;
     }
     if (Math.abs(remainingToAllocate) > 0.01) {
-      toast.error("Please allocate the full invoice amount to gang members");
+      toast.error("Please allocate the full booking value to gang members");
       return;
     }
 
@@ -116,8 +118,8 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
         .from("bookings")
         .insert({
           booked_by: user?.id,
-          booked_value: invoiceAmount,
-          percentage: 100,
+          booked_value: bookingValue,
+          percentage,
           invoice_number: invoiceNumber,
           notes,
           status: "confirmed",
@@ -143,6 +145,7 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
 
       // Reset form
       setInvoiceAmount(0);
+      setPercentage(100);
       setNotes("");
       setGangMembers([]);
       onOpenChange(false);
@@ -163,6 +166,7 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
           </DialogHeader>
 
           <div className="space-y-6">
+            {/* Invoice Amount + Percentage */}
             <Card>
               <CardHeader>
                 <CardTitle>Invoice Amount</CardTitle>
@@ -170,54 +174,39 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
               <CardContent>
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      {editingAmount ? (
-                        <Input
-                          type="number"
-                          value={tempAmount}
-                          onChange={(e) => setTempAmount(e.target.value)}
-                          onBlur={() => {
-                            const val = parseFloat(tempAmount);
-                            if (!isNaN(val) && val >= 0 && val <= 15000) {
-                              setInvoiceAmount(val);
-                            }
-                            setEditingAmount(false);
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              const val = parseFloat(tempAmount);
-                              if (!isNaN(val) && val >= 0 && val <= 15000) {
-                                setInvoiceAmount(val);
-                              }
-                              setEditingAmount(false);
-                            }
-                          }}
-                          className="w-32"
-                          autoFocus
-                          step="50"
-                          min="0"
-                        />
-                      ) : (
-                        <Label
-                          className="cursor-pointer hover:text-primary transition-colors"
-                          onClick={() => {
-                            setTempAmount(invoiceAmount.toString());
-                            setEditingAmount(true);
-                          }}
-                        >
-                          Amount: £{invoiceAmount.toFixed(2)}
-                        </Label>
-                      )}
-                    </div>
-                    <Slider
-                      value={[invoiceAmount]}
-                      onValueChange={(value) => setInvoiceAmount(value[0])}
-                      max={15000}
-                      step={50}
-                      className="w-full"
+                    <Label>Base Invoice Amount (£)</Label>
+                    <Input
+                      type="number"
+                      value={invoiceAmount}
+                      onChange={(e) => setInvoiceAmount(parseFloat(e.target.value) || 0)}
+                      min="0"
+                      step="50"
+                      className="w-40"
                     />
-                    <p className="text-sm text-muted-foreground">Maximum: £15,000.00</p>
                   </div>
+
+                  {invoiceAmount > 0 && (
+                    <div className="space-y-2">
+                      <Label>Percentage: {percentage}%</Label>
+                      <Slider
+                        value={[percentage]}
+                        onValueChange={(value) => setPercentage(value[0])}
+                        min={1}
+                        max={100}
+                        step={1}
+                      />
+                      <div className="p-4 bg-muted rounded-lg">
+                        <div className="flex justify-between mb-2">
+                          <span className="text-muted-foreground">Total Invoice:</span>
+                          <span className="font-semibold">£{invoiceAmount.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Booking Value ({percentage}%):</span>
+                          <span className="font-semibold text-primary">£{bookingValue.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="space-y-2">
                     <Label>Notes *</Label>
@@ -233,6 +222,7 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
               </CardContent>
             </Card>
 
+            {/* Gang Division */}
             {invoiceAmount > 0 && (
               <Card>
                 <CardHeader>
@@ -253,7 +243,7 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
                         const otherMembersTotal = gangMembers
                           .filter((_, i) => i !== index)
                           .reduce((sum, m) => sum + m.amount, 0);
-                        const maxForThisMember = invoiceAmount - otherMembersTotal;
+                        const maxForThisMember = bookingValue - otherMembersTotal;
 
                         return (
                           <div key={index} className="p-4 bg-muted rounded-lg space-y-2">
@@ -274,13 +264,11 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
                                   value={member.amount}
                                   onChange={(e) => {
                                     const val = parseFloat(e.target.value) || 0;
-                                    if (val <= maxForThisMember) {
-                                      handleUpdateMemberAmount(index, val);
-                                    }
+                                    handleUpdateMemberAmount(index, val);
                                   }}
                                   className="w-24 h-8"
-                                  step="10"
-                                  min="0"
+                                  step={10}
+                                  min={0}
                                   max={maxForThisMember}
                                 />
                               </div>
@@ -298,8 +286,8 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
 
                       <div className="mt-4 pt-4 border-t space-y-1">
                         <div className="flex justify-between text-sm text-muted-foreground">
-                          <span>Invoice Total:</span>
-                          <span className="font-semibold">£{invoiceAmount.toFixed(2)}</span>
+                          <span>Booking Value:</span>
+                          <span className="font-semibold">£{bookingValue.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-sm text-muted-foreground">
                           <span>Allocated:</span>
@@ -326,15 +314,42 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
               </Card>
             )}
 
+            {/* Bottom Action Buttons */}
             {invoiceAmount > 0 && gangMembers.length > 0 && (
-              <Button
-                onClick={handleCreateInvoice}
-                className="w-full"
-                size="lg"
-                disabled={Math.abs(remainingToAllocate) > 0.01}
-              >
-                Create Invoice
-              </Button>
+              <div className="space-y-3">
+                <Button
+                  onClick={handleCreateInvoice}
+                  size="lg"
+                  className="w-full"
+                  disabled={Math.abs(remainingToAllocate) > 0.01}
+                >
+                  Confirm Invoice
+                </Button>
+
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      // TODO: implement PDF export
+                      toast.info("Export to PDF coming soon");
+                    }}
+                  >
+                    Export to PDF
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      // TODO: implement send-to-admin
+                      toast.info("Send to admin coming soon");
+                    }}
+                  >
+                    Send to Admin
+                  </Button>
+                </div>
+              </div>
             )}
           </div>
         </DialogContent>
