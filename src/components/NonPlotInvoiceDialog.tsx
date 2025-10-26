@@ -71,31 +71,19 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
   };
 
   const handleAddMember = () => {
-    try {
-      // Validate input
-      gangMemberSchema.parse({
-        name: memberName,
-        type: memberType,
-        amount: memberAmount,
-      });
-
-      setGangMembers([...gangMembers, {
-        name: memberName.trim(),
-        type: memberType,
-        amount: memberAmount
-      }]);
-      
-      saveGangMember({ name: memberName, type: memberType });
-      setMemberName("");
-      setMemberAmount(0);
-      setGangDialogOpen(false);
-    } catch (error: any) {
-      if (error.errors?.[0]?.message) {
-        toast.error(error.errors[0].message);
-      } else {
-        toast.error("Invalid input. Please check all fields.");
-      }
+    if (!memberName.trim()) {
+      toast.error("Please enter member name");
+      return;
     }
+
+    // Only validate name & type here; amount will be allocated on the invoice list
+    setGangMembers([
+      ...gangMembers,
+      { name: memberName.trim(), type: memberType, amount: 0 },
+    ]);
+    saveGangMember({ name: memberName.trim(), type: memberType });
+    setMemberName("");
+    setGangDialogOpen(false);
   };
 
   const handleRemoveMember = (index: number) => {
@@ -419,16 +407,6 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
                   <SelectItem value="apprentice">Apprentice</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Amount: £{memberAmount.toFixed(2)} (£{remainingToAllocate.toFixed(2)} remaining)</Label>
-              <Slider
-                value={[memberAmount]}
-                onValueChange={(value) => setMemberAmount(value[0])}
-                max={remainingToAllocate}
-                step={10}
-                className="w-full"
-              />
             </div>
             <Button onClick={handleAddMember} className="w-full">
               Add Member
