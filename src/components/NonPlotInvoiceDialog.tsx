@@ -16,7 +16,7 @@ interface GangMember {
 }
 
 const NonPlotBooking = () => {
-  const [invoiceAmount, setInvoiceAmount] = useState(1000); // Set manually
+  const [invoiceAmount, setInvoiceAmount] = useState(1000); // manually set
   const [gangMembers, setGangMembers] = useState<GangMember[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [memberName, setMemberName] = useState("");
@@ -27,14 +27,8 @@ const NonPlotBooking = () => {
   const remainingToAllocate = invoiceAmount - totalAllocated;
 
   const handleAddMember = () => {
-    setGangMembers([
-      ...gangMembers,
-      {
-        name: memberName.trim(),
-        type: memberType,
-        amount: memberAmount,
-      },
-    ]);
+    if (!memberName.trim()) return;
+    setGangMembers([...gangMembers, { name: memberName.trim(), type: memberType, amount: memberAmount }]);
     setMemberName("");
     setMemberAmount(0);
     setDialogOpen(false);
@@ -46,8 +40,8 @@ const NonPlotBooking = () => {
 
   const handleUpdateMemberAmount = (index: number, newAmount: number) => {
     const member = gangMembers[index];
-    const otherMembersTotal = gangMembers.filter((_, i) => i !== index).reduce((sum, m) => sum + m.amount, 0);
-    const maxAllowed = invoiceAmount - otherMembersTotal;
+    const otherTotal = gangMembers.filter((_, i) => i !== index).reduce((sum, m) => sum + m.amount, 0);
+    const maxAllowed = invoiceAmount - otherTotal;
     const finalAmount = Math.min(newAmount, maxAllowed);
 
     const updated = [...gangMembers];
@@ -70,11 +64,13 @@ const NonPlotBooking = () => {
         <div className="grid gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>Gang Division</CardTitle>
-              <Button onClick={() => setDialogOpen(true)} size="sm">
-                <Plus className="mr-2 h-4 w-4" />
-                Add Member
-              </Button>
+              <div className="flex justify-between items-center">
+                <CardTitle>Gang Division</CardTitle>
+                <Button onClick={() => setDialogOpen(true)} size="sm">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Member
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {gangMembers.length === 0 ? (
@@ -82,10 +78,8 @@ const NonPlotBooking = () => {
               ) : (
                 <div className="space-y-3">
                   {gangMembers.map((member, index) => {
-                    const otherMembersTotal = gangMembers
-                      .filter((_, i) => i !== index)
-                      .reduce((sum, m) => sum + m.amount, 0);
-                    const maxForThisMember = invoiceAmount - otherMembersTotal;
+                    const otherTotal = gangMembers.filter((_, i) => i !== index).reduce((sum, m) => sum + m.amount, 0);
+                    const maxForThisMember = invoiceAmount - otherTotal;
 
                     return (
                       <div key={index} className="p-4 bg-muted rounded-lg space-y-2">
