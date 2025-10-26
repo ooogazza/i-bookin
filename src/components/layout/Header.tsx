@@ -1,12 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { signOut } from "@/lib/supabase";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { LogOut, ArrowLeft, FileText } from "lucide-react";
+import { LogOut, ArrowLeft, Plus } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { ReactNode, useState } from "react";
 import { NonPlotInvoiceDialog } from "@/components/NonPlotInvoiceDialog";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface HeaderProps {
   showBackButton?: boolean;
@@ -24,8 +25,12 @@ export const Header = ({
   leftContent
 }: HeaderProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, isAdmin } = useAuth();
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
+  const isMobile = useIsMobile();
+  
+  const isSiteDetailPage = location.pathname.startsWith('/site/');
 
   const handleLogout = async () => {
     const { error } = await signOut();
@@ -59,10 +64,15 @@ export const Header = ({
         
         <nav className="flex items-center gap-2 flex-wrap">
           {actions}
-          {!isAdmin && user && (
-            <Button variant="default" onClick={() => setInvoiceDialogOpen(true)} size="sm" className="whitespace-nowrap">
-              <FileText className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Create Invoice</span>
+          {!isAdmin && user && isSiteDetailPage && (
+            <Button 
+              variant="default" 
+              onClick={() => setInvoiceDialogOpen(true)} 
+              size={isMobile ? "icon" : "sm"} 
+              className="whitespace-nowrap"
+            >
+              <Plus className={isMobile ? "h-4 w-4" : "mr-2 h-4 w-4"} />
+              {!isMobile && <span>Create Invoice</span>}
             </Button>
           )}
           {showLogout && (

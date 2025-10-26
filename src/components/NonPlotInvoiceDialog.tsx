@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,11 @@ interface GangMember {
   amount: number;
 }
 
+interface SavedGangMember {
+  name: string;
+  type: string;
+}
+
 interface NonPlotInvoiceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -28,20 +33,49 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
   const [invoiceAmount, setInvoiceAmount] = useState(0);
   const [notes, setNotes] = useState("");
   const [gangMembers, setGangMembers] = useState<GangMember[]>([]);
+  const [savedGangMembers, setSavedGangMembers] = useState<SavedGangMember[]>([]);
   const [gangDialogOpen, setGangDialogOpen] = useState(false);
   
   const [memberName, setMemberName] = useState("");
   const [memberType, setMemberType] = useState("bricklayer");
   const [memberAmount, setMemberAmount] = useState(0);
   const [editingMemberIndex, setEditingMemberIndex] = useState<number | null>(null);
-  const [tempAmount, setTempAmount] = useState("");
 
   const totalAllocated = gangMembers.reduce((sum, m) => sum + m.amount, 0);
   const remainingToAllocate = invoiceAmount - totalAllocated;
 
+  // Load saved gang members from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('savedGangMembers');
+    if (saved) {
+      try {
+        setSavedGangMembers(JSON.parse(saved));
+      } catch (e) {
+        console.error('Failed to load saved gang members:', e);
+      }
+    }
+  }, []);
+
+  // Save gang members to localStorage
+  const saveGangMember = (member: SavedGangMember) => {
+    const existing = savedGangMembers.find(
+      m => m.name === member.name && m.type === member.type
+    );
+    if (!existing) {
+      const updated = [...savedGangMembers, member];
+      setSavedGangMembers(updated);
+      localStorage.setItem('savedGangMembers', JSON.stringify(updated));
+    }
+  };
+
   const handleAddMember = () => {
     if (!memberName.trim()) {
       toast.error("Please enter member name");
+      return;
+    }
+
+    if (memberAmount <= 0) {
+      toast.error("Please set an amount greater than 0");
       return;
     }
 
@@ -58,6 +92,7 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
       }
 
       setGangMembers([...gangMembers, { name: memberName, type: memberType, amount: memberAmount }]);
+      saveGangMember({ name: memberName, type: memberType });
       setMemberName("");
       setMemberType("bricklayer");
       setMemberAmount(0);
@@ -80,13 +115,11 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
       .filter((_, i) => i !== index)
       .reduce((sum, m) => sum + m.amount, 0);
     
-    if (newAmount > invoiceAmount - otherMembersTotal) {
-      toast.error(`Cannot allocate more than £${(invoiceAmount - otherMembersTotal).toFixed(2)}`);
-      return;
-    }
+    const maxAllowed = invoiceAmount - otherMembersTotal;
+    const finalAmount = Math.min(newAmount, maxAllowed);
 
     const updated = [...gangMembers];
-    updated[index] = { ...member, amount: newAmount };
+    updated[index] = { ...member, amount: finalAmount };
     setGangMembers(updated);
   };
 
@@ -210,58 +243,40 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
 
               {gangMembers.length > 0 && (
                 <div className="space-y-2">
-                  {gangMembers.map((member, index) => (
-                    <div key={index} className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-                      <div className="flex-1">
-                        <p className="font-medium">{member.name}</p>
-                        <p className="text-sm text-muted-foreground capitalize">{member.type}</p>
+                  {gangMembers.map((member, index) => {
+                    const otherMembersTotal = gangMembers
+                      .filter((_, i) => i !== index)
+                      .reduce((sum, m) => sum + m.amount, 0);
+                    const maxForThisMember = invoiceAmount - otherMembersTotal;
+
+                    return (
+                      <div key={index} className="p-3 bg-muted rounded-lg space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <p className="font-medium">{member.name}</p>
+                            <p className="text-sm text-muted-foreground capitalize">{member.type}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">£{member.amount.toFixed(2)}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveMember(index)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        <Slider
+                          value={[member.amount]}
+                          onValueChange={(value) => handleUpdateMemberAmount(index, value[0])}
+                          max={maxForThisMember}
+                          step={10}
+                          className="w-full"
+                        />
                       </div>
-                      <div className="flex items-center gap-2">
-                        {editingMemberIndex === index ? (
-                          <Input
-                            type="number"
-                            value={tempAmount}
-                            onChange={(e) => setTempAmount(e.target.value)}
-                            onBlur={() => {
-                              const val = parseFloat(tempAmount);
-                              if (!isNaN(val) && val > 0) {
-                                handleUpdateMemberAmount(index, val);
-                              }
-                              setEditingMemberIndex(null);
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                const val = parseFloat(tempAmount);
-                                if (!isNaN(val) && val > 0) {
-                                  handleUpdateMemberAmount(index, val);
-                                }
-                                setEditingMemberIndex(null);
-                              }
-                            }}
-                            className="w-24 h-8"
-                            autoFocus
-                          />
-                        ) : (
-                          <span 
-                            className="font-semibold cursor-pointer hover:text-primary"
-                            onClick={() => {
-                              setEditingMemberIndex(index);
-                              setTempAmount(member.amount.toString());
-                            }}
-                          >
-                            £{member.amount.toFixed(2)}
-                          </span>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveMember(index)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
 
                   <div className="p-3 bg-primary/10 rounded-lg">
                     <div className="flex justify-between font-semibold">
@@ -297,6 +312,31 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
             <DialogTitle>Add Gang Member</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            {savedGangMembers.length > 0 && (
+              <div className="space-y-2">
+                <Label>Saved Members</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {savedGangMembers.map((saved, idx) => (
+                    <Button
+                      key={idx}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setMemberName(saved.name);
+                        setMemberType(saved.type);
+                      }}
+                      className="text-left justify-start"
+                    >
+                      <div>
+                        <p className="font-medium text-sm">{saved.name}</p>
+                        <p className="text-xs text-muted-foreground capitalize">{saved.type}</p>
+                      </div>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label>Name</Label>
               <Input
@@ -321,15 +361,13 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
             </div>
 
             <div className="space-y-2">
-              <Label>Amount (£{remainingToAllocate.toFixed(2)} remaining)</Label>
-              <Input
-                type="number"
-                value={memberAmount}
-                onChange={(e) => setMemberAmount(parseFloat(e.target.value) || 0)}
-                placeholder="0.00"
-                step="0.01"
-                min="0"
+              <Label>Amount: £{memberAmount.toFixed(2)} (£{remainingToAllocate.toFixed(2)} remaining)</Label>
+              <Slider
+                value={[memberAmount]}
+                onValueChange={(value) => setMemberAmount(value[0])}
                 max={remainingToAllocate}
+                step={10}
+                className="w-full"
               />
             </div>
 
