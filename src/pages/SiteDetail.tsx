@@ -1294,7 +1294,6 @@ const SiteDetail = () => {
                     >
                       <div className="flex-1">
                         <p className="font-medium">{u.profiles.full_name}</p>
-                        <p className="text-sm text-muted-foreground">{maskEmail(u.profiles.email)}</p>
                       </div>
                       <Button
                         variant="ghost"
@@ -1618,7 +1617,7 @@ const SiteDetail = () => {
                     
                     {users.map(u => (
                       <SelectItem key={u.user_id} value={u.user_id}>
-                        {u.profiles.full_name} ({maskEmail(u.profiles.email)})
+                        {u.profiles.full_name}
                       </SelectItem>
                     ))}
                   </SelectContent>
