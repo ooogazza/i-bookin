@@ -7,12 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, X } from "lucide-react";
+import { Plus, X, FileText } from "lucide-react";
 import { toast } from "sonner";
 
-// ========================================================
-// TYPES
-// ========================================================
 interface GangMember {
   name: string;
   type: string;
@@ -26,9 +23,6 @@ interface NonPlotInvoiceDialogProps {
   handleSendToAdmin: (invoiceData: any) => void;
 }
 
-// ========================================================
-// COMPONENT
-// ========================================================
 export const NonPlotInvoiceDialog = ({
   open,
   onOpenChange,
@@ -48,19 +42,18 @@ export const NonPlotInvoiceDialog = ({
   const [memberType, setMemberType] = useState("bricklayer");
   const [memberAmount, setMemberAmount] = useState(0);
 
-  // Generate invoice number automatically on open
   useEffect(() => {
     if (open) {
       setInvoiceNumber(`NPINV-${Date.now()}`);
+      document.body.style.overflow = "hidden"; // stop background scrolling
+    } else {
+      document.body.style.overflow = "auto";
     }
   }, [open]);
 
   const totalAllocated = gangMembers.reduce((sum, m) => sum + m.amount, 0);
   const remainingToAllocate = invoiceAmount - totalAllocated;
 
-  // ========================================================
-  // HANDLERS
-  // ========================================================
   const handleAddMember = () => {
     if (!memberName.trim()) {
       toast.error("Name required");
@@ -99,7 +92,7 @@ export const NonPlotInvoiceDialog = ({
 
   const onExportClick = () => {
     handleExportPDF(buildInvoicePayload());
-    toast.success("PDF export generated");
+    toast.success("PDF exported");
   };
 
   const onSendClick = () => {
@@ -108,23 +101,24 @@ export const NonPlotInvoiceDialog = ({
     onOpenChange(false);
   };
 
-  // ========================================================
-  // RENDER
-  // ========================================================
   return (
     <>
+      {/* ENTIRE CONTENT NOW SCROLLS LIKE PlotBooking */}
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Non-Plot Invoice</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden">
+          <div className="max-h-[85vh] overflow-y-auto px-6 py-8 space-y-6">
+            {/* Header */}
+            <div className="flex items-center gap-2">
+              <FileText className="h-7 w-7 text-primary" />
+              <h2 className="text-2xl font-bold tracking-tight">Create Non-Plot Invoice</h2>
+            </div>
 
-          <div className="space-y-6">
-            {/* INVOICE AMOUNT */}
+            {/* Invoice Amount */}
             <Card>
               <CardHeader>
                 <CardTitle>Invoice Amount</CardTitle>
               </CardHeader>
+
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
@@ -145,7 +139,7 @@ export const NonPlotInvoiceDialog = ({
                             setEditingAmount(false);
                           }
                         }}
-                        className="w-40"
+                        className="w-32"
                         autoFocus
                       />
                     ) : (
@@ -156,7 +150,7 @@ export const NonPlotInvoiceDialog = ({
                           setEditingAmount(true);
                         }}
                       >
-                        Amount: £{invoiceAmount.toFixed(2)}
+                        £{invoiceAmount.toFixed(2)}
                       </Label>
                     )}
                   </div>
@@ -164,7 +158,7 @@ export const NonPlotInvoiceDialog = ({
                   <Slider
                     value={[invoiceAmount]}
                     onValueChange={(value) => setInvoiceAmount(value[0])}
-                    max={15000}
+                    max={20000}
                     step={50}
                   />
 
@@ -174,14 +168,13 @@ export const NonPlotInvoiceDialog = ({
                       placeholder="Describe the non-plot work performed"
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
-                      rows={4}
                     />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* GANG */}
+            {/* Gang Division */}
             {invoiceAmount > 0 && (
               <Card>
                 <CardHeader>
@@ -200,15 +193,15 @@ export const NonPlotInvoiceDialog = ({
                   ) : (
                     <div className="space-y-3">
                       {gangMembers.map((member, index) => {
-                        const otherMembersTotal = gangMembers
+                        const otherTotal = gangMembers
                           .filter((_, i) => i !== index)
                           .reduce((sum, m) => sum + m.amount, 0);
 
-                        const maxForThisMember = invoiceAmount - otherMembersTotal;
+                        const maxForThisMember = invoiceAmount - otherTotal;
 
                         return (
                           <div key={index} className="p-4 bg-muted rounded-lg space-y-2">
-                            <div className="flex items-start justify-between">
+                            <div className="flex justify-between">
                               <div>
                                 <p className="font-semibold">{member.name}</p>
                                 <p className="text-sm text-muted-foreground capitalize">{member.type}</p>
@@ -219,8 +212,8 @@ export const NonPlotInvoiceDialog = ({
                             </div>
 
                             <div className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium">Amount:</span>
+                              <div className="flex gap-2 items-center">
+                                <span className="text-sm">Amount:</span>
                                 <Input
                                   type="number"
                                   value={member.amount}
@@ -231,7 +224,6 @@ export const NonPlotInvoiceDialog = ({
                                     }
                                   }}
                                   className="w-24 h-8"
-                                  step={10}
                                 />
                               </div>
 
@@ -247,12 +239,12 @@ export const NonPlotInvoiceDialog = ({
                       })}
 
                       <div className="mt-4 pt-4 border-t space-y-1">
-                        <div className="flex justify-between text-sm text-muted-foreground">
+                        <div className="flex justify-between text-sm">
                           <span>Invoice Total:</span>
                           <span className="font-semibold">£{invoiceAmount.toFixed(2)}</span>
                         </div>
 
-                        <div className="flex justify-between text-sm text-muted-foreground">
+                        <div className="flex justify-between text-sm">
                           <span>Allocated:</span>
                           <span className="font-semibold">£{totalAllocated.toFixed(2)}</span>
                         </div>
@@ -278,32 +270,34 @@ export const NonPlotInvoiceDialog = ({
               </Card>
             )}
 
-            {/* ACTIONS */}
+            {/* ACTION BUTTONS LIKE PLOT BOOKING */}
             {invoiceAmount > 0 && gangMembers.length > 0 && (
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  disabled={remainingToAllocate !== 0}
-                  onClick={onExportClick}
-                >
-                  Export PDF
-                </Button>
+              <Button
+                onClick={onSendClick}
+                size="lg"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                disabled={remainingToAllocate !== 0}
+              >
+                Send to Admin
+              </Button>
+            )}
 
-                <Button
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                  disabled={remainingToAllocate !== 0}
-                  onClick={onSendClick}
-                >
-                  Send to Admin
-                </Button>
-              </div>
+            {invoiceAmount > 0 && gangMembers.length > 0 && (
+              <Button
+                onClick={onExportClick}
+                variant="outline"
+                size="lg"
+                className="w-full"
+                disabled={remainingToAllocate !== 0}
+              >
+                Export PDF
+              </Button>
             )}
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* ADD MEMBER */}
+      {/* ADD MEMBER DIALOG */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -311,12 +305,12 @@ export const NonPlotInvoiceDialog = ({
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="space-y-2">
+            <div>
               <Label>Name</Label>
-              <Input value={memberName} onChange={(e) => setMemberName(e.target.value)} placeholder="Enter name" />
+              <Input value={memberName} onChange={(e) => setMemberName(e.target.value)} />
             </div>
 
-            <div className="space-y-2">
+            <div>
               <Label>Type</Label>
               <Select value={memberType} onValueChange={setMemberType}>
                 <SelectTrigger>
@@ -330,7 +324,7 @@ export const NonPlotInvoiceDialog = ({
               </Select>
             </div>
 
-            <div className="space-y-2">
+            <div>
               <Label>
                 Amount: £{memberAmount.toFixed(2)} (£{remainingToAllocate.toFixed(2)} remaining)
               </Label>
@@ -342,7 +336,7 @@ export const NonPlotInvoiceDialog = ({
               />
             </div>
 
-            <Button onClick={handleAddMember} className="w-full">
+            <Button className="w-full" onClick={handleAddMember}>
               Add Member
             </Button>
           </div>
