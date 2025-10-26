@@ -11,11 +11,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Plus, X } from "lucide-react";
+import jsPDF from "jspdf";
 
 interface GangMember {
   name: string;
   type: string;
-  amount: number;
+  percent: number;
 }
 
 interface NonPlotInvoiceDialogProps {
@@ -30,10 +31,6 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
   const [editingAmount, setEditingAmount] = useState(false);
   const [tempAmount, setTempAmount] = useState("0");
 
-  const [percentage, setPercentage] = useState(100);
-  const [editingPercentage, setEditingPercentage] = useState(false);
-  const [tempPercentage, setTempPercentage] = useState("100");
-
   const [notes, setNotes] = useState("");
 
   const [gangMembers, setGangMembers] = useState<GangMember[]>([]);
@@ -41,16 +38,16 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
   const [memberName, setMemberName] = useState("");
   const [memberType, setMemberType] = useState("bricklayer");
 
-  const bookingValue = (invoiceAmount * percentage) / 100;
-  const totalAllocated = gangMembers.reduce((sum, m) => sum + m.amount, 0);
-  const remainingToAllocate = bookingValue - totalAllocated;
+  const totalPercent = gangMembers.reduce((sum, m) => sum + m.percent, 0);
+  const remainingPercent = 100 - totalPercent;
+  const totalAllocatedValue = gangMembers.reduce((sum, m) => sum + (invoiceAmount * m.percent) / 100, 0);
 
   const handleAddMember = () => {
     if (!memberName.trim()) {
       toast.error("Please enter member name");
       return;
     }
-    setGangMembers([...gangMembers, { name: memberName.trim(), type: memberType, amount: 0 }]);
+    setGangMembers([...gangMembers, { name: memberName.trim(), type: memberType, percent: 0 }]);
     setMemberName("");
     setGangDialogOpen(false);
   };
@@ -59,14 +56,14 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
     setGangMembers(gangMembers.filter((_, i) => i !== index));
   };
 
-  const handleUpdateMemberAmount = (index: number, newAmount: number) => {
-    const member = gangMembers[index];
-    const otherMembersTotal = gangMembers.filter((_, i) => i !== index).reduce((sum, m) => sum + m.amount, 0);
-    const maxAllowed = bookingValue - otherMembersTotal;
-    const finalAmount = Math.max(0, Math.min(newAmount, Math.max(0, maxAllowed)));
+  const handleUpdateMemberPercent = (index: number, newPercent: number) => {
+    const clamped = Math.max(0, Math.min(100, newPercent));
+    const otherTotal = gangMembers.filter((_, i) => i !== index).reduce((sum, m) => sum + m.percent, 0);
+    const maxAllowed = Math.max(0, 100 - otherTotal);
+    const finalPercent = Math.min(clamped, maxAllowed);
 
     const updated = [...gangMembers];
-    updated[index] = { ...member, amount: finalAmount };
+    updated[index] = { ...updated[index], percent: finalPercent };
     setGangMembers(updated);
   };
 
@@ -83,8 +80,8 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
       toast.error("Please add at least one gang member");
       return null;
     }
-    if (Math.abs(remainingToAllocate) > 0.01) {
-      toast.error("Please allocate the full booking value to gang members");
+    if (Math.abs(remainingPercent) > 0.01) {
+      toast.error("Please allocate 100% across gang members");
       return null;
     }
 
@@ -95,8 +92,8 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
         .from("bookings")
         .insert({
           booked_by: user?.id,
-          booked_value: bookingValue,
-          percentage,
+          booked_value: invoiceAmount,
+          percentage: 100,
           invoice_number: invoiceNumber,
           notes,
           status,
@@ -112,13 +109,14 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
         booking_id: booking.id,
         member_name: m.name,
         member_type: m.type,
-        amount: m.amount,
+        amount: parseFloat(((invoiceAmount * m.percent) / 100).toFixed(2)),
+        percent: m.percent,
       }));
 
       const { error: gangError } = await supabase.from("gang_divisions").insert(gangDivisions);
       if (gangError) throw gangError;
 
-      return booking;
+      return { booking, invoiceNumber, gangDivisions };
     } catch (error: any) {
       if (import.meta.env.DEV) console.error("Error:", error);
       toast.error("Failed to create invoice");
@@ -127,27 +125,57 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
   };
 
   const handleSendToAdmin = async () => {
-    const booking = await createBooking("pending_admin");
-    if (booking) {
+    const result = await createBooking("pending_admin");
+    if (result) {
       toast.success("Invoice sent to admin");
       resetForm();
     }
   };
 
   const handleExportPDF = async () => {
-    const booking = await createBooking("confirmed");
-    if (booking) {
-      // Here you’d call your PDF export util, passing booking + gangMembers
+    const result = await createBooking("confirmed");
+    if (!result) return;
+
+    const { booking, invoiceNumber, gangDivisions } = result;
+
+    try {
+      const doc = new jsPDF();
+      doc.setFontSize(16);
+      doc.text("Invoice (Non-Plot)", 14, 20);
+      doc.setFontSize(12);
+      doc.text(`Invoice #: ${invoiceNumber}`, 14, 28);
+      doc.text(`Status: ${booking.status}`, 14, 34);
+      doc.text(`Booked By: ${user?.id ?? "Unknown"}`, 14, 40);
+      doc.text(`Total Invoice: £${invoiceAmount.toFixed(2)}`, 14, 50);
+      doc.text(`Total Allocated: £${totalAllocatedValue.toFixed(2)}`, 14, 56);
+      doc.text("Notes:", 14, 66);
+      const splitNotes = doc.splitTextToSize(notes || "-", 180);
+      doc.text(splitNotes, 14, 72);
+
+      let y = 90;
+      doc.text("Gang Division:", 14, y);
+      y += 8;
+      gangDivisions.forEach((gd) => {
+        const line = `${gd.member_name} (${gd.member_type}) — ${gd.percent}% — £${gd.amount.toFixed(2)}`;
+        doc.text(line, 14, y);
+        y += 6;
+      });
+
+      doc.save(`${invoiceNumber}.pdf`);
       toast.success("Invoice exported to PDF");
       resetForm();
+    } catch (err) {
+      if (import.meta.env.DEV) console.error("PDF error:", err);
+      toast.error("Failed to export PDF");
     }
   };
 
   const resetForm = () => {
     setInvoiceAmount(0);
-    setPercentage(100);
     setNotes("");
     setGangMembers([]);
+    setMemberName("");
+    setMemberType("bricklayer");
     onOpenChange(false);
   };
 
@@ -160,14 +188,13 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
           </DialogHeader>
 
           <div className="space-y-6">
-            {/* Invoice Amount + Percentage */}
+            {/* Invoice Amount */}
             <Card>
               <CardHeader>
-                <CardTitle>Invoice amount and percentage</CardTitle>
+                <CardTitle>Invoice amount</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {/* Amount with inline edit and slider */}
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
                       {editingAmount ? (
@@ -218,69 +245,6 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
                     <p className="text-sm text-muted-foreground">Maximum: £15,000.00</p>
                   </div>
 
-                  {/* Percentage */}
-                  {invoiceAmount > 0 && (
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        {editingPercentage ? (
-                          <Input
-                            type="number"
-                            value={tempPercentage}
-                            onChange={(e) => setTempPercentage(e.target.value)}
-                            onBlur={() => {
-                              const val = parseInt(tempPercentage);
-                              if (!isNaN(val) && val >= 1 && val <= 100) {
-                                setPercentage(val);
-                              }
-                              setEditingPercentage(false);
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                const val = parseInt(tempPercentage);
-                                if (!isNaN(val) && val >= 1 && val <= 100) {
-                                  setPercentage(val);
-                                }
-                                setEditingPercentage(false);
-                              }
-                            }}
-                            className="w-32"
-                            autoFocus
-                            step="1"
-                            min="1"
-                            max="100"
-                          />
-                        ) : (
-                          <Label
-                            className="cursor-pointer hover:text-primary transition-colors"
-                            onClick={() => {
-                              setTempPercentage(percentage.toString());
-                              setEditingPercentage(true);
-                            }}
-                          >
-                            Percentage: {percentage}%
-                          </Label>
-                        )}
-                      </div>
-                      <Slider
-                        value={[percentage]}
-                        onValueChange={(value) => setPercentage(value[0])}
-                        min={1}
-                        max={100}
-                        step={1}
-                      />
-                      <div className="p-4 bg-muted rounded-lg">
-                        <div className="flex justify-between mb-2">
-                          <span className="text-muted-foreground">Total Invoice:</span>
-                          <span className="font-semibold">£{invoiceAmount.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Booking Value ({percentage}%):</span>
-                          <span className="font-semibold text-primary">£{bookingValue.toFixed(2)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
                   <div className="space-y-2">
                     <Label>Notes *</Label>
                     <Textarea
@@ -300,7 +264,7 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
               <Card>
                 <CardHeader>
                   <div className="flex justify-between items-center">
-                    <CardTitle>Gang Division</CardTitle>
+                    <CardTitle>Gang Division (percent-based)</CardTitle>
                     <Button onClick={() => setGangDialogOpen(true)} size="sm">
                       <Plus className="mr-2 h-4 w-4" />
                       Add Member
@@ -315,8 +279,13 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
                       {gangMembers.map((member, index) => {
                         const otherMembersTotal = gangMembers
                           .filter((_, i) => i !== index)
-                          .reduce((sum, m) => sum + m.amount, 0);
-                        const maxForThisMember = Math.max(0, bookingValue - otherMembersTotal);
+                          .reduce((sum, m) => sum + m.percent, 0);
+                        const maxForThisMember = Math.max(0, 100 - otherMembersTotal);
+                        const amountForMember = (invoiceAmount * member.percent) / 100;
+
+                        // Inline edit state per member
+                        const [editing, setEditing] = useState(false);
+                        const [tempPercent, setTempPercent] = useState(member.percent.toString());
 
                         return (
                           <div key={index} className="p-4 bg-muted rounded-lg space-y-2">
@@ -329,29 +298,61 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
                                 <X className="h-5 w-5" />
                               </Button>
                             </div>
+
                             <div className="space-y-1">
                               <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium">Amount:</span>
-                                <Input
-                                  type="number"
-                                  value={member.amount}
-                                  onChange={(e) => {
-                                    const val = parseFloat(e.target.value) || 0;
-                                    handleUpdateMemberAmount(index, val);
-                                  }}
-                                  className="w-24 h-8"
-                                  step={10}
-                                  min={0}
-                                  max={maxForThisMember}
-                                />
+                                <span className="text-sm font-medium">Percent:</span>
+                                {editing ? (
+                                  <Input
+                                    type="number"
+                                    value={tempPercent}
+                                    onChange={(e) => setTempPercent(e.target.value)}
+                                    onBlur={() => {
+                                      const val = parseFloat(tempPercent);
+                                      if (!isNaN(val)) {
+                                        handleUpdateMemberPercent(index, val);
+                                      }
+                                      setEditing(false);
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") {
+                                        const val = parseFloat(tempPercent);
+                                        if (!isNaN(val)) {
+                                          handleUpdateMemberPercent(index, val);
+                                        }
+                                        setEditing(false);
+                                      }
+                                    }}
+                                    className="w-20 h-8"
+                                    autoFocus
+                                    step={1}
+                                    min={0}
+                                    max={maxForThisMember}
+                                  />
+                                ) : (
+                                  <Label
+                                    className="cursor-pointer hover:text-primary transition-colors"
+                                    onClick={() => {
+                                      setTempPercent(member.percent.toString());
+                                      setEditing(true);
+                                    }}
+                                  >
+                                    {member.percent.toFixed(0)}%
+                                  </Label>
+                                )}
                               </div>
+
                               <Slider
-                                value={[member.amount]}
-                                onValueChange={(value) => handleUpdateMemberAmount(index, value[0])}
+                                value={[member.percent]}
+                                onValueChange={(value) => handleUpdateMemberPercent(index, value[0])}
                                 max={maxForThisMember}
-                                step={10}
+                                step={1}
                                 className="w-full"
                               />
+
+                              <p className="text-xs text-muted-foreground">
+                                Allocated: {member.percent.toFixed(0)}% — £{amountForMember.toFixed(2)}
+                              </p>
                             </div>
                           </div>
                         );
@@ -359,25 +360,29 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
 
                       <div className="mt-4 pt-4 border-t space-y-1">
                         <div className="flex justify-between text-sm text-muted-foreground">
-                          <span>Booking Value:</span>
-                          <span className="font-semibold">£{bookingValue.toFixed(2)}</span>
+                          <span>Invoice total:</span>
+                          <span className="font-semibold">£{invoiceAmount.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-sm text-muted-foreground">
-                          <span>Allocated:</span>
-                          <span className="font-semibold">£{totalAllocated.toFixed(2)}</span>
+                          <span>Allocated value:</span>
+                          <span className="font-semibold">£{totalAllocatedValue.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm text-muted-foreground">
+                          <span>Allocated percent:</span>
+                          <span className="font-semibold">{totalPercent.toFixed(0)}%</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Remaining:</span>
+                          <span className="text-muted-foreground">Remaining percent:</span>
                           <span
                             className={`font-semibold ${
-                              remainingToAllocate < 0
+                              remainingPercent < 0
                                 ? "text-destructive"
-                                : remainingToAllocate > 0
+                                : remainingPercent > 0
                                   ? "text-orange-500"
                                   : "text-green-600"
                             }`}
                           >
-                            £{remainingToAllocate.toFixed(2)}
+                            {remainingPercent.toFixed(0)}%
                           </span>
                         </div>
                       </div>
@@ -393,16 +398,15 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
                 <Button
                   variant="outline"
                   className="flex-1"
-                  disabled={Math.abs(remainingToAllocate) > 0.01}
+                  disabled={Math.abs(remainingPercent) > 0.01}
                   onClick={handleExportPDF}
                 >
                   Export to PDF
                 </Button>
 
                 <Button
-                  variant="outline"
-                  className="flex-1"
-                  disabled={Math.abs(remainingToAllocate) > 0.01}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                  disabled={Math.abs(remainingPercent) > 0.01}
                   onClick={handleSendToAdmin}
                 >
                   Send to Admin
