@@ -1292,8 +1292,11 @@ const SiteDetail = () => {
                       onClick={() => handleUserSelect(u.user_id)}
                       onSelect={(e) => e.preventDefault()}
                     >
-                      <div className="flex-1">
+                      <div className="flex-1 flex items-center gap-2">
                         <p className="font-medium">{u.profiles.full_name}</p>
+                        <Badge variant="secondary" className="text-xs">
+                          {plots.filter(p => p.assigned_to === u.user_id).length} plots
+                        </Badge>
                       </div>
                       <Button
                         variant="ghost"
@@ -1617,7 +1620,7 @@ const SiteDetail = () => {
                     
                     {users.map(u => (
                       <SelectItem key={u.user_id} value={u.user_id}>
-                        {u.profiles.full_name}
+                        {u.profiles.full_name} ({plots.filter(p => p.assigned_to === u.user_id).length} plots)
                       </SelectItem>
                     ))}
                   </SelectContent>
