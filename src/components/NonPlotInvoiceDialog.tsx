@@ -136,38 +136,26 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
     const result = await createBooking("confirmed");
     if (!result) return;
 
-    const { booking, invoiceNumber, gangDivisions } = result;
+    const { invoiceNumber, gangDivisions } = result;
 
-    try {
-      const doc = new jsPDF();
-      doc.setFontSize(16);
-      doc.text("Invoice (Non-Plot)", 14, 20);
-      doc.setFontSize(12);
-      doc.text(`Invoice #: ${invoiceNumber}`, 14, 28);
-      doc.text(`Status: ${booking.status}`, 14, 34);
-      doc.text(`Booked By: ${user?.id ?? "Unknown"}`, 14, 40);
-      doc.text(`Total Invoice: £${invoiceAmount.toFixed(2)}`, 14, 50);
-      doc.text(`Total Allocated: £${totalAllocatedValue.toFixed(2)}`, 14, 56);
-      doc.text("Notes:", 14, 66);
-      const splitNotes = doc.splitTextToSize(notes || "-", 180);
-      doc.text(splitNotes, 14, 72);
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("Invoice (Non-Plot)", 14, 20);
+    doc.setFontSize(12);
+    doc.text(`Invoice #: ${invoiceNumber}`, 14, 28);
+    doc.text(`Total Invoice: £${invoiceAmount.toFixed(2)}`, 14, 36);
+    doc.text("Gang Division:", 14, 46);
 
-      let y = 90;
-      doc.text("Gang Division:", 14, y);
-      y += 8;
-      gangDivisions.forEach((gd) => {
-        const line = `${gd.member_name} (${gd.member_type}) — ${gd.percent}% — £${gd.amount.toFixed(2)}`;
-        doc.text(line, 14, y);
-        y += 6;
-      });
+    let y = 54;
+    gangDivisions.forEach((gd) => {
+      const line = `${gd.member_name} (${gd.member_type}) — ${gd.percent}% — £${gd.amount.toFixed(2)}`;
+      doc.text(line, 14, y);
+      y += 6;
+    });
 
-      doc.save(`${invoiceNumber}.pdf`);
-      toast.success("Invoice exported to PDF");
-      resetForm();
-    } catch (err) {
-      if (import.meta.env.DEV) console.error("PDF error:", err);
-      toast.error("Failed to export PDF");
-    }
+    doc.save(`${invoiceNumber}.pdf`);
+    toast.success("Invoice exported to PDF");
+    resetForm();
   };
 
   const resetForm = () => {
@@ -264,7 +252,7 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
               <Card>
                 <CardHeader>
                   <div className="flex justify-between items-center">
-                    <CardTitle>Gang Division (percent-based)</CardTitle>
+                    <CardTitle>Gang Division</CardTitle>
                     <Button onClick={() => setGangDialogOpen(true)} size="sm">
                       <Plus className="mr-2 h-4 w-4" />
                       Add Member
@@ -283,10 +271,6 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
                         const maxForThisMember = Math.max(0, 100 - otherMembersTotal);
                         const amountForMember = (invoiceAmount * member.percent) / 100;
 
-                        // Inline edit state per member
-                        const [editing, setEditing] = useState(false);
-                        const [tempPercent, setTempPercent] = useState(member.percent.toString());
-
                         return (
                           <div key={index} className="p-4 bg-muted rounded-lg space-y-2">
                             <div className="flex items-start justify-between">
@@ -302,46 +286,16 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
                             <div className="space-y-1">
                               <div className="flex items-center gap-2">
                                 <span className="text-sm font-medium">Percent:</span>
-                                {editing ? (
-                                  <Input
-                                    type="number"
-                                    value={tempPercent}
-                                    onChange={(e) => setTempPercent(e.target.value)}
-                                    onBlur={() => {
-                                      const val = parseFloat(tempPercent);
-                                      if (!isNaN(val)) {
-                                        handleUpdateMemberPercent(index, val);
-                                      }
-                                      setEditing(false);
-                                    }}
-                                    onKeyDown={(e) => {
-                                      if (e.key === "Enter") {
-                                        const val = parseFloat(tempPercent);
-                                        if (!isNaN(val)) {
-                                          handleUpdateMemberPercent(index, val);
-                                        }
-                                        setEditing(false);
-                                      }
-                                    }}
-                                    className="w-20 h-8"
-                                    autoFocus
-                                    step={1}
-                                    min={0}
-                                    max={maxForThisMember}
-                                  />
-                                ) : (
-                                  <Label
-                                    className="cursor-pointer hover:text-primary transition-colors"
-                                    onClick={() => {
-                                      setTempPercent(member.percent.toString());
-                                      setEditing(true);
-                                    }}
-                                  >
-                                    {member.percent.toFixed(0)}%
-                                  </Label>
-                                )}
+                                <Input
+                                  type="number"
+                                  value={member.percent}
+                                  onChange={(e) => handleUpdateMemberPercent(index, parseFloat(e.target.value) || 0)}
+                                  className="w-20 h-8"
+                                  step={1}
+                                  min={0}
+                                  max={maxForThisMember}
+                                />
                               </div>
-
                               <Slider
                                 value={[member.percent]}
                                 onValueChange={(value) => handleUpdateMemberPercent(index, value[0])}
@@ -349,7 +303,6 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
                                 step={1}
                                 className="w-full"
                               />
-
                               <p className="text-xs text-muted-foreground">
                                 Allocated: {member.percent.toFixed(0)}% — £{amountForMember.toFixed(2)}
                               </p>
