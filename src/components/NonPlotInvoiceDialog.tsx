@@ -1,28 +1,12 @@
 import { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, X } from "lucide-react";
 
 interface GangMember {
@@ -34,8 +18,8 @@ interface GangMember {
 interface NonPlotInvoiceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  handleExportPDF: () => void;     // reuse from PlotBooking
-  handleSendToAdmin: () => void;   // reuse from PlotBooking
+  handleExportPDF: () => void; // reuse from PlotBooking
+  handleSendToAdmin: () => void; // reuse from PlotBooking
 }
 
 export const NonPlotInvoiceDialog = ({
@@ -61,10 +45,7 @@ export const NonPlotInvoiceDialog = ({
 
   const handleAddMember = () => {
     if (!memberName.trim()) return;
-    setGangMembers([
-      ...gangMembers,
-      { name: memberName.trim(), type: memberType, amount: 0 },
-    ]);
+    setGangMembers([...gangMembers, { name: memberName.trim(), type: memberType, amount: 0 }]);
     setMemberName("");
     setGangDialogOpen(false);
   };
@@ -75,9 +56,7 @@ export const NonPlotInvoiceDialog = ({
 
   const handleUpdateMemberAmount = (index: number, newAmount: number) => {
     const member = gangMembers[index];
-    const otherTotal = gangMembers
-      .filter((_, i) => i !== index)
-      .reduce((sum, m) => sum + m.amount, 0);
+    const otherTotal = gangMembers.filter((_, i) => i !== index).reduce((sum, m) => sum + m.amount, 0);
     const maxAllowed = Math.max(0, invoiceAmount - otherTotal);
     const finalAmount = Math.max(0, Math.min(newAmount, maxAllowed));
 
@@ -169,9 +148,7 @@ export const NonPlotInvoiceDialog = ({
                 </CardHeader>
                 <CardContent>
                   {gangMembers.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-4">
-                      No gang members added yet
-                    </p>
+                    <p className="text-center text-muted-foreground py-4">No gang members added yet</p>
                   ) : (
                     <div className="space-y-3">
                       {gangMembers.map((member, index) => {
@@ -181,32 +158,19 @@ export const NonPlotInvoiceDialog = ({
                         const maxForThisMember = invoiceAmount - otherTotal;
 
                         return (
-                          <div
-                            key={index}
-                            className="p-4 bg-muted rounded-lg space-y-2"
-                          >
+                          <div key={index} className="p-4 bg-muted rounded-lg space-y-2">
                             <div className="flex items-start justify-between">
                               <div>
-                                <p className="font-semibold text-base">
-                                  {member.name}
-                                </p>
-                                <p className="text-sm text-muted-foreground capitalize">
-                                  {member.type}
-                                </p>
+                                <p className="font-semibold text-base">{member.name}</p>
+                                <p className="text-sm text-muted-foreground capitalize">{member.type}</p>
                               </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleRemoveMember(index)}
-                              >
+                              <Button variant="ghost" size="sm" onClick={() => handleRemoveMember(index)}>
                                 <X className="h-5 w-5" />
                               </Button>
                             </div>
                             <div className="space-y-1">
                               <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium">
-                                  Amount:
-                                </span>
+                                <span className="text-sm font-medium">Amount:</span>
                                 <Input
                                   type="number"
                                   value={member.amount}
@@ -224,9 +188,7 @@ export const NonPlotInvoiceDialog = ({
                               </div>
                               <Slider
                                 value={[member.amount]}
-                                onValueChange={(value) =>
-                                  handleUpdateMemberAmount(index, value[0])
-                                }
+                                onValueChange={(value) => handleUpdateMemberAmount(index, value[0])}
                                 max={maxForThisMember}
                                 step={10}
                                 className="w-full"
@@ -239,28 +201,22 @@ export const NonPlotInvoiceDialog = ({
                       <div className="mt-4 pt-4 border-t space-y-1">
                         <div className="flex justify-between text-sm text-muted-foreground">
                           <span>Invoice Total:</span>
-                          <span className="font-semibold">
-                            £{invoiceAmount.toFixed(2)}
-                          </span>
+                          <span className="font-semibold">£{invoiceAmount.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-sm text-muted-foreground">
                           <span>Allocated:</span>
-                          <span className="font-semibold">
-                            £{totalAllocated.toFixed(2)}
-                          </span>
+                          <span className="font-semibold">£{totalAllocated.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">
-                            Remaining:
-                          </span>
+                          <span className="text-muted-foreground">Remaining:</span>
                           <span
                             className={`font-semibold ${
                               remainingToAllocate < 0
                                 ? "text-destructive"
                                 : remainingToAllocate > 0
-                                ? "text-orange-500"
-                                : "text-green-600"
-                            }`}                            }
+                                  ? "text-orange-500"
+                                  : "text-green-600"
+                            }`}
                           >
                             £{remainingToAllocate.toFixed(2)}
                           </span>
@@ -321,9 +277,7 @@ export const NonPlotInvoiceDialog = ({
                     >
                       <div>
                         <p className="font-medium text-sm">{saved.name}</p>
-                        <p className="text-xs text-muted-foreground capitalize">
-                          {saved.type}
-                        </p>
+                        <p className="text-xs text-muted-foreground capitalize">{saved.type}</p>
                       </div>
                     </Button>
                   ))}
