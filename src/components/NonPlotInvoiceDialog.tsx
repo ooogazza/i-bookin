@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Plus, X } from "lucide-react";
-import { gangMemberSchema, bookingSchema } from "@/lib/validations";
+import { gangMemberSchema } from "@/lib/validations";
 
 interface GangMember {
   name: string;
@@ -27,12 +27,6 @@ interface SavedGangMember {
 interface NonPlotInvoiceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-}
-
-interface Booking {
-  id: string;
-  lift_value_id: string;
-  percentage: number;
 }
 
 export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialogProps) => {
