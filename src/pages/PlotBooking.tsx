@@ -175,6 +175,20 @@ const PlotBooking = () => {
     setGangMembers(gangMembers.filter((_, i) => i !== index));
   };
 
+  const handleUpdateMemberAmount = (index: number, newAmount: number) => {
+    const member = gangMembers[index];
+    const otherMembersTotal = gangMembers
+      .filter((_, i) => i !== index)
+      .reduce((sum, m) => sum + m.amount, 0);
+    
+    const maxAllowed = bookingValue - otherMembersTotal;
+    const finalAmount = Math.min(newAmount, maxAllowed);
+
+    const updated = [...gangMembers];
+    updated[index] = { ...member, amount: finalAmount };
+    setGangMembers(updated);
+  };
+
   const totalAllocated = gangMembers.reduce((sum, m) => sum + m.amount, 0);
   const selectedLiftValue = selectedLiftId ? 
     plot?.house_types.lift_values.find(lv => lv.id === selectedLiftId)?.value || 0 
@@ -417,34 +431,70 @@ const PlotBooking = () => {
                     No gang members added yet
                   </p>
                 ) : (
-                  <div className="space-y-2">
-                    {gangMembers.map((member, index) => (
-                      <div key={index} className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                        <div>
-                          <p className="font-medium">{member.name}</p>
-                          <p className="text-sm text-muted-foreground capitalize">{member.type}</p>
+                  <div className="space-y-3">
+                    {gangMembers.map((member, index) => {
+                      const otherMembersTotal = gangMembers
+                        .filter((_, i) => i !== index)
+                        .reduce((sum, m) => sum + m.amount, 0);
+                      const maxForThisMember = bookingValue - otherMembersTotal;
+
+                      return (
+                        <div key={index} className="p-4 bg-muted rounded-lg space-y-2">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="font-semibold text-base">{member.name}</p>
+                              <p className="text-sm text-muted-foreground capitalize">{member.type}</p>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveMember(index)}
+                            >
+                              <X className="h-5 w-5" />
+                            </Button>
+                          </div>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium">Amount:</span>
+                              <Input
+                                type="number"
+                                value={member.amount}
+                                onChange={(e) => {
+                                  const val = parseFloat(e.target.value) || 0;
+                                  if (val <= maxForThisMember) {
+                                    handleUpdateMemberAmount(index, val);
+                                  }
+                                }}
+                                className="w-24 h-8"
+                                step="10"
+                                min="0"
+                                max={maxForThisMember}
+                              />
+                            </div>
+                            <Slider
+                              value={[member.amount]}
+                              onValueChange={(value) => handleUpdateMemberAmount(index, value[0])}
+                              max={maxForThisMember}
+                              step={10}
+                              className="w-full"
+                            />
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold">£{member.amount.toFixed(2)}</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveMember(index)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                     
-                    <div className="mt-4 pt-4 border-t">
-                      <div className="flex justify-between mb-2">
-                        <span className="text-muted-foreground">Total Allocated:</span>
+                    <div className="mt-4 pt-4 border-t space-y-1">
+                      <div className="flex justify-between text-sm text-muted-foreground">
+                        <span>Booking Value:</span>
+                        <span className="font-semibold">£{bookingValue.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm text-muted-foreground">
+                        <span>Allocated:</span>
                         <span className="font-semibold">£{totalAllocated.toFixed(2)}</span>
                       </div>
-                      <div className="flex justify-between">
+                      <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Remaining:</span>
-                        <span className={`font-semibold ${remainingToAllocate < 0 ? 'text-destructive' : 'text-primary'}`}>
+                        <span className={`font-semibold ${remainingToAllocate < 0 ? 'text-destructive' : remainingToAllocate > 0 ? 'text-orange-500' : 'text-green-600'}`}>
                           £{remainingToAllocate.toFixed(2)}
                         </span>
                       </div>
@@ -496,13 +546,13 @@ const PlotBooking = () => {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Amount (£)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={memberAmount}
-                  onChange={(e) => setMemberAmount(parseFloat(e.target.value) || 0)}
-                  placeholder="0.00"
+                <Label>Amount: £{memberAmount.toFixed(2)} (£{remainingToAllocate.toFixed(2)} remaining)</Label>
+                <Slider
+                  value={[memberAmount]}
+                  onValueChange={(value) => setMemberAmount(value[0])}
+                  max={remainingToAllocate}
+                  step={10}
+                  className="w-full"
                 />
               </div>
               <Button onClick={handleAddMember} className="w-full">

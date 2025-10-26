@@ -229,12 +229,11 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
             {/* Gang Division Section */}
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <Label>Gang Division</Label>
+                <h3 className="text-lg font-semibold">Gang Division - Who Gets Paid</h3>
                 <Button
-                  variant="outline"
-                  size="sm"
                   onClick={() => setGangDialogOpen(true)}
                   disabled={invoiceAmount === 0}
+                  size="sm"
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Add Member
@@ -242,7 +241,7 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
               </div>
 
               {gangMembers.length > 0 && (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {gangMembers.map((member, index) => {
                     const otherMembersTotal = gangMembers
                       .filter((_, i) => i !== index)
@@ -250,42 +249,60 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
                     const maxForThisMember = invoiceAmount - otherMembersTotal;
 
                     return (
-                      <div key={index} className="p-3 bg-muted rounded-lg space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <p className="font-medium">{member.name}</p>
+                      <div key={index} className="p-4 bg-muted rounded-lg space-y-2">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className="font-semibold text-base">{member.name}</p>
                             <p className="text-sm text-muted-foreground capitalize">{member.type}</p>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold">£{member.amount.toFixed(2)}</span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRemoveMember(index)}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveMember(index)}
+                          >
+                            <X className="h-5 w-5" />
+                          </Button>
                         </div>
-                        <Slider
-                          value={[member.amount]}
-                          onValueChange={(value) => handleUpdateMemberAmount(index, value[0])}
-                          max={maxForThisMember}
-                          step={10}
-                          className="w-full"
-                        />
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">Amount:</span>
+                            <Input
+                              type="number"
+                              value={member.amount}
+                              onChange={(e) => {
+                                const val = parseFloat(e.target.value) || 0;
+                                handleUpdateMemberAmount(index, val);
+                              }}
+                              className="w-24 h-8"
+                              step="10"
+                              min="0"
+                              max={maxForThisMember}
+                            />
+                          </div>
+                          <Slider
+                            value={[member.amount]}
+                            onValueChange={(value) => handleUpdateMemberAmount(index, value[0])}
+                            max={maxForThisMember}
+                            step={10}
+                            className="w-full"
+                          />
+                        </div>
                       </div>
                     );
                   })}
 
-                  <div className="p-3 bg-primary/10 rounded-lg">
-                    <div className="flex justify-between font-semibold">
-                      <span>Total Allocated:</span>
-                      <span>£{totalAllocated.toFixed(2)}</span>
+                  <div className="pt-2 border-t space-y-1">
+                    <div className="flex justify-between text-sm text-muted-foreground">
+                      <span>Invoice Total:</span>
+                      <span className="font-semibold">£{invoiceAmount.toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between text-sm mt-1">
+                    <div className="flex justify-between text-sm text-muted-foreground">
+                      <span>Allocated:</span>
+                      <span className="font-semibold">£{totalAllocated.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Remaining:</span>
-                      <span className={remainingToAllocate < 0 ? "text-destructive" : "text-muted-foreground"}>
+                      <span className={`font-semibold ${remainingToAllocate < 0 ? "text-destructive" : remainingToAllocate > 0 ? "text-orange-500" : "text-green-600"}`}>
                         £{remainingToAllocate.toFixed(2)}
                       </span>
                     </div>

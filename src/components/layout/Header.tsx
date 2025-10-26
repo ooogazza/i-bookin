@@ -3,7 +3,7 @@ import { signOut } from "@/lib/supabase";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { LogOut, ArrowLeft, Plus } from "lucide-react";
+import { LogOut, ArrowLeft, Plus, FileText } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { ReactNode, useState } from "react";
 import { NonPlotInvoiceDialog } from "@/components/NonPlotInvoiceDialog";
@@ -68,11 +68,20 @@ export const Header = ({
             <Button 
               variant="default" 
               onClick={() => setInvoiceDialogOpen(true)} 
-              size={isMobile ? "icon" : "sm"} 
+              size="sm" 
               className="whitespace-nowrap"
             >
-              <Plus className={isMobile ? "h-4 w-4" : "mr-2 h-4 w-4"} />
-              {!isMobile && <span>Create Invoice</span>}
+              {isMobile ? (
+                <>
+                  <FileText className="h-4 w-4" />
+                  <Plus className="h-4 w-4 -ml-1" />
+                </>
+              ) : (
+                <>
+                  <FileText className="mr-2 h-4 w-4" />
+                  <span>Create Invoice</span>
+                </>
+              )}
             </Button>
           )}
           {showLogout && (
