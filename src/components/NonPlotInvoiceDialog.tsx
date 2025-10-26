@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -35,6 +36,8 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
   const [gangMembers, setGangMembers] = useState<GangMember[]>([]);
   const [savedGangMembers, setSavedGangMembers] = useState<SavedGangMember[]>([]);
   const [gangDialogOpen, setGangDialogOpen] = useState(false);
+  const [editingAmount, setEditingAmount] = useState(false);
+  const [tempAmount, setTempAmount] = useState("");
   
   const [memberName, setMemberName] = useState("");
   const [memberType, setMemberType] = useState("bricklayer");
@@ -181,127 +184,172 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create Non-Plot Invoice</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-6">
-            {/* Invoice Amount Slider */}
-            <div className="space-y-2">
-              <Label>Invoice Amount: £{invoiceAmount.toFixed(2)}</Label>
-              <Slider
-                value={[invoiceAmount]}
-                onValueChange={(value) => setInvoiceAmount(value[0])}
-                max={15000}
-                step={50}
-                className="w-full"
-              />
-              <p className="text-sm text-muted-foreground">Maximum: £15,000.00</p>
-            </div>
-
-            {/* Notes Section */}
-            <div className="space-y-2">
-              <Label>Notes *</Label>
-              <Textarea
-                placeholder="Describe the work performed (required)"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={4}
-                className="resize-none"
-              />
-            </div>
-
-            {/* Gang Division Section */}
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Gang Division - Who Gets Paid</h3>
-                <Button
-                  onClick={() => setGangDialogOpen(true)}
-                  disabled={invoiceAmount === 0}
-                  size="sm"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Member
-                </Button>
-              </div>
-
-              {gangMembers.length === 0 ? (
-                <p className="text-center text-muted-foreground py-4">
-                  No gang members added yet
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {gangMembers.map((member, index) => {
-                    const otherMembersTotal = gangMembers
-                      .filter((_, i) => i !== index)
-                      .reduce((sum, m) => sum + m.amount, 0);
-                    const maxForThisMember = invoiceAmount - otherMembersTotal;
-
-                    return (
-                      <div key={index} className="p-4 bg-muted rounded-lg space-y-2">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <p className="font-semibold text-base">{member.name}</p>
-                            <p className="text-sm text-muted-foreground capitalize">{member.type}</p>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveMember(index)}
-                          >
-                            <X className="h-5 w-5" />
-                          </Button>
-                        </div>
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">Amount:</span>
-                            <Input
-                              type="number"
-                              value={member.amount}
-                              onChange={(e) => {
-                                const val = parseFloat(e.target.value) || 0;
-                                if (val <= maxForThisMember) {
-                                  handleUpdateMemberAmount(index, val);
-                                }
-                              }}
-                              className="w-24 h-8"
-                              step="10"
-                              min="0"
-                              max={maxForThisMember}
-                            />
-                          </div>
-                          <Slider
-                            value={[member.amount]}
-                            onValueChange={(value) => handleUpdateMemberAmount(index, value[0])}
-                            max={maxForThisMember}
-                            step={10}
-                            className="w-full"
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                  
-                  <div className="mt-4 pt-4 border-t space-y-1">
-                    <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>Invoice Total:</span>
-                      <span className="font-semibold">£{invoiceAmount.toFixed(2)}</span>
+            <Card>
+              <CardHeader>
+                <CardTitle>Invoice Amount</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      {editingAmount ? (
+                        <Input
+                          type="number"
+                          value={tempAmount}
+                          onChange={(e) => setTempAmount(e.target.value)}
+                          onBlur={() => {
+                            const val = parseFloat(tempAmount);
+                            if (!isNaN(val) && val >= 0 && val <= 15000) {
+                              setInvoiceAmount(val);
+                            }
+                            setEditingAmount(false);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              const val = parseFloat(tempAmount);
+                              if (!isNaN(val) && val >= 0 && val <= 15000) {
+                                setInvoiceAmount(val);
+                              }
+                              setEditingAmount(false);
+                            }
+                          }}
+                          className="w-32"
+                          autoFocus
+                          step="50"
+                          min="0"
+                        />
+                      ) : (
+                        <Label 
+                          className="cursor-pointer hover:text-primary transition-colors"
+                          onClick={() => {
+                            setTempAmount(invoiceAmount.toString());
+                            setEditingAmount(true);
+                          }}
+                        >
+                          Amount: £{invoiceAmount.toFixed(2)}
+                        </Label>
+                      )}
                     </div>
-                    <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>Allocated:</span>
-                      <span className="font-semibold">£{totalAllocated.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Remaining:</span>
-                      <span className={`font-semibold ${remainingToAllocate < 0 ? "text-destructive" : remainingToAllocate > 0 ? "text-orange-500" : "text-green-600"}`}>
-                        £{remainingToAllocate.toFixed(2)}
-                      </span>
-                    </div>
+                    <Slider
+                      value={[invoiceAmount]}
+                      onValueChange={(value) => setInvoiceAmount(value[0])}
+                      max={15000}
+                      step={50}
+                      className="w-full"
+                    />
+                    <p className="text-sm text-muted-foreground">Maximum: £15,000.00</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Notes *</Label>
+                    <Textarea
+                      placeholder="Describe the work performed (required)"
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      rows={4}
+                      className="resize-none"
+                    />
                   </div>
                 </div>
-              )}
-            </div>
+              </CardContent>
+            </Card>
+
+            {invoiceAmount > 0 && (
+              <Card>
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <CardTitle>Gang Division</CardTitle>
+                    <Button onClick={() => setGangDialogOpen(true)} size="sm">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Member
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {gangMembers.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-4">
+                      No gang members added yet
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {gangMembers.map((member, index) => {
+                        const otherMembersTotal = gangMembers
+                          .filter((_, i) => i !== index)
+                          .reduce((sum, m) => sum + m.amount, 0);
+                        const maxForThisMember = invoiceAmount - otherMembersTotal;
+
+                        return (
+                          <div key={index} className="p-4 bg-muted rounded-lg space-y-2">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <p className="font-semibold text-base">{member.name}</p>
+                                <p className="text-sm text-muted-foreground capitalize">{member.type}</p>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemoveMember(index)}
+                              >
+                                <X className="h-5 w-5" />
+                              </Button>
+                            </div>
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium">Amount:</span>
+                                <Input
+                                  type="number"
+                                  value={member.amount}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value) || 0;
+                                    if (val <= maxForThisMember) {
+                                      handleUpdateMemberAmount(index, val);
+                                    }
+                                  }}
+                                  className="w-24 h-8"
+                                  step="10"
+                                  min="0"
+                                  max={maxForThisMember}
+                                />
+                              </div>
+                              <Slider
+                                value={[member.amount]}
+                                onValueChange={(value) => handleUpdateMemberAmount(index, value[0])}
+                                max={maxForThisMember}
+                                step={10}
+                                className="w-full"
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                      
+                      <div className="mt-4 pt-4 border-t space-y-1">
+                        <div className="flex justify-between text-sm text-muted-foreground">
+                          <span>Invoice Total:</span>
+                          <span className="font-semibold">£{invoiceAmount.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm text-muted-foreground">
+                          <span>Allocated:</span>
+                          <span className="font-semibold">£{totalAllocated.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Remaining:</span>
+                          <span className={`font-semibold ${remainingToAllocate < 0 ? "text-destructive" : remainingToAllocate > 0 ? "text-orange-500" : "text-green-600"}`}>
+                            £{remainingToAllocate.toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             <Button
               onClick={handleCreateInvoice}
