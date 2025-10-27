@@ -185,7 +185,7 @@ export const GangDivisionCard = ({
                         }}
                         onDragStart={() => setActiveSplitIndex(i)}
                         onDragEnd={() => setTimeout(() => setActiveSplitIndex(null), 6000)}
-                        max={totalValue}
+                        max={safeAmount + remainingToAllocate}
                         step={1}
                         className="w-full"
                       />
