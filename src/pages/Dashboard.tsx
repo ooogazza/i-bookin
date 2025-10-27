@@ -221,27 +221,29 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 mb-8">
-          <Card className="cursor-pointer hover:bg-muted/50 transition-colors relative" onClick={() => navigate("/booking-in")}>
-            {isAdmin && unviewedInvoicesCount > 0 && (
-              <div className="absolute top-4 right-4 h-3 w-3 rounded-full bg-primary animate-pulse" />
-            )}
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-6 w-6 text-primary" />
-                Booking In
-                {isAdmin && unviewedInvoicesCount > 0 && (
-                  <span className="ml-auto text-sm font-normal text-primary">
-                    {unviewedInvoicesCount} new
-                  </span>
-                )}
-              </CardTitle>
-              <CardDescription>
-                {isAdmin ? "View all invoices" : "View your invoices"}
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
+        {isAdmin && (
+          <div className="grid gap-6 md:grid-cols-2 mb-8">
+            <Card className="cursor-pointer hover:bg-muted/50 transition-colors relative" onClick={() => navigate("/booking-in")}>
+              {unviewedInvoicesCount > 0 && (
+                <div className="absolute top-4 right-4 h-3 w-3 rounded-full bg-primary animate-pulse" />
+              )}
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-6 w-6 text-primary" />
+                  Booking In
+                  {unviewedInvoicesCount > 0 && (
+                    <span className="ml-auto text-sm font-normal text-primary">
+                      {unviewedInvoicesCount} new
+                    </span>
+                  )}
+                </CardTitle>
+                <CardDescription>
+                  View all invoices
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
+        )}
 
         <div className="mb-6">
           <h3 className="text-2xl font-bold mb-4">Developers</h3>

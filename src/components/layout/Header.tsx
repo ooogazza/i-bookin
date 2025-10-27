@@ -73,6 +73,18 @@ export const Header = ({
         <nav className="flex items-center gap-2 flex-wrap">
           {actions}
 
+          {!isAdmin && user && location.pathname === "/dashboard" && (
+            <Button
+              variant="default"
+              onClick={() => navigate("/booking-in")}
+              size="sm"
+              className="whitespace-nowrap"
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              <span>Invoices</span>
+            </Button>
+          )}
+
           {!isAdmin && user && isSiteDetailPage && (
             <Button
               variant="default"
