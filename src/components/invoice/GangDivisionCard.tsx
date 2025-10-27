@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -5,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Plus, X, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { StickySplitButton } from "@/components/StickySplitButton";
 
 interface SavedGangMember {
   id: string;
@@ -51,6 +53,8 @@ export const GangDivisionCard = ({
   onAddExistingMember,
   totalValueLabel = "Total",
 }: GangDivisionCardProps) => {
+  const [activeSplitIndex, setActiveSplitIndex] = useState<number | null>(null);
+
   return (
     <Card>
       <CardHeader>
@@ -64,7 +68,6 @@ export const GangDivisionCard = ({
       </CardHeader>
 
       <CardContent>
-        {/* Saved members quick add */}
         {savedMembers && savedMembers.length > 0 && onAddExistingMember && (
           <div className="mb-4">
             <Label className="text-sm text-muted-foreground mb-2 block">
@@ -96,11 +99,6 @@ export const GangDivisionCard = ({
         {gangMembers.length > 0 && (
           <div className="space-y-3">
             {gangMembers.map((m, i) => {
-              const otherMembersTotal = gangMembers
-                .filter((_, idx) => idx !== i)
-                .reduce((sum, member) => sum + member.amount, 0);
-              const maxForThisMember = totalValue - otherMembersTotal;
-
               return (
                 <div key={i} className="p-4 bg-muted rounded-lg space-y-2">
                   <div className="flex justify-between">
@@ -109,18 +107,18 @@ export const GangDivisionCard = ({
                       <p className="text-sm text-muted-foreground capitalize">{m.type}</p>
                     </div>
                     <div className="flex gap-1">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => onRemoveMember(i)}
                         title="Remove from this invoice"
                       >
                         <X className="h-5 w-5" />
                       </Button>
                       {m.id && onDeletePermanently && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => onDeletePermanently(m.id!, i)}
                           className="text-destructive hover:text-destructive"
                           title="Delete permanently"
@@ -149,15 +147,12 @@ export const GangDivisionCard = ({
                           onBlur={() => onStopEditing(i)}
                           onChange={(e) => {
                             const v = parseFloat(e.target.value) || 0;
-                            if (v <= maxForThisMember) {
-                              onUpdateMemberAmount(i, v);
-                            }
+                            onUpdateMemberAmount(i, v);
                           }}
                           onKeyDown={(e) => e.key === "Enter" && onStopEditing(i)}
                           className="w-24 h-8"
-                          step="10"
-                          min="0"
-                          max={maxForThisMember}
+                          step={1}
+                          min={0}
                         />
                       </div>
                     )}
@@ -166,15 +161,28 @@ export const GangDivisionCard = ({
                       value={[m.amount]}
                       onValueChange={(v) => {
                         const newAmount = v[0];
-                        if (newAmount <= maxForThisMember) {
-                          onUpdateMemberAmount(i, newAmount);
-                        }
+                        onUpdateMemberAmount(i, newAmount);
                       }}
-                      max={maxForThisMember}
-                      step={10}
+                      onDragStart={() => setActiveSplitIndex(i)}
+                      onDragEnd={() => setTimeout(() => setActiveSplitIndex(null), 3000)}
+                      max={totalValue}
+                      step={1}
                       className="w-full"
                     />
                   </div>
+
+                  {activeSplitIndex === i && i < gangMembers.length - 1 && (
+                    <StickySplitButton
+                      index={i}
+                      remainingAmount={remainingToAllocate}
+                      onSplit={(index) => {
+                        const half = remainingToAllocate / 2;
+                        onUpdateMemberAmount(index, gangMembers[index].amount + half);
+                        onUpdateMemberAmount(index + 1, gangMembers[index + 1].amount + half);
+                        setActiveSplitIndex(null);
+                      }}
+                    />
+                  )}
                 </div>
               );
             })}
@@ -195,8 +203,8 @@ export const GangDivisionCard = ({
                     remainingToAllocate < 0
                       ? "text-destructive"
                       : remainingToAllocate > 0
-                        ? "text-orange-500"
-                        : "text-green-600"
+                      ? "text-orange-500"
+                      : "text-green-600"
                   }`}
                 >
                   £{remainingToAllocate.toFixed(2)}

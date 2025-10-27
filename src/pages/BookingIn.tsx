@@ -100,120 +100,159 @@ const BookingIn = () => {
     fetchBookings();
   }, [user, isAdmin]);
 
-  const fetchBookings = async () => {
-    if (!user) return;
+ const fetchBookings = async () => {
+  if (!user) return;
 
-    try {
-      let query = supabase
-        .from("bookings")
-        .select(`
-          *,
-          notes,
-          confirmed_by_admin,
-          profiles!bookings_booked_by_fkey (
-            full_name,
-            email
-          ),
-          plots (
-            plot_number,
-            house_types (
-              name,
-              sites (
-                name
-              )
+  try {
+    // Plot-based bookings
+    let query = supabase
+      .from("bookings")
+      .select(`
+        *,
+        notes,
+        confirmed_by_admin,
+        profiles!bookings_booked_by_fkey (
+          full_name,
+          email
+        ),
+        plots (
+          plot_number,
+          house_types (
+            name,
+            sites (
+              name
             )
-          ),
-          lift_values (
-            lift_type
-          ),
-          gang_divisions (
-            member_name,
-            member_type,
-            amount
           )
-        `)
-        .eq("status", "confirmed")
-        .order("created_at", { ascending: false });
+        ),
+        lift_values (
+          lift_type
+        ),
+        gang_divisions (
+          member_name,
+          member_type,
+          amount
+        )
+      `)
+      .eq("status", "confirmed")
+      .order("created_at", { ascending: false });
 
-      // Filter by user if not admin
-      if (!isAdmin) {
-        query = query.eq("booked_by", user.id);
+    if (!isAdmin) {
+      query = query.eq("booked_by", user.id);
+    }
+
+    const { data: plotData, error: plotError } = await query;
+    if (plotError) throw plotError;
+
+    const groupedPlot = (plotData || []).reduce((acc: { [key: string]: GroupedInvoice }, booking: any) => {
+      if (!acc[booking.invoice_number]) {
+        acc[booking.invoice_number] = {
+          invoice_number: booking.invoice_number,
+          created_at: booking.created_at,
+          booked_by: booking.profiles,
+          items: [],
+          total_value: 0,
+          notes: booking.notes,
+          is_confirmed: booking.confirmed_by_admin || false,
+        };
       }
+      if (booking.confirmed_by_admin) {
+        acc[booking.invoice_number].is_confirmed = true;
+      }
+      acc[booking.invoice_number].items.push(booking);
+      acc[booking.invoice_number].total_value += booking.booked_value;
+      return acc;
+    }, {});
+    const plotInvoices = Object.values(groupedPlot);
 
-      const { data, error } = await query;
+    // Non-plot invoices
+    const { data: nonPlotData, error: nonPlotError } = await supabase
+      .from("non_plot_invoices")
+      .select(`
+        *,
+        profiles:profiles!non_plot_invoices_user_id_fkey (
+          full_name,
+          email
+        ),
+        non_plot_gang_divisions (
+          member_name,
+          member_type,
+          amount
+        )
+      `)
+      .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      setBookings(data as any || []);
-      
-      // Group bookings by invoice number
-      const grouped = (data as any || []).reduce((acc: { [key: string]: GroupedInvoice }, booking: any) => {
-        if (!acc[booking.invoice_number]) {
-          acc[booking.invoice_number] = {
-            invoice_number: booking.invoice_number,
-            created_at: booking.created_at,
-            booked_by: booking.profiles,
-            items: [],
+    if (nonPlotError) throw nonPlotError;
+
+    const nonPlotInvoices: GroupedInvoice[] = (nonPlotData || []).map((inv: any) => ({
+      invoice_number: inv.invoice_number,
+      created_at: inv.created_at,
+      booked_by: inv.profiles,
+      items: [{
+        booked_value: inv.total_amount,
+        gang_divisions: inv.non_plot_gang_divisions,
+        plots: { plot_number: 0, house_types: { name: "Non-Plot", sites: { name: "N/A" } } },
+        lift_values: { lift_type: "non_plot" },
+        percentage: 100,
+        notes: inv.notes,
+        profiles: inv.profiles,
+        invoice_number: inv.invoice_number,
+        status: "confirmed",
+        created_at: inv.created_at,
+      }],
+      total_value: inv.total_amount,
+      notes: inv.notes,
+      is_confirmed: true,
+    }));
+
+    // Merge and sort
+    const allInvoices = [...plotInvoices, ...nonPlotInvoices].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+
+    // Fetch viewed status for admin
+    if (isAdmin) {
+      const { data: viewData, error: viewError } = await supabase
+        .from("invoice_views")
+        .select("invoice_number")
+        .eq("viewed_by", user.id);
+
+      if (!viewError) {
+        const viewedInvoices = new Set(viewData?.map(v => v.invoice_number) || []);
+        allInvoices.forEach((invoice: GroupedInvoice) => {
+          invoice.is_viewed = viewedInvoices.has(invoice.invoice_number);
+        });
+        setUnviewedCount(allInvoices.filter((inv: GroupedInvoice) => !inv.is_viewed).length);
+      }
+    }
+
+    setGroupedInvoices(allInvoices);
+
+    // Group by user for admin view
+    if (isAdmin) {
+      const userGroups = allInvoices.reduce((acc: { [key: string]: UserInvoices }, invoice: GroupedInvoice) => {
+        const userEmail = invoice.booked_by.email;
+        if (!acc[userEmail]) {
+          acc[userEmail] = {
+            user_id: userEmail,
+            full_name: invoice.booked_by.full_name,
+            email: invoice.booked_by.email,
+            invoices: [],
             total_value: 0,
-            notes: booking.notes,
-            is_confirmed: booking.confirmed_by_admin || false
           };
         }
-        // Update is_confirmed if any booking in the invoice is confirmed
-        if (booking.confirmed_by_admin) {
-          acc[booking.invoice_number].is_confirmed = true;
-        }
-        acc[booking.invoice_number].items.push(booking);
-        acc[booking.invoice_number].total_value += booking.booked_value;
+        acc[userEmail].invoices.push(invoice);
+        acc[userEmail].total_value += invoice.total_value;
         return acc;
       }, {});
-      
-      const invoices = Object.values(grouped) as GroupedInvoice[];
-      
-      // Fetch viewed status for admin
-      if (isAdmin) {
-        const { data: viewData, error: viewError } = await supabase
-          .from("invoice_views")
-          .select("invoice_number")
-          .eq("viewed_by", user.id);
-        
-        if (!viewError) {
-          const viewedInvoices = new Set(viewData?.map(v => v.invoice_number) || []);
-          invoices.forEach((invoice: GroupedInvoice) => {
-            invoice.is_viewed = viewedInvoices.has(invoice.invoice_number);
-          });
-          setUnviewedCount(invoices.filter((inv: GroupedInvoice) => !inv.is_viewed).length);
-        }
-      }
-      
-      setGroupedInvoices(invoices);
-
-      // Group invoices by user for admin view
-      if (isAdmin) {
-        const userGroups = invoices.reduce((acc: { [key: string]: UserInvoices }, invoice: GroupedInvoice) => {
-          const userEmail = invoice.booked_by.email;
-          if (!acc[userEmail]) {
-            acc[userEmail] = {
-              user_id: userEmail,
-              full_name: invoice.booked_by.full_name,
-              email: invoice.booked_by.email,
-              invoices: [],
-              total_value: 0
-            };
-          }
-          acc[userEmail].invoices.push(invoice);
-          acc[userEmail].total_value += invoice.total_value;
-          return acc;
-        }, {});
-        
-        setUserInvoices(Object.values(userGroups));
-      }
-    } catch (error: any) {
-      toast.error("Failed to load bookings");
-      console.error("Error:", error);
-    } finally {
-      setLoading(false);
+      setUserInvoices(Object.values(userGroups));
     }
-  };
+  } catch (error: any) {
+    toast.error("Failed to load bookings");
+    console.error("Error:", error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleViewUserInvoices = (userGroup: UserInvoices) => {
     setSelectedUser(userGroup);
