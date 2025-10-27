@@ -14,6 +14,7 @@ import PlotBooking from "./pages/PlotBooking";
 import BookingIn from "./pages/BookingIn";
 import Admin from "./pages/Admin";
 import Sites from "./pages/admin/Sites";
+import Settings from "./pages/admin/Settings";
 import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
 
@@ -82,6 +83,14 @@ const App = () => (
               element={
                 <ProtectedRoute requireAdmin>
                   <Sites />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/settings"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <Settings />
                 </ProtectedRoute>
               }
             />

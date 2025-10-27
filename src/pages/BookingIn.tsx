@@ -750,15 +750,7 @@ const BookingIn = () => {
           }
         `}
       </style>
-      <Header
-        showBackButton
-        actions={
-          <Button onClick={handlePrint} variant="outline" size="sm" title="Print" className="no-print">
-            <Printer className="h-4 w-4" />
-            <span className="hidden md:inline ml-2">Print</span>
-          </Button>
-        }
-      />
+      <Header showBackButton />
 
       {/* Hidden Print Section */}
       {selectedInvoice && (

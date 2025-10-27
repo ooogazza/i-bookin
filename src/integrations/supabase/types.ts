@@ -231,6 +231,36 @@ export type Database = {
         }
         Relationships: []
       }
+      letterhead_settings: {
+        Row: {
+          file_name: string
+          file_type: string
+          file_url: string
+          id: string
+          is_active: boolean
+          uploaded_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          file_name: string
+          file_type: string
+          file_url: string
+          id?: string
+          is_active?: boolean
+          uploaded_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          file_name?: string
+          file_type?: string
+          file_url?: string
+          id?: string
+          is_active?: boolean
+          uploaded_at?: string
+          uploaded_by?: string
+        }
+        Relationships: []
+      }
       lift_values: {
         Row: {
           created_at: string
