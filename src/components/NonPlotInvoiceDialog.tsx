@@ -1,12 +1,10 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
+import {
+  Card, CardContent, CardHeader, CardTitle,
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+  Input, Label, Slider, Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Textarea, Button
+} from "@/components/ui";
 import { FileText } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -57,7 +55,11 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
 
   const loadSavedMembers = async () => {
     if (!user) return;
-    const { data, error } = await supabase.from("saved_gang_members").select("*").eq("user_id", user.id).order("name");
+    const { data, error } = await supabase
+      .from("saved_gang_members")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("name");
     if (!error && data) setSavedMembers(data);
   };
 
@@ -86,7 +88,7 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
   };
 
   const handleAddExistingMember = (member) => {
-    if (gangMembers.some((m) => m.id === member.id)) {
+    if (gangMembers.some(m => m.id === member.id)) {
       toast.error("Already added");
       return;
     }
@@ -95,12 +97,15 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
   };
 
   const handleDeleteMemberPermanently = async (memberId: string, idx: number) => {
-    const { error } = await supabase.from("saved_gang_members").delete().eq("id", memberId);
+    const { error } = await supabase
+      .from("saved_gang_members")
+      .delete()
+      .eq("id", memberId);
     if (error) {
       toast.error("Failed to delete member");
       return;
     }
-    setSavedMembers(savedMembers.filter((m) => m.id !== memberId));
+    setSavedMembers(savedMembers.filter(m => m.id !== memberId));
     removeMember(idx);
     toast.success("Deleted permanently");
   };
@@ -128,14 +133,16 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
       return;
     }
 
-    const divisions = gangMembers.map((m) => ({
+    const divisions = gangMembers.map(m => ({
       invoice_id: invoice.id,
       member_name: m.name,
       member_type: m.type,
       amount: m.amount,
     }));
 
-    const { error: divError } = await supabase.from("non_plot_gang_divisions").insert(divisions);
+    const { error: divError } = await supabase
+      .from("non_plot_gang_divisions")
+      .insert(divisions);
 
     if (divError) {
       toast.error("Failed to save divisions");
@@ -169,9 +176,7 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
             </div>
 
             <Card>
-              <CardHeader>
-                <CardTitle>Invoice Amount</CardTitle>
-              </CardHeader>
+              <CardHeader><CardTitle>Invoice Amount</CardTitle></CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {!editingAmount ? (
@@ -242,19 +247,10 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
 
             {invoiceAmount > 0 && gangMembers.length > 0 && (
               <div className="flex gap-3" onClick={(e) => e.stopPropagation()}>
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  disabled={remainingToAllocate !== 0}
-                  onClick={handleExport}
-                >
+                <Button variant="outline" className="flex-1" disabled={remainingToAllocate !== 0} onClick={handleExport}>
                   Export PDF
                 </Button>
-                <Button
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                  disabled={remainingToAllocate !== 0}
-                  onClick={handleSaveInvoice}
-                >
+                <Button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white" disabled={remainingToAllocate !== 0} onClick={handleSaveInvoice}>
                   Send to Admin
                 </Button>
               </div>
@@ -263,19 +259,22 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
         </DialogContent>
       </Dialog>
 
-      {/* Add Member Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>Add New Gang Member</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
-            <Input placeholder="Name" value={memberName} onChange={(e) => setMemberName(e.target.value)} />
+            <Input
+              placeholder="Name"
+              value={memberName}
+              onChange={(e) => setMemberName(e.target.value)}
+            />
 
             <Select value={memberType} onValueChange={setMemberType}>
               <SelectTrigger>
-                <SelectValue placeholder="Select type" />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="bricklayer">Bricklayer</SelectItem>
