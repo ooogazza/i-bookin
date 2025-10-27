@@ -239,7 +239,7 @@ export const NonPlotInvoiceDialog = ({
           <div className="max-h-[70vh] overflow-y-auto px-6 py-6 space-y-6">
             <div className="flex items-center gap-2">
               <FileText className="h-7 w-7 text-primary" />
-              <h2 className="text-2xl font-bold tracking-tight">Create Non-Plot Invoice</h2>
+              <h2 className="text-2xl font-bold tracking-tight">Non-Plot Invoice</h2>
             </div>
 
             <Card>
@@ -298,26 +298,24 @@ export const NonPlotInvoiceDialog = ({
             </Card>
 
             {/* Gang Division */}
-            {invoiceAmount > 0 && (
-              <GangDivisionCard
-                gangMembers={gangMembers}
-                totalValue={invoiceAmount}
-                totalAllocated={totalAllocated}
-                remainingToAllocate={remainingToAllocate}
-                onAddMemberClick={() => setDialogOpen(true)}
-                onRemoveMember={handleRemoveMemberFromInvoice}
-                onDeletePermanently={handleDeleteMemberPermanently}
-                onUpdateMemberAmount={handleUpdateMemberAmount}
-                onStartEditing={startEditingMember}
-                onStopEditing={stopEditingMember}
-                savedMembers={savedMembers}
-                onAddExistingMember={handleAddExistingMember}
-                totalValueLabel="Total"
-              />
-            )}
+            <GangDivisionCard
+              gangMembers={gangMembers}
+              totalValue={invoiceAmount}
+              totalAllocated={totalAllocated}
+              remainingToAllocate={remainingToAllocate}
+              onAddMemberClick={() => setDialogOpen(true)}
+              onRemoveMember={handleRemoveMemberFromInvoice}
+              onDeletePermanently={handleDeleteMemberPermanently}
+              onUpdateMemberAmount={handleUpdateMemberAmount}
+              onStartEditing={startEditingMember}
+              onStopEditing={stopEditingMember}
+              savedMembers={savedMembers}
+              onAddExistingMember={handleAddExistingMember}
+              totalValueLabel="Total"
+            />
 
             {/* ACTIONS */}
-            {invoiceAmount > 0 && gangMembers.length > 0 && (
+            {gangMembers.length > 0 && (
               <div className="flex gap-3" onClick={(e) => e.stopPropagation()}>
                 <Button
                   variant="outline"
@@ -333,7 +331,7 @@ export const NonPlotInvoiceDialog = ({
 
                 <Button
                   className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                  disabled={remainingToAllocate !== 0}
+                  disabled={remainingToAllocate !== 0 || !notes.trim()}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleSaveInvoice();
