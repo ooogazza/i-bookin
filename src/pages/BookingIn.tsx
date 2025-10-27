@@ -986,52 +986,52 @@ const BookingIn = () => {
 
         {/* Invoice Details Dialog */}
         <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
-          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
-            <DialogHeader className="no-print">
-              <DialogTitle>Invoice Details</DialogTitle>
+          <DialogContent className="max-w-3xl max-h-[85vh] md:max-h-[80vh] overflow-y-auto p-4 md:p-6" onOpenAutoFocus={(e) => e.preventDefault()}>
+            <DialogHeader className="no-print pb-3 md:pb-4">
+              <DialogTitle className="text-lg md:text-xl">Invoice Details</DialogTitle>
             </DialogHeader>
             {selectedInvoice && (
-              <div className="space-y-4 print-invoice">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Invoice Number</p>
-                    <p className="font-semibold">{selectedInvoice.invoice_number}</p>
+              <div className="space-y-4 md:space-y-6 print-invoice">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+                  <div className="bg-muted/50 p-3 rounded-lg">
+                    <p className="text-xs md:text-sm text-muted-foreground mb-1">Invoice Number</p>
+                    <p className="font-semibold text-sm md:text-base">{selectedInvoice.invoice_number}</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Date</p>
-                    <p className="font-semibold">{new Date(selectedInvoice.created_at).toLocaleDateString()}</p>
+                  <div className="bg-muted/50 p-3 rounded-lg">
+                    <p className="text-xs md:text-sm text-muted-foreground mb-1">Date</p>
+                    <p className="font-semibold text-sm md:text-base">{new Date(selectedInvoice.created_at).toLocaleDateString()}</p>
                   </div>
-                  <div className="col-span-2">
-                    <p className="text-sm text-muted-foreground">Booked By</p>
-                    <p className="font-semibold">{selectedInvoice.booked_by.full_name}</p>
+                  <div className="bg-muted/50 p-3 rounded-lg md:col-span-2">
+                    <p className="text-xs md:text-sm text-muted-foreground mb-1">Booked By</p>
+                    <p className="font-semibold text-sm md:text-base">{selectedInvoice.booked_by.full_name}</p>
                   </div>
                 </div>
 
-                <div className="border-t pt-4">
-                  <h4 className="font-semibold mb-3">Invoice Items</h4>
-                  <div className="space-y-2">
+                <div className="border-t pt-3 md:pt-4">
+                  <h4 className="font-semibold mb-2 md:mb-3 text-sm md:text-base">Invoice Items</h4>
+                  <div className="space-y-2 md:space-y-3">
                     {selectedInvoice.items.map((item, index) => (
-                      <div key={index} className="p-3 bg-muted rounded-lg">
+                      <div key={index} className="p-3 md:p-4 bg-muted rounded-lg">
                         {item.is_non_plot ? (
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className="font-medium">Non-Plot Work</p>
-                              <p className="text-sm text-muted-foreground">General brickwork</p>
+                          <div className="flex justify-between items-start gap-2">
+                            <div className="flex-1">
+                              <p className="font-medium text-sm md:text-base">Non-Plot Work</p>
+                              <p className="text-xs md:text-sm text-muted-foreground">General brickwork</p>
                             </div>
-                            <p className="font-bold text-primary">£{item.booked_value.toFixed(2)}</p>
+                            <p className="font-bold text-primary text-sm md:text-base whitespace-nowrap">£{item.booked_value.toFixed(2)}</p>
                           </div>
                         ) : (
                           <>
-                            <div className="flex justify-between items-start mb-2">
-                              <div>
-                                <p className="font-medium">
+                            <div className="flex justify-between items-start gap-2 mb-2">
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm md:text-base break-words">
                                   Plot {item.plots?.plot_number} - {item.plots?.house_types.name}
                                 </p>
-                                <p className="text-sm text-muted-foreground">{item.plots?.house_types.sites.name}</p>
+                                <p className="text-xs md:text-sm text-muted-foreground truncate">{item.plots?.house_types.sites.name}</p>
                               </div>
-                              <p className="font-bold text-primary">£{item.booked_value.toFixed(2)}</p>
+                              <p className="font-bold text-primary text-sm md:text-base whitespace-nowrap">£{item.booked_value.toFixed(2)}</p>
                             </div>
-                            <div className="text-sm">
+                            <div className="text-xs md:text-sm">
                               <span className="font-medium">
                                 {item.lift_values && LIFT_LABELS[item.lift_values.lift_type as keyof typeof LIFT_LABELS]}
                               </span>
@@ -1042,7 +1042,7 @@ const BookingIn = () => {
                         )}
                       </div>
                     ))}
-                    <div className="flex justify-between items-center pt-2 border-t font-bold text-lg">
+                    <div className="flex justify-between items-center pt-2 md:pt-3 border-t font-bold text-base md:text-lg bg-primary/5 p-3 rounded-lg">
                       <span>Invoice Total:</span>
                       <span className="text-primary">£{selectedInvoice.total_value.toFixed(2)}</span>
                     </div>
@@ -1050,34 +1050,34 @@ const BookingIn = () => {
                 </div>
 
                 {selectedInvoice.notes && (
-                  <div className="border-t pt-4">
-                    <h4 className="font-semibold mb-2">Notes</h4>
-                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedInvoice.notes}</p>
+                  <div className="border-t pt-3 md:pt-4">
+                    <h4 className="font-semibold mb-2 text-sm md:text-base">Notes</h4>
+                    <p className="text-xs md:text-sm text-muted-foreground whitespace-pre-wrap bg-muted/50 p-3 rounded-lg">{selectedInvoice.notes}</p>
                   </div>
                 )}
 
-                <div className="border-t pt-4">
-                  <h4 className="font-semibold mb-3">Gang Division</h4>
-                  <div className="space-y-2">
+                <div className="border-t pt-3 md:pt-4">
+                  <h4 className="font-semibold mb-2 md:mb-3 text-sm md:text-base">Gang Division</h4>
+                  <div className="space-y-2 md:space-y-3">
                     {selectedInvoice.items[0]?.gang_divisions.map((member, index) => (
-                      <div key={index} className="flex justify-between items-center p-2 bg-muted rounded">
-                        <div>
-                          <p className="font-medium">{member.member_name}</p>
-                          <p className="text-sm text-muted-foreground capitalize">{member.member_type}</p>
+                      <div key={index} className="flex justify-between items-center p-3 md:p-4 bg-muted rounded-lg gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm md:text-base truncate">{member.member_name}</p>
+                          <p className="text-xs md:text-sm text-muted-foreground capitalize">{member.member_type}</p>
                         </div>
-                        <p className="font-semibold">£{member.amount.toFixed(2)}</p>
+                        <p className="font-semibold text-primary text-sm md:text-base whitespace-nowrap">£{member.amount.toFixed(2)}</p>
                       </div>
                     ))}
-                    <div className="flex justify-between items-center pt-2 border-t font-bold">
+                    <div className="flex justify-between items-center pt-2 md:pt-3 border-t font-bold bg-primary/5 p-3 rounded-lg text-sm md:text-base">
                       <span>Total Allocated</span>
-                      <span>
+                      <span className="text-primary">
                         £{selectedInvoice.items[0]?.gang_divisions.reduce((sum, m) => sum + m.amount, 0).toFixed(2)}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex gap-2 print:hidden">
+                <div className="flex flex-col md:flex-row gap-2 print:hidden pt-2">
                   <Button
                     onClick={(e) => {
                       e.preventDefault();
@@ -1086,9 +1086,10 @@ const BookingIn = () => {
                     className="flex-1"
                     variant="outline"
                     type="button"
+                    size="lg"
                   >
                     <Printer className="mr-2 h-4 w-4" />
-                    Print
+                    <span className="text-sm md:text-base">Print</span>
                   </Button>
                   <Button
                     onClick={(e) => {
@@ -1098,9 +1099,10 @@ const BookingIn = () => {
                     className="flex-1"
                     variant="default"
                     type="button"
+                    size="lg"
                   >
                     <FileText className="mr-2 h-4 w-4" />
-                    Export PDF
+                    <span className="text-sm md:text-base">Export PDF</span>
                   </Button>
                   {!isAdmin && (
                     <Button
@@ -1111,18 +1113,20 @@ const BookingIn = () => {
                       className="flex-1"
                       variant="default"
                       type="button"
+                      size="lg"
                       disabled={sendingToAdmin}
                     >
                       <Send className="mr-2 h-4 w-4" />
-                      {sendingToAdmin ? "Sending..." : "Send to Admin"}
+                      <span className="text-sm md:text-base">{sendingToAdmin ? "Sending..." : "Send to Admin"}</span>
                     </Button>
                   )}
                   {isAdmin && !selectedInvoice.is_confirmed && (
                     <Button
                       onClick={() => handleConfirmInvoice(selectedInvoice)}
                       className="flex-1 bg-green-600 hover:bg-green-700"
+                      size="lg"
                     >
-                      Confirm
+                      <span className="text-sm md:text-base">Confirm</span>
                     </Button>
                   )}
                 </div>
