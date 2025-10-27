@@ -1,3 +1,4 @@
+// Same imports as before...
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,35 +8,7 @@ import { Slider } from "@/components/ui/slider";
 import { Plus, X, Trash2, UserPlus } from "lucide-react";
 import { StickySplitButton } from "@/components/StickySplitButton";
 
-interface SavedGangMember {
-  id: string;
-  name: string;
-  type: string;
-}
-
-interface GangMember {
-  id?: string;
-  name: string;
-  type: string;
-  amount: number;
-  editing?: boolean;
-}
-
-interface GangDivisionCardProps {
-  gangMembers: GangMember[];
-  totalValue: number;
-  totalAllocated: number;
-  remainingToAllocate: number;
-  onAddMemberClick: () => void;
-  onRemoveMember: (index: number) => void;
-  onDeletePermanently?: (memberId: string, index: number) => void;
-  onUpdateMemberAmount: (index: number, newAmount: number) => void;
-  onStartEditing: (index: number) => void;
-  onStopEditing: (index: number) => void;
-  savedMembers?: SavedGangMember[];
-  onAddExistingMember?: (member: SavedGangMember) => void;
-  totalValueLabel?: string;
-}
+// Interfaces unchanged...
 
 export const GangDivisionCard = ({
   gangMembers,
@@ -69,7 +42,9 @@ export const GangDivisionCard = ({
       <CardContent>
         {savedMembers && savedMembers.length > 0 && onAddExistingMember && (
           <div className="mb-4">
-            <Label className="text-sm text-muted-foreground mb-2 block">Quick Add from Saved Members:</Label>
+            <Label className="text-sm text-muted-foreground mb-2 block">
+              Quick Add from Saved Members:
+            </Label>
             <div className="flex flex-wrap gap-2">
               {savedMembers.map((member) => {
                 const alreadyAdded = gangMembers.some((m) => m.id === member.id);
@@ -92,13 +67,16 @@ export const GangDivisionCard = ({
         )}
 
         {gangMembers.length === 0 && (
-          <p className="text-center text-muted-foreground py-4">No gang members added yet</p>
+          <p className="text-center text-muted-foreground py-4">
+            No gang members added yet
+          </p>
         )}
 
         {gangMembers.length > 0 && (
           <div className="space-y-3">
             {gangMembers.map((m, i) => {
-              const safeAmount = typeof m.amount === "number" && !isNaN(m.amount) ? m.amount : 0;
+              const safeAmount =
+                typeof m.amount === "number" && !isNaN(m.amount) ? m.amount : 0;
 
               return (
                 <div key={i} className="p-4 bg-muted rounded-lg space-y-2">
@@ -181,7 +159,8 @@ export const GangDivisionCard = ({
                       onSplit={(index) => {
                         const memberA = gangMembers[index];
                         const memberB = gangMembers[index + 1];
-                        const totalAvailable = memberA.amount + memberB.amount + remainingToAllocate;
+                        const totalAvailable =
+                          memberA.amount + memberB.amount + remainingToAllocate;
                         const splitAmount = Math.floor(totalAvailable / 2);
 
                         onUpdateMemberAmount(index, splitAmount);
@@ -210,8 +189,8 @@ export const GangDivisionCard = ({
                     remainingToAllocate < 0
                       ? "text-destructive"
                       : remainingToAllocate > 0
-                        ? "text-orange-500"
-                        : "text-green-600"
+                      ? "text-orange-500"
+                      : "text-green-600"
                   }`}
                 >
                   £{remainingToAllocate.toFixed(2)}
