@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
-import { FileText, Printer, Trash2, Send } from "lucide-react";
+import { FileText, Printer, Trash2, Send, Settings } from "lucide-react";
 import { maskEmail } from "@/lib/emailUtils";
 import jsPDF from "jspdf";
 import logo from "@/assets/logo.png";
@@ -79,6 +80,7 @@ const LIFT_LABELS = {
 
 const BookingIn = () => {
   const { user, isAdmin } = useAuth();
+  const navigate = useNavigate();
   const [bookings, setBookings] = useState<BookingData[]>([]);
   const [groupedInvoices, setGroupedInvoices] = useState<GroupedInvoice[]>([]);
   const [userInvoices, setUserInvoices] = useState<UserInvoices[]>([]);
@@ -750,7 +752,22 @@ const BookingIn = () => {
           }
         `}
       </style>
-      <Header showBackButton />
+      <Header 
+        showBackButton 
+        actions={
+          isAdmin ? (
+            <Button 
+              onClick={() => navigate("/admin/settings")} 
+              variant="outline" 
+              size="sm" 
+              title="Settings"
+            >
+              <Settings className="h-4 w-4" />
+              <span className="hidden md:inline ml-2">Settings</span>
+            </Button>
+          ) : undefined
+        }
+      />
 
       {/* Hidden Print Section */}
       {selectedInvoice && (
