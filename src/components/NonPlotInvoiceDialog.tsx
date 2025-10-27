@@ -315,32 +315,30 @@ export const NonPlotInvoiceDialog = ({
             />
 
             {/* ACTIONS */}
-            {gangMembers.length > 0 && (
-              <div className="flex gap-3" onClick={(e) => e.stopPropagation()}>
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  disabled={remainingToAllocate !== 0}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleExport();
-                  }}
-                >
-                  Export PDF
-                </Button>
+            <div className="flex gap-3" onClick={(e) => e.stopPropagation()}>
+              <Button
+                variant="outline"
+                className="flex-1"
+                disabled={remainingToAllocate !== 0 || gangMembers.length === 0}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleExport();
+                }}
+              >
+                Export PDF
+              </Button>
 
-                <Button
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                  disabled={remainingToAllocate !== 0 || !notes.trim()}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleSaveInvoice();
-                  }}
-                >
-                  Send to Admin
-                </Button>
-              </div>
-            )}
+              <Button
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                disabled={remainingToAllocate !== 0 || !notes.trim() || gangMembers.length === 0}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSaveInvoice();
+                }}
+              >
+                Send to Admin
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
