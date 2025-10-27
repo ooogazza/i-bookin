@@ -1,3 +1,4 @@
+// Same imports as before...
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,35 +8,7 @@ import { Slider } from "@/components/ui/slider";
 import { Plus, X, Trash2, UserPlus } from "lucide-react";
 import { StickySplitButton } from "@/components/StickySplitButton";
 
-interface SavedGangMember {
-  id: string;
-  name: string;
-  type: string;
-}
-
-interface GangMember {
-  id?: string;
-  name: string;
-  type: string;
-  amount: number;
-  editing?: boolean;
-}
-
-interface GangDivisionCardProps {
-  gangMembers: GangMember[];
-  totalValue: number;
-  totalAllocated: number;
-  remainingToAllocate: number;
-  onAddMemberClick: () => void;
-  onRemoveMember: (index: number) => void;
-  onDeletePermanently?: (memberId: string, index: number) => void;
-  onUpdateMemberAmount: (index: number, newAmount: number) => void;
-  onStartEditing: (index: number) => void;
-  onStopEditing: (index: number) => void;
-  savedMembers?: SavedGangMember[];
-  onAddExistingMember?: (member: SavedGangMember) => void;
-  totalValueLabel?: string;
-}
+// Interfaces unchanged...
 
 export const GangDivisionCard = ({
   gangMembers,
@@ -163,18 +136,20 @@ export const GangDivisionCard = ({
                       </div>
                     )}
 
-                    <Slider
-                      value={[safeAmount]}
-                      onValueChange={(v) => {
-                        const newAmount = v[0];
-                        onUpdateMemberAmount(i, newAmount);
-                      }}
-                      onDragStart={() => setActiveSplitIndex(i)}
-                      onDragEnd={() => setTimeout(() => setActiveSplitIndex(null), 6000)}
-                      max={totalValue}
-                      step={1}
-                      className="w-full"
-                    />
+                    {Number.isFinite(safeAmount) && (
+                      <Slider
+                        value={[safeAmount]}
+                        onValueChange={(v) => {
+                          const newAmount = v[0];
+                          onUpdateMemberAmount(i, newAmount);
+                        }}
+                        onDragStart={() => setActiveSplitIndex(i)}
+                        onDragEnd={() => setTimeout(() => setActiveSplitIndex(null), 6000)}
+                        max={totalValue}
+                        step={1}
+                        className="w-full"
+                      />
+                    )}
                   </div>
 
                   {activeSplitIndex === i && i < gangMembers.length - 1 && (
