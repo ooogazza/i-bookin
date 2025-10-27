@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Plus, X, Trash2, UserPlus } from "lucide-react";
+import { Plus, X, Trash2, UserPlus, Users } from "lucide-react";
 import { StickySplitButton } from "@/components/StickySplitButton";
 import {
   DropdownMenu,
@@ -70,8 +70,7 @@ export const GangDivisionCard = ({
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button size="sm" variant="outline">
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Saved Members
+                    <Users className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
