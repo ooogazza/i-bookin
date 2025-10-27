@@ -186,37 +186,26 @@ const generateLetterheadPDFContent = (doc: jsPDF, invoice: any, userName: string
     console.error("Failed to add letterhead to PDF", e);
   }
 
-  // Position content on LEFT side with space at TOP and RIGHT for letterhead
+  // Position content on LEFT side
   const leftMargin = 15;
-  const contentWidth = 120;
-  const startY = 50;
+  const contentWidth = 120; // Width for text wrapping
+  const startY = 20;
 
-  // Add logo on top left (smaller)
-  try {
-    doc.addImage(roundedLogo, "PNG", leftMargin, 10, 25, 17);
-  } catch (e) {
-    console.error("Failed to add logo to PDF", e);
-  }
-
-  // Company name below logo
-  doc.setTextColor(0, 0, 0);
-  doc.setFontSize(12);
-  doc.setFont("helvetica", "normal");
-  doc.text("Brickwork Manager", leftMargin, 32);
-
-  // Blue header bar - LEFT aligned
+  // Blue header bar - compact, only around text
   doc.setFillColor(...blueColor);
-  doc.rect(leftMargin, startY, contentWidth, 12, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
-  doc.text(`INVOICE: ${invoice.invoiceNumber}`, leftMargin + 5, startY + 8);
+  const invoiceText = `INVOICE: ${invoice.invoiceNumber}`;
+  const textWidth = doc.getTextWidth(invoiceText);
+  doc.rect(leftMargin, startY, textWidth + 10, 10, "F");
+  doc.text(invoiceText, leftMargin + 5, startY + 7);
 
   doc.setTextColor(0, 0, 0);
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
 
-  let yPos = startY + 20;
+  let yPos = startY + 18;
 
   if (userName) {
     doc.text(`Booked by: ${userName}`, leftMargin, yPos);
@@ -278,6 +267,13 @@ const generateLetterheadPDFContent = (doc: jsPDF, invoice: any, userName: string
     doc.setFont("helvetica", "bold");
     const total = invoice.gangMembers.reduce((sum: number, m: any) => sum + m.amount, 0);
     doc.text(`Total Allocated: £${total.toFixed(2)}`, leftMargin, yPos);
+  }
+
+  // Add logo at BOTTOM LEFT
+  try {
+    doc.addImage(roundedLogo, "PNG", leftMargin, 270, 20, 13);
+  } catch (e) {
+    console.error("Failed to add logo to bottom", e);
   }
 };
 
