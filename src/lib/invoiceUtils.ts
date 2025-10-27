@@ -189,7 +189,7 @@ const generateLetterheadPDFContent = (doc: jsPDF, invoice: any, userName: string
   // Position content on LEFT side
   const leftMargin = 15;
   const contentWidth = 120; // Width for text wrapping
-  const startY = 20;
+  const startY = 70; // Lower start to leave space for letterhead at top
 
   // Blue header bar - compact, only around text
   doc.setFillColor(...blueColor);
