@@ -6,15 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-  TableFooter,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { FileText, Printer, Trash2 } from "lucide-react";
 import { maskEmail } from "@/lib/emailUtils";
 import jsPDF from "jspdf";
@@ -100,159 +92,122 @@ const BookingIn = () => {
     fetchBookings();
   }, [user, isAdmin]);
 
- const fetchBookings = async () => {
-  if (!user) return;
+  const fetchBookings = async () => {
+    if (!user) return;
 
-  try {
-    // Plot-based bookings
-    let query = supabase
-      .from("bookings")
-      .select(`
-        *,
-        notes,
-        confirmed_by_admin,
-        profiles!bookings_booked_by_fkey (
-          full_name,
-          email
-        ),
-        plots (
-          plot_number,
-          house_types (
-            name,
-            sites (
-              name
+    try {
+      let query = supabase
+        .from("bookings")
+        .select(
+          `
+          *,
+          notes,
+          confirmed_by_admin,
+          profiles!bookings_booked_by_fkey (
+            full_name,
+            email
+          ),
+          plots (
+            plot_number,
+            house_types (
+              name,
+              sites (
+                name
+              )
             )
+          ),
+          lift_values (
+            lift_type
+          ),
+          gang_divisions (
+            member_name,
+            member_type,
+            amount
           )
-        ),
-        lift_values (
-          lift_type
-        ),
-        gang_divisions (
-          member_name,
-          member_type,
-          amount
+        `,
         )
-      `)
-      .eq("status", "confirmed")
-      .order("created_at", { ascending: false });
+        .eq("status", "confirmed")
+        .order("created_at", { ascending: false });
 
-    if (!isAdmin) {
-      query = query.eq("booked_by", user.id);
-    }
-
-    const { data: plotData, error: plotError } = await query;
-    if (plotError) throw plotError;
-
-    const groupedPlot = (plotData || []).reduce((acc: { [key: string]: GroupedInvoice }, booking: any) => {
-      if (!acc[booking.invoice_number]) {
-        acc[booking.invoice_number] = {
-          invoice_number: booking.invoice_number,
-          created_at: booking.created_at,
-          booked_by: booking.profiles,
-          items: [],
-          total_value: 0,
-          notes: booking.notes,
-          is_confirmed: booking.confirmed_by_admin || false,
-        };
+      // Filter by user if not admin
+      if (!isAdmin) {
+        query = query.eq("booked_by", user.id);
       }
-      if (booking.confirmed_by_admin) {
-        acc[booking.invoice_number].is_confirmed = true;
-      }
-      acc[booking.invoice_number].items.push(booking);
-      acc[booking.invoice_number].total_value += booking.booked_value;
-      return acc;
-    }, {});
-    const plotInvoices = Object.values(groupedPlot);
 
-    // Non-plot invoices
-    const { data: nonPlotData, error: nonPlotError } = await supabase
-      .from("non_plot_invoices")
-      .select(`
-        *,
-        profiles:profiles!non_plot_invoices_user_id_fkey (
-          full_name,
-          email
-        ),
-        non_plot_gang_divisions (
-          member_name,
-          member_type,
-          amount
-        )
-      `)
-      .order("created_at", { ascending: false });
+      const { data, error } = await query;
 
-    if (nonPlotError) throw nonPlotError;
+      if (error) throw error;
+      setBookings((data as any) || []);
 
-    const nonPlotInvoices: GroupedInvoice[] = (nonPlotData || []).map((inv: any) => ({
-      invoice_number: inv.invoice_number,
-      created_at: inv.created_at,
-      booked_by: inv.profiles,
-      items: [{
-        booked_value: inv.total_amount,
-        gang_divisions: inv.non_plot_gang_divisions,
-        plots: { plot_number: 0, house_types: { name: "Non-Plot", sites: { name: "N/A" } } },
-        lift_values: { lift_type: "non_plot" },
-        percentage: 100,
-        notes: inv.notes,
-        profiles: inv.profiles,
-        invoice_number: inv.invoice_number,
-        status: "confirmed",
-        created_at: inv.created_at,
-      }],
-      total_value: inv.total_amount,
-      notes: inv.notes,
-      is_confirmed: true,
-    }));
-
-    // Merge and sort
-    const allInvoices = [...plotInvoices, ...nonPlotInvoices].sort(
-      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
-
-    // Fetch viewed status for admin
-    if (isAdmin) {
-      const { data: viewData, error: viewError } = await supabase
-        .from("invoice_views")
-        .select("invoice_number")
-        .eq("viewed_by", user.id);
-
-      if (!viewError) {
-        const viewedInvoices = new Set(viewData?.map(v => v.invoice_number) || []);
-        allInvoices.forEach((invoice: GroupedInvoice) => {
-          invoice.is_viewed = viewedInvoices.has(invoice.invoice_number);
-        });
-        setUnviewedCount(allInvoices.filter((inv: GroupedInvoice) => !inv.is_viewed).length);
-      }
-    }
-
-    setGroupedInvoices(allInvoices);
-
-    // Group by user for admin view
-    if (isAdmin) {
-      const userGroups = allInvoices.reduce((acc: { [key: string]: UserInvoices }, invoice: GroupedInvoice) => {
-        const userEmail = invoice.booked_by.email;
-        if (!acc[userEmail]) {
-          acc[userEmail] = {
-            user_id: userEmail,
-            full_name: invoice.booked_by.full_name,
-            email: invoice.booked_by.email,
-            invoices: [],
+      // Group bookings by invoice number
+      const grouped = ((data as any) || []).reduce((acc: { [key: string]: GroupedInvoice }, booking: any) => {
+        if (!acc[booking.invoice_number]) {
+          acc[booking.invoice_number] = {
+            invoice_number: booking.invoice_number,
+            created_at: booking.created_at,
+            booked_by: booking.profiles,
+            items: [],
             total_value: 0,
+            notes: booking.notes,
+            is_confirmed: booking.confirmed_by_admin || false,
           };
         }
-        acc[userEmail].invoices.push(invoice);
-        acc[userEmail].total_value += invoice.total_value;
+        // Update is_confirmed if any booking in the invoice is confirmed
+        if (booking.confirmed_by_admin) {
+          acc[booking.invoice_number].is_confirmed = true;
+        }
+        acc[booking.invoice_number].items.push(booking);
+        acc[booking.invoice_number].total_value += booking.booked_value;
         return acc;
       }, {});
-      setUserInvoices(Object.values(userGroups));
+
+      const invoices = Object.values(grouped) as GroupedInvoice[];
+
+      // Fetch viewed status for admin
+      if (isAdmin) {
+        const { data: viewData, error: viewError } = await supabase
+          .from("invoice_views")
+          .select("invoice_number")
+          .eq("viewed_by", user.id);
+
+        if (!viewError) {
+          const viewedInvoices = new Set(viewData?.map((v) => v.invoice_number) || []);
+          invoices.forEach((invoice: GroupedInvoice) => {
+            invoice.is_viewed = viewedInvoices.has(invoice.invoice_number);
+          });
+          setUnviewedCount(invoices.filter((inv: GroupedInvoice) => !inv.is_viewed).length);
+        }
+      }
+
+      setGroupedInvoices(invoices);
+
+      // Group invoices by user for admin view
+      if (isAdmin) {
+        const userGroups = invoices.reduce((acc: { [key: string]: UserInvoices }, invoice: GroupedInvoice) => {
+          const userEmail = invoice.booked_by.email;
+          if (!acc[userEmail]) {
+            acc[userEmail] = {
+              user_id: userEmail,
+              full_name: invoice.booked_by.full_name,
+              email: invoice.booked_by.email,
+              invoices: [],
+              total_value: 0,
+            };
+          }
+          acc[userEmail].invoices.push(invoice);
+          acc[userEmail].total_value += invoice.total_value;
+          return acc;
+        }, {});
+
+        setUserInvoices(Object.values(userGroups));
+      }
+    } catch (error: any) {
+      toast.error("Failed to load bookings");
+      console.error("Error:", error);
+    } finally {
+      setLoading(false);
     }
-  } catch (error: any) {
-    toast.error("Failed to load bookings");
-    console.error("Error:", error);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const handleViewUserInvoices = (userGroup: UserInvoices) => {
     setSelectedUser(userGroup);
@@ -262,39 +217,33 @@ const BookingIn = () => {
   const handleViewDetails = async (invoice: GroupedInvoice) => {
     setSelectedInvoice(invoice);
     setDetailsDialogOpen(true);
-    
+
     // Mark as viewed for admins
     if (isAdmin && !invoice.is_viewed) {
       try {
-        await supabase
-          .from("invoice_views")
-          .insert({
-            invoice_number: invoice.invoice_number,
-            viewed_by: user!.id
-          });
-        
+        await supabase.from("invoice_views").insert({
+          invoice_number: invoice.invoice_number,
+          viewed_by: user!.id,
+        });
+
         // Update local state
-        setGroupedInvoices((prev: GroupedInvoice[]) => 
-          prev.map((inv: GroupedInvoice) => 
-            inv.invoice_number === invoice.invoice_number 
-              ? { ...inv, is_viewed: true } as GroupedInvoice
-              : inv
-          )
+        setGroupedInvoices((prev: GroupedInvoice[]) =>
+          prev.map((inv: GroupedInvoice) =>
+            inv.invoice_number === invoice.invoice_number ? ({ ...inv, is_viewed: true } as GroupedInvoice) : inv,
+          ),
         );
-        
+
         // Update userInvoices state
-        setUserInvoices((prev: UserInvoices[]) => 
+        setUserInvoices((prev: UserInvoices[]) =>
           prev.map((user: UserInvoices) => ({
             ...user,
-            invoices: user.invoices.map((inv: GroupedInvoice) => 
-              inv.invoice_number === invoice.invoice_number 
-                ? { ...inv, is_viewed: true } as GroupedInvoice
-                : inv
-            )
-          }))
+            invoices: user.invoices.map((inv: GroupedInvoice) =>
+              inv.invoice_number === invoice.invoice_number ? ({ ...inv, is_viewed: true } as GroupedInvoice) : inv,
+            ),
+          })),
         );
-        
-        setUnviewedCount(prev => Math.max(0, prev - 1));
+
+        setUnviewedCount((prev) => Math.max(0, prev - 1));
       } catch (error: any) {
         console.error("Error marking invoice as viewed:", error);
       }
@@ -314,33 +263,29 @@ const BookingIn = () => {
       if (error) throw error;
 
       // Update local state
-      setGroupedInvoices((prev: GroupedInvoice[]) => 
-        prev.map((inv: GroupedInvoice) => 
-          inv.invoice_number === invoice.invoice_number 
-            ? { ...inv, is_confirmed: true } as GroupedInvoice
-            : inv
-        )
+      setGroupedInvoices((prev: GroupedInvoice[]) =>
+        prev.map((inv: GroupedInvoice) =>
+          inv.invoice_number === invoice.invoice_number ? ({ ...inv, is_confirmed: true } as GroupedInvoice) : inv,
+        ),
       );
 
       // Update userInvoices state
-      setUserInvoices((prev: UserInvoices[]) => 
+      setUserInvoices((prev: UserInvoices[]) =>
         prev.map((user: UserInvoices) => ({
           ...user,
-          invoices: user.invoices.map((inv: GroupedInvoice) => 
-            inv.invoice_number === invoice.invoice_number 
-              ? { ...inv, is_confirmed: true } as GroupedInvoice
-              : inv
-          )
-        }))
+          invoices: user.invoices.map((inv: GroupedInvoice) =>
+            inv.invoice_number === invoice.invoice_number ? ({ ...inv, is_confirmed: true } as GroupedInvoice) : inv,
+          ),
+        })),
       );
 
       // Update selectedInvoice state to show green immediately
-      setSelectedInvoice((prev: GroupedInvoice | null) => 
-        prev ? { ...prev, is_confirmed: true } as GroupedInvoice : prev
+      setSelectedInvoice((prev: GroupedInvoice | null) =>
+        prev ? ({ ...prev, is_confirmed: true } as GroupedInvoice) : prev,
       );
 
       toast.success("Invoice confirmed successfully");
-      
+
       // Refetch to ensure state is synchronized
       await fetchBookings();
     } catch (error: any) {
@@ -351,24 +296,24 @@ const BookingIn = () => {
 
   const handleExportInvoice = (invoice: GroupedInvoice) => {
     const doc = new jsPDF();
-    
+
     // Blue color for styling
     const blueColor: [number, number, number] = [37, 99, 235]; // #2563EB
-    
+
     // Create rounded logo
     const img = new Image();
     img.src = logo;
     img.onload = () => {
       // Create canvas for rounded image
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
       const width = 300;
       const height = 200;
       const radius = 20;
-      
+
       canvas.width = width;
       canvas.height = height;
-      
+
       if (ctx) {
         // Draw rounded rectangle
         ctx.beginPath();
@@ -383,125 +328,125 @@ const BookingIn = () => {
         ctx.quadraticCurveTo(0, 0, radius, 0);
         ctx.closePath();
         ctx.clip();
-        
+
         // Draw image
         ctx.drawImage(img, 0, 0, width, height);
-        
+
         // Add rounded logo to PDF
-        const roundedLogo = canvas.toDataURL('image/png');
+        const roundedLogo = canvas.toDataURL("image/png");
         try {
-          doc.addImage(roundedLogo, 'PNG', 90, 10, 30, 20);
+          doc.addImage(roundedLogo, "PNG", 90, 10, 30, 20);
         } catch (e) {
-          console.error('Failed to add logo to PDF', e);
+          console.error("Failed to add logo to PDF", e);
         }
-        
+
         generateRestOfPDF();
       }
     };
-    
+
     const generateRestOfPDF = () => {
       // Black text for Brickwork Manager
       doc.setTextColor(0, 0, 0);
       doc.setFontSize(14);
       doc.setFont("helvetica", "normal");
       doc.text("Brickwork Manager", 105, 38, { align: "center" });
-    
-    // Invoice number with blue background
-    doc.setFillColor(...blueColor);
-    doc.rect(10, 45, 190, 12, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
-    doc.text(`INVOICE: ${invoice.invoice_number}`, 105, 53, { align: "center" });
-    
-    // Reset to black text for content
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    
-    let yPos = 68;
-    
-    // Date
-    doc.text(`Date: ${new Date(invoice.created_at).toLocaleDateString()}`, 15, yPos);
-    yPos += 10;
-    
-    // Booked by section with blue title
-    doc.setTextColor(...blueColor);
-    doc.setFont("helvetica", "bold");
-    doc.text("BOOKED BY:", 15, yPos);
-    doc.setTextColor(0, 0, 0);
-    doc.setFont("helvetica", "normal");
-    yPos += 7;
-    doc.text(`Name: ${invoice.booked_by.full_name}`, 15, yPos);
-    yPos += 12;
-    
-    // Items section with blue title
-    doc.setTextColor(...blueColor);
-    doc.setFont("helvetica", "bold");
-    doc.text("ITEMS:", 15, yPos);
-    doc.setTextColor(0, 0, 0);
-    doc.setFont("helvetica", "normal");
-    yPos += 7;
-    
-    invoice.items.forEach(item => {
-      if (yPos > 270) {
-        doc.addPage();
-        yPos = 20;
-      }
-      const text = `Plot ${item.plots.plot_number} - ${LIFT_LABELS[item.lift_values.lift_type as keyof typeof LIFT_LABELS]}: ${item.percentage}% = £${item.booked_value.toFixed(2)}`;
-      doc.text(text, 15, yPos);
-      yPos += 6;
-    });
-    
-    yPos += 6;
-    
-    // Notes section if exists
-    if (invoice.notes) {
+
+      // Invoice number with blue background
+      doc.setFillColor(...blueColor);
+      doc.rect(10, 45, 190, 12, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text(`INVOICE: ${invoice.invoice_number}`, 105, 53, { align: "center" });
+
+      // Reset to black text for content
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+
+      let yPos = 68;
+
+      // Date
+      doc.text(`Date: ${new Date(invoice.created_at).toLocaleDateString()}`, 15, yPos);
+      yPos += 10;
+
+      // Booked by section with blue title
       doc.setTextColor(...blueColor);
       doc.setFont("helvetica", "bold");
-      doc.text("NOTES:", 15, yPos);
+      doc.text("BOOKED BY:", 15, yPos);
       doc.setTextColor(0, 0, 0);
       doc.setFont("helvetica", "normal");
       yPos += 7;
-      const noteLines = doc.splitTextToSize(invoice.notes, 180);
-      doc.text(noteLines, 15, yPos);
-      yPos += noteLines.length * 6 + 6;
-    }
-    
-    // Total value with blue box
-    doc.setFillColor(...blueColor);
-    doc.rect(10, yPos, 190, 10, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
-    doc.text(`Total Value: £${invoice.total_value.toFixed(2)}`, 105, yPos + 7, { align: "center" });
-    yPos += 18;
-    
-    // Gang division section
-    const gangDivisions = invoice.items[0]?.gang_divisions || [];
-    if (gangDivisions.length > 0) {
+      doc.text(`Name: ${invoice.booked_by.full_name}`, 15, yPos);
+      yPos += 12;
+
+      // Items section with blue title
       doc.setTextColor(...blueColor);
       doc.setFont("helvetica", "bold");
-      doc.text("GANG DIVISION:", 15, yPos);
+      doc.text("ITEMS:", 15, yPos);
       doc.setTextColor(0, 0, 0);
       doc.setFont("helvetica", "normal");
       yPos += 7;
-      
-      gangDivisions.forEach(member => {
+
+      invoice.items.forEach((item) => {
         if (yPos > 270) {
           doc.addPage();
           yPos = 20;
         }
-        doc.text(`${member.member_name} (${member.member_type}): £${member.amount.toFixed(2)}`, 15, yPos);
+        const text = `Plot ${item.plots.plot_number} - ${LIFT_LABELS[item.lift_values.lift_type as keyof typeof LIFT_LABELS]}: ${item.percentage}% = £${item.booked_value.toFixed(2)}`;
+        doc.text(text, 15, yPos);
         yPos += 6;
       });
-      
-      yPos += 4;
+
+      yPos += 6;
+
+      // Notes section if exists
+      if (invoice.notes) {
+        doc.setTextColor(...blueColor);
+        doc.setFont("helvetica", "bold");
+        doc.text("NOTES:", 15, yPos);
+        doc.setTextColor(0, 0, 0);
+        doc.setFont("helvetica", "normal");
+        yPos += 7;
+        const noteLines = doc.splitTextToSize(invoice.notes, 180);
+        doc.text(noteLines, 15, yPos);
+        yPos += noteLines.length * 6 + 6;
+      }
+
+      // Total value with blue box
+      doc.setFillColor(...blueColor);
+      doc.rect(10, yPos, 190, 10, "F");
+      doc.setTextColor(255, 255, 255);
       doc.setFont("helvetica", "bold");
-      doc.text(`Total Allocated: £${gangDivisions.reduce((sum, m) => sum + m.amount, 0).toFixed(2)}`, 15, yPos);
-    }
-    
-    doc.save(`${invoice.invoice_number}.pdf`);
-    toast.success("Invoice exported as PDF");
+      doc.text(`Total Value: £${invoice.total_value.toFixed(2)}`, 105, yPos + 7, { align: "center" });
+      yPos += 18;
+
+      // Gang division section
+      const gangDivisions = invoice.items[0]?.gang_divisions || [];
+      if (gangDivisions.length > 0) {
+        doc.setTextColor(...blueColor);
+        doc.setFont("helvetica", "bold");
+        doc.text("GANG DIVISION:", 15, yPos);
+        doc.setTextColor(0, 0, 0);
+        doc.setFont("helvetica", "normal");
+        yPos += 7;
+
+        gangDivisions.forEach((member) => {
+          if (yPos > 270) {
+            doc.addPage();
+            yPos = 20;
+          }
+          doc.text(`${member.member_name} (${member.member_type}): £${member.amount.toFixed(2)}`, 15, yPos);
+          yPos += 6;
+        });
+
+        yPos += 4;
+        doc.setFont("helvetica", "bold");
+        doc.text(`Total Allocated: £${gangDivisions.reduce((sum, m) => sum + m.amount, 0).toFixed(2)}`, 15, yPos);
+      }
+
+      doc.save(`${invoice.invoice_number}.pdf`);
+      toast.success("Invoice exported as PDF");
     };
   };
 
@@ -514,7 +459,7 @@ const BookingIn = () => {
   const handlePrintInvoice = (invoice: GroupedInvoice) => {
     // Set the selected invoice for printing
     setSelectedInvoice(invoice);
-    
+
     // Small delay to ensure content is rendered before printing
     setTimeout(() => {
       window.print();
@@ -558,7 +503,7 @@ const BookingIn = () => {
           }
         `}
       </style>
-      <Header 
+      <Header
         showBackButton
         actions={
           <Button onClick={handlePrint} variant="outline" size="sm" title="Print" className="no-print">
@@ -567,76 +512,80 @@ const BookingIn = () => {
           </Button>
         }
       />
-      
+
       {/* Hidden Print Section */}
       {selectedInvoice && (
         <div className="print-invoice-section">
-          <div style={{ backgroundColor: '#2563EB', padding: '15px', textAlign: 'center', marginBottom: '15px' }}>
-            <img 
-              src={logo} 
+          <div style={{ backgroundColor: "#2563EB", padding: "15px", textAlign: "center", marginBottom: "15px" }}>
+            <img
+              src={logo}
               alt="I-Bookin"
-              style={{ 
-                height: '50px', 
-                width: 'auto',
-                margin: '0 auto', 
-                display: 'block',
-                borderRadius: '8px'
-              }} 
+              style={{
+                height: "50px",
+                width: "auto",
+                margin: "0 auto",
+                display: "block",
+                borderRadius: "8px",
+              }}
             />
-            <p style={{ color: 'white', fontSize: '14px', margin: '5px 0 0 0' }}>Brickwork Manager</p>
+            <p style={{ color: "white", fontSize: "14px", margin: "5px 0 0 0" }}>Brickwork Manager</p>
           </div>
-          
-          <div style={{ backgroundColor: '#2563EB', padding: '8px', textAlign: 'center', marginBottom: '20px' }}>
-            <h2 style={{ color: 'white', fontSize: '16px', fontWeight: 'bold', margin: 0 }}>
+
+          <div style={{ backgroundColor: "#2563EB", padding: "8px", textAlign: "center", marginBottom: "20px" }}>
+            <h2 style={{ color: "white", fontSize: "16px", fontWeight: "bold", margin: 0 }}>
               INVOICE: {selectedInvoice.invoice_number}
             </h2>
           </div>
 
-          <div style={{ marginBottom: '15px' }}>
-            <p style={{ fontSize: '13px', marginBottom: '0' }}>
+          <div style={{ marginBottom: "15px" }}>
+            <p style={{ fontSize: "13px", marginBottom: "0" }}>
               <strong>Date:</strong> {new Date(selectedInvoice.created_at).toLocaleDateString()}
             </p>
           </div>
 
-          <div style={{ marginBottom: '20px' }}>
-            <h3 style={{ color: '#2563EB', fontSize: '15px', fontWeight: 'bold', marginBottom: '8px' }}>BOOKED BY:</h3>
-            <p style={{ fontSize: '13px', margin: '3px 0' }}>
+          <div style={{ marginBottom: "20px" }}>
+            <h3 style={{ color: "#2563EB", fontSize: "15px", fontWeight: "bold", marginBottom: "8px" }}>BOOKED BY:</h3>
+            <p style={{ fontSize: "13px", margin: "3px 0" }}>
               <strong>Name:</strong> {selectedInvoice.booked_by.full_name}
             </p>
           </div>
 
-          <div style={{ marginBottom: '20px' }}>
-            <h3 style={{ color: '#2563EB', fontSize: '15px', fontWeight: 'bold', marginBottom: '8px' }}>ITEMS:</h3>
+          <div style={{ marginBottom: "20px" }}>
+            <h3 style={{ color: "#2563EB", fontSize: "15px", fontWeight: "bold", marginBottom: "8px" }}>ITEMS:</h3>
             {selectedInvoice.items.map((item, index) => (
-              <p key={index} style={{ fontSize: '13px', marginBottom: '5px' }}>
-                Plot {item.plots.plot_number} - {LIFT_LABELS[item.lift_values.lift_type as keyof typeof LIFT_LABELS]}: {item.percentage}% = £{item.booked_value.toFixed(2)}
+              <p key={index} style={{ fontSize: "13px", marginBottom: "5px" }}>
+                Plot {item.plots.plot_number} - {LIFT_LABELS[item.lift_values.lift_type as keyof typeof LIFT_LABELS]}:{" "}
+                {item.percentage}% = £{item.booked_value.toFixed(2)}
               </p>
             ))}
           </div>
 
           {selectedInvoice.notes && (
-            <div style={{ marginBottom: '20px' }}>
-              <h3 style={{ color: '#2563EB', fontSize: '15px', fontWeight: 'bold', marginBottom: '8px' }}>NOTES:</h3>
-              <p style={{ fontSize: '13px', whiteSpace: 'pre-wrap', margin: 0 }}>{selectedInvoice.notes}</p>
+            <div style={{ marginBottom: "20px" }}>
+              <h3 style={{ color: "#2563EB", fontSize: "15px", fontWeight: "bold", marginBottom: "8px" }}>NOTES:</h3>
+              <p style={{ fontSize: "13px", whiteSpace: "pre-wrap", margin: 0 }}>{selectedInvoice.notes}</p>
             </div>
           )}
 
-          <div style={{ backgroundColor: '#2563EB', padding: '8px', textAlign: 'center', marginBottom: '20px' }}>
-            <p style={{ color: 'white', fontSize: '16px', fontWeight: 'bold', margin: 0 }}>
+          <div style={{ backgroundColor: "#2563EB", padding: "8px", textAlign: "center", marginBottom: "20px" }}>
+            <p style={{ color: "white", fontSize: "16px", fontWeight: "bold", margin: 0 }}>
               Total Value: £{selectedInvoice.total_value.toFixed(2)}
             </p>
           </div>
 
           {selectedInvoice.items[0]?.gang_divisions && selectedInvoice.items[0].gang_divisions.length > 0 && (
             <div>
-              <h3 style={{ color: '#2563EB', fontSize: '15px', fontWeight: 'bold', marginBottom: '8px' }}>GANG DIVISION:</h3>
+              <h3 style={{ color: "#2563EB", fontSize: "15px", fontWeight: "bold", marginBottom: "8px" }}>
+                GANG DIVISION:
+              </h3>
               {selectedInvoice.items[0].gang_divisions.map((member, index) => (
-                <p key={index} style={{ fontSize: '13px', marginBottom: '5px' }}>
+                <p key={index} style={{ fontSize: "13px", marginBottom: "5px" }}>
                   {member.member_name} ({member.member_type}): £{member.amount.toFixed(2)}
                 </p>
               ))}
-              <p style={{ fontSize: '13px', fontWeight: 'bold', marginTop: '10px', marginBottom: 0 }}>
-                Total Allocated: £{selectedInvoice.items[0].gang_divisions.reduce((sum, m) => sum + m.amount, 0).toFixed(2)}
+              <p style={{ fontSize: "13px", fontWeight: "bold", marginTop: "10px", marginBottom: 0 }}>
+                Total Allocated: £
+                {selectedInvoice.items[0].gang_divisions.reduce((sum, m) => sum + m.amount, 0).toFixed(2)}
               </p>
             </div>
           )}
@@ -650,9 +599,7 @@ const BookingIn = () => {
               <FileText className="h-8 w-8 text-primary" />
               Booking In
             </h2>
-            <p className="text-muted-foreground">
-              Invoice summary of all booked work
-            </p>
+            <p className="text-muted-foreground">Invoice summary of all booked work</p>
           </div>
         </div>
 
@@ -670,14 +617,11 @@ const BookingIn = () => {
               </Card>
             ) : (
               userInvoices.map((userGroup) => {
-                const unviewedInvoices = userGroup.invoices.filter(inv => !inv.is_viewed && !inv.is_confirmed).length;
-                const confirmedInvoices = userGroup.invoices.filter(inv => inv.is_confirmed).length;
-                
+                const unviewedInvoices = userGroup.invoices.filter((inv) => !inv.is_viewed && !inv.is_confirmed).length;
+                const confirmedInvoices = userGroup.invoices.filter((inv) => inv.is_confirmed).length;
+
                 return (
-                  <Card 
-                    key={userGroup.user_id} 
-                    className="hover:shadow-lg transition-shadow"
-                  >
+                  <Card key={userGroup.user_id} className="hover:shadow-lg transition-shadow">
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -706,26 +650,23 @@ const BookingIn = () => {
                           <span className="text-xl font-bold text-primary">£{userGroup.total_value.toFixed(2)}</span>
                         </div>
                         <div className="flex gap-2 pt-2">
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             size="sm"
                             className="flex-1"
                             onClick={() => handleViewUserInvoices(userGroup)}
                           >
                             View Invoices
                           </Button>
-                          <Button 
-                            variant="destructive" 
+                          <Button
+                            variant="destructive"
                             size="sm"
                             onClick={async (e) => {
                               e.stopPropagation();
                               if (!confirm(`Delete all invoices for ${userGroup.full_name}?`)) return;
                               try {
-                                const invoiceNumbers = userGroup.invoices.map(inv => inv.invoice_number);
-                                await supabase
-                                  .from("bookings")
-                                  .delete()
-                                  .in("invoice_number", invoiceNumbers);
+                                const invoiceNumbers = userGroup.invoices.map((inv) => inv.invoice_number);
+                                await supabase.from("bookings").delete().in("invoice_number", invoiceNumbers);
                                 toast.success("User invoices deleted");
                                 fetchBookings();
                               } catch (error: any) {
@@ -757,7 +698,7 @@ const BookingIn = () => {
               ) : (
                 <Table>
                   <TableHeader>
-                   <TableRow>
+                    <TableRow>
                       <TableHead>Invoice #</TableHead>
                       <TableHead>Gang Members</TableHead>
                       <TableHead className="text-right">Total Value</TableHead>
@@ -767,20 +708,18 @@ const BookingIn = () => {
                   </TableHeader>
                   <TableBody>
                     {groupedInvoices.map((invoice) => (
-                      <TableRow 
+                      <TableRow
                         key={invoice.invoice_number}
                         className="cursor-pointer hover:bg-muted/50"
                         onClick={() => handleViewDetails(invoice)}
                       >
-                        <TableCell className="font-medium">
-                          {invoice.invoice_number}
-                        </TableCell>
+                        <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
                         <TableCell>
                           <div className="space-y-1">
                             {invoice.items[0]?.gang_divisions.map((member, idx) => (
                               <div key={idx} className="text-sm">
                                 <span className="font-medium">{member.member_name}</span>
-                                {' - '}
+                                {" - "}
                                 <span className="text-muted-foreground capitalize">£{member.amount.toFixed(2)}</span>
                               </div>
                             ))}
@@ -789,10 +728,8 @@ const BookingIn = () => {
                         <TableCell className="text-right font-bold text-primary">
                           £{invoice.total_value.toFixed(2)}
                         </TableCell>
-                        <TableCell>
-                          {new Date(invoice.created_at).toLocaleDateString()}
-                        </TableCell>
-                          <TableCell className="text-right">
+                        <TableCell>{new Date(invoice.created_at).toLocaleDateString()}</TableCell>
+                        <TableCell className="text-right">
                           <Button
                             variant="outline"
                             size="sm"
@@ -857,7 +794,7 @@ const BookingIn = () => {
                   <h4 className="font-semibold mb-3">Invoices</h4>
                   <Table>
                     <TableHeader>
-                     <TableRow>
+                      <TableRow>
                         <TableHead>Invoice #</TableHead>
                         <TableHead>Gang Members</TableHead>
                         <TableHead className="text-right">Value</TableHead>
@@ -867,9 +804,9 @@ const BookingIn = () => {
                     </TableHeader>
                     <TableBody>
                       {selectedUser.invoices.map((invoice) => (
-                        <TableRow 
+                        <TableRow
                           key={invoice.invoice_number}
-                          className={`cursor-pointer ${invoice.is_confirmed ? 'bg-green-100 dark:bg-green-900/20 hover:bg-green-200 dark:hover:bg-green-900/30' : 'hover:bg-muted/50'}`}
+                          className={`cursor-pointer ${invoice.is_confirmed ? "bg-green-100 dark:bg-green-900/20 hover:bg-green-200 dark:hover:bg-green-900/30" : "hover:bg-muted/50"}`}
                           onClick={() => handleViewDetails(invoice)}
                         >
                           <TableCell className="font-medium">
@@ -885,7 +822,7 @@ const BookingIn = () => {
                               {invoice.items[0]?.gang_divisions.map((member, idx) => (
                                 <div key={idx} className="text-sm">
                                   <span className="font-medium">{member.member_name}</span>
-                                  {' - '}
+                                  {" - "}
                                   <span className="text-muted-foreground capitalize">£{member.amount.toFixed(2)}</span>
                                 </div>
                               ))}
@@ -894,9 +831,7 @@ const BookingIn = () => {
                           <TableCell className="text-right font-bold text-primary">
                             £{invoice.total_value.toFixed(2)}
                           </TableCell>
-                          <TableCell>
-                            {new Date(invoice.created_at).toLocaleDateString()}
-                          </TableCell>
+                          <TableCell>{new Date(invoice.created_at).toLocaleDateString()}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex gap-1">
                               <Button
@@ -966,9 +901,7 @@ const BookingIn = () => {
                             <p className="font-medium">
                               Plot {item.plots.plot_number} - {item.plots.house_types.name}
                             </p>
-                            <p className="text-sm text-muted-foreground">
-                              {item.plots.house_types.sites.name}
-                            </p>
+                            <p className="text-sm text-muted-foreground">{item.plots.house_types.sites.name}</p>
                           </div>
                           <p className="font-bold text-primary">£{item.booked_value.toFixed(2)}</p>
                         </div>
@@ -976,7 +909,7 @@ const BookingIn = () => {
                           <span className="font-medium">
                             {LIFT_LABELS[item.lift_values.lift_type as keyof typeof LIFT_LABELS]}
                           </span>
-                          {' - '}
+                          {" - "}
                           <span className="text-muted-foreground">{item.percentage}%</span>
                         </div>
                       </div>
@@ -1009,17 +942,19 @@ const BookingIn = () => {
                     ))}
                     <div className="flex justify-between items-center pt-2 border-t font-bold">
                       <span>Total Allocated</span>
-                      <span>£{selectedInvoice.items[0]?.gang_divisions.reduce((sum, m) => sum + m.amount, 0).toFixed(2)}</span>
+                      <span>
+                        £{selectedInvoice.items[0]?.gang_divisions.reduce((sum, m) => sum + m.amount, 0).toFixed(2)}
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 <div className="flex gap-2 print:hidden">
-                  <Button 
+                  <Button
                     onClick={(e) => {
                       e.preventDefault();
                       window.print();
-                    }} 
+                    }}
                     className="flex-1"
                     variant="outline"
                     type="button"
@@ -1027,11 +962,11 @@ const BookingIn = () => {
                     <Printer className="mr-2 h-4 w-4" />
                     Print
                   </Button>
-                  <Button 
+                  <Button
                     onClick={(e) => {
                       e.preventDefault();
                       handleExportInvoice(selectedInvoice);
-                    }} 
+                    }}
                     className="flex-1"
                     variant="default"
                     type="button"
@@ -1040,8 +975,8 @@ const BookingIn = () => {
                     Export PDF
                   </Button>
                   {isAdmin && !selectedInvoice.is_confirmed && (
-                    <Button 
-                      onClick={() => handleConfirmInvoice(selectedInvoice)} 
+                    <Button
+                      onClick={() => handleConfirmInvoice(selectedInvoice)}
                       className="flex-1 bg-green-600 hover:bg-green-700"
                     >
                       Confirm
