@@ -245,10 +245,6 @@ const Dashboard = () => {
           </div>
         )}
 
-        <div className="mb-6">
-          <h3 className="text-2xl font-bold mb-4">Developers</h3>
-        </div>
-
         {loading ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">Loading developers...</p>
