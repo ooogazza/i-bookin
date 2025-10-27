@@ -98,8 +98,8 @@ export const GangDivisionCard = ({
               </DropdownMenu>
             )}
             <Button size="sm" onClick={onAddMemberClick}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Member
+              <Plus className="md:mr-2 h-4 w-4" />
+              <span className="hidden md:inline">Add Member</span>
             </Button>
           </div>
         </div>
