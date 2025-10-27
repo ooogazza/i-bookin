@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -5,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Plus, X, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { StickySplitButton } from "@/components/StickySplitButton";
 
 interface SavedGangMember {
   id: string;
@@ -51,6 +53,8 @@ export const GangDivisionCard = ({
   onAddExistingMember,
   totalValueLabel = "Total",
 }: GangDivisionCardProps) => {
+  const [activeSplitIndex, setActiveSplitIndex] = useState<number | null>(null);
+
   return (
     <Card>
       <CardHeader>
@@ -159,11 +163,26 @@ export const GangDivisionCard = ({
                         const newAmount = v[0];
                         onUpdateMemberAmount(i, newAmount);
                       }}
+                      onDragStart={() => setActiveSplitIndex(i)}
+                      onDragEnd={() => setTimeout(() => setActiveSplitIndex(null), 3000)}
                       max={totalValue}
                       step={1}
                       className="w-full"
                     />
                   </div>
+
+                  {activeSplitIndex === i && i < gangMembers.length - 1 && (
+                    <StickySplitButton
+                      index={i}
+                      remainingAmount={remainingToAllocate}
+                      onSplit={(index) => {
+                        const half = remainingToAllocate / 2;
+                        onUpdateMemberAmount(index, gangMembers[index].amount + half);
+                        onUpdateMemberAmount(index + 1, gangMembers[index + 1].amount + half);
+                        setActiveSplitIndex(null);
+                      }}
+                    />
+                  )}
                 </div>
               );
             })}
