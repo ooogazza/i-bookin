@@ -181,11 +181,16 @@ export const GangDivisionCard = ({
                         value={[safeAmount]}
                         onValueChange={(v) => {
                           const newAmount = v[0];
-                          onUpdateMemberAmount(i, newAmount);
+                          const otherMembersTotal = gangMembers
+                            .filter((_, idx) => idx !== i)
+                            .reduce((sum, member) => sum + (member.amount || 0), 0);
+                          const maxAllowed = totalValue - otherMembersTotal;
+                          const cappedAmount = Math.min(newAmount, Math.max(0, maxAllowed));
+                          onUpdateMemberAmount(i, cappedAmount);
                         }}
                         onDragStart={() => setActiveSplitIndex(i)}
                         onDragEnd={() => setTimeout(() => setActiveSplitIndex(null), 6000)}
-                        max={safeAmount + remainingToAllocate}
+                        max={totalValue}
                         step={1}
                         className="w-full"
                       />
