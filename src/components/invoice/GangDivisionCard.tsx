@@ -119,7 +119,7 @@ export const GangDivisionCard = ({
                 typeof m.amount === "number" && !isNaN(m.amount) ? m.amount : 0;
 
               return (
-                <div key={i} className="p-4 bg-muted rounded-lg space-y-2">
+                <div key={i} className="p-4 bg-primary/10 rounded-2xl space-y-2 border border-primary/20 shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex justify-between">
                     <div>
                       <p className="font-semibold text-base">{m.name}</p>
