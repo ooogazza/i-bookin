@@ -488,7 +488,12 @@ const SiteDetail = () => {
     return confirmedTotal + pendingTotal;
   };
 
-  const getCellColor = (totalBooked: number): string => {
+  const isPendingInInvoice = (plot: Plot, liftType: string): boolean => {
+    return invoiceItems.some(item => item.plot.id === plot.id && item.liftType === liftType);
+  };
+
+  const getCellColor = (totalBooked: number, isPending: boolean): string => {
+    if (isPending) return "bg-blue-200 hover:bg-blue-300 dark:bg-blue-900/40 dark:hover:bg-blue-900/50 cursor-pointer border-2 border-blue-400";
     if (totalBooked === 0) return "bg-red-100 hover:bg-red-200 dark:bg-red-900/20 dark:hover:bg-red-900/30 cursor-pointer";
     if (totalBooked <= 33) return "bg-orange-100 hover:bg-orange-200 dark:bg-orange-900/20 dark:hover:bg-orange-900/30 cursor-pointer";
     if (totalBooked <= 66) return "bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/20 dark:hover:bg-yellow-900/30 cursor-pointer";
@@ -540,8 +545,8 @@ const SiteDetail = () => {
     };
 
     setInvoiceItems([...invoiceItems, newItem]);
-    setBookingDialogOpen(false);
     toast.success("Added to invoice");
+    setBookingDialogOpen(false);
   };
 
   const handleRemoveFromInvoice = (index: number) => {
@@ -1475,12 +1480,13 @@ const SiteDetail = () => {
                     </td>
                     {Object.keys(LIFT_LABELS).map(liftType => {
                       const totalBooked = getTotalBooked(plot, liftType);
+                      const isPending = isPendingInInvoice(plot, liftType);
                       
                       return (
                         <td 
                           key={liftType}
                           data-lift-type={liftType}
-                          className={`p-4 text-center transition-all ${getCellColor(totalBooked)}`}
+                          className={`p-4 text-center transition-all ${getCellColor(totalBooked, isPending)}`}
                           onClick={() => handleLiftCellClick(plot, liftType)}
                         >
                           <div className="flex items-center justify-center min-h-[50px]">
@@ -1889,7 +1895,7 @@ const SiteDetail = () => {
                 <Card>
                   <CardHeader>
                     <div className="flex justify-between items-center">
-                      <CardTitle>Gang Division - Who Gets Paid</CardTitle>
+                      <CardTitle>Gang Division</CardTitle>
                       <Button onClick={() => setGangDialogOpen(true)} size="sm">
                         <Plus className="mr-2 h-4 w-4" />
                         Add Member
@@ -2055,9 +2061,6 @@ const SiteDetail = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Amount will be allocated using the slider in the invoice view
-              </p>
               <Button onClick={handleAddGangMember} className="w-full">
                 Add Member
               </Button>
