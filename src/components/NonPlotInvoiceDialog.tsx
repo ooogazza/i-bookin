@@ -186,6 +186,18 @@ export const NonPlotInvoiceDialog = ({
       return;
     }
     try {
+      // Get user's full name
+      let userName = user?.email || "Unknown";
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user.id)
+        .single();
+      if (profile?.full_name) {
+        userName = profile.full_name;
+      }
+
+      // Save invoice to database
       const { data: invoice, error: invoiceError } = await supabase
         .from("non_plot_invoices")
         .insert({
@@ -210,6 +222,10 @@ export const NonPlotInvoiceDialog = ({
         .from("non_plot_gang_divisions")
         .insert(divisions);
       if (divisionsError) throw divisionsError;
+
+      // Send PDF to admin
+      const invoicePayload = buildInvoice();
+      await handleSendToAdmin(invoicePayload, userName);
 
       setInvoiceAmount(0);
       setNotes("");
