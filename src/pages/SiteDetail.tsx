@@ -21,6 +21,7 @@ import logo from "@/assets/logo.png";
 import { GangDivisionCard } from "@/components/invoice/GangDivisionCard";
 import { useSavedGangMembers } from "@/hooks/useSavedGangMembers";
 import type { GangMember as GangDivisionMember } from "@/components/invoice/GangDivisionCard";
+import { usePinchZoom } from "@/hooks/usePinchZoom";
 
 interface Site {
   id: string;
@@ -176,6 +177,12 @@ const SiteDetail = () => {
   
   const stickyScrollRef = useRef<HTMLDivElement>(null);
   const mainScrollRef = useRef<HTMLDivElement>(null);
+  
+  const { containerRef: pinchZoomContainerRef, scale: zoomScale, position: zoomPosition, style: zoomStyle } = usePinchZoom({
+    minScale: 1,
+    maxScale: 3,
+    onlyMobile: true,
+  });
 
   useEffect(() => {
     const handleScroll = () => {
@@ -1661,8 +1668,9 @@ const SiteDetail = () => {
               {isAdmin ? "No plots created yet" : "No plots assigned to you"}
             </p>
           ) : (
-            <div ref={mainScrollRef} className="overflow-x-auto border rounded-lg">
-              <table className="w-full border-collapse min-w-[800px]">
+            <div ref={pinchZoomContainerRef} className="overflow-hidden border rounded-lg touch-none">
+              <div ref={mainScrollRef} className="overflow-x-auto" style={zoomStyle}>
+                <table className="w-full border-collapse min-w-[800px]">
               <thead>
                 <tr className="border-b bg-muted/50">
                   <th className="p-2 text-left font-medium w-20">Plot</th>
@@ -1724,6 +1732,7 @@ const SiteDetail = () => {
                 ))}
               </tbody>
             </table>
+              </div>
             </div>
           )}
         </div>
