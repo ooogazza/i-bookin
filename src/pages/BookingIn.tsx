@@ -145,10 +145,6 @@ const BookingIn = () => {
         .select(
           `
           *,
-          profiles!non_plot_invoices_user_id_fkey (
-            full_name,
-            email
-          ),
           non_plot_gang_divisions (
             member_name,
             member_type,
@@ -167,6 +163,18 @@ const BookingIn = () => {
       const { data: nonPlotInvoices, error: nonPlotError } = await nonPlotQuery;
       if (nonPlotError) throw nonPlotError;
 
+      // Fetch profiles for non-plot invoices
+      const userIds = [...new Set((nonPlotInvoices || []).map((inv: any) => inv.user_id))];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", userIds);
+
+      const profilesMap = (profiles || []).reduce((acc: any, profile: any) => {
+        acc[profile.id] = profile;
+        return acc;
+      }, {});
+
       // Transform non-plot invoices to match booking structure
       const transformedNonPlot = (nonPlotInvoices || []).map((invoice: any) => ({
         id: invoice.id,
@@ -178,7 +186,7 @@ const BookingIn = () => {
         notes: invoice.notes,
         confirmed_by_admin: true,
         is_non_plot: true,
-        profiles: invoice.profiles,
+        profiles: profilesMap[invoice.user_id] || { full_name: "Unknown", email: "" },
         gang_divisions: invoice.non_plot_gang_divisions || [],
       }));
 
