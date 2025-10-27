@@ -14,14 +14,14 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
       VitePWA({
-        registerType: "autoUpdate",
-        includeAssets: ["favicon.png", "apple-touch-icon.png", "pwa-192x192.png", "pwa-512x512.png"],
+        registerType: "prompt",
+        includeAssets: ["favicon.png", "favicon.svg", "apple-touch-icon.png", "pwa-192x192.png", "pwa-512x512.png"],
         devOptions: {
           enabled: true,
           type: "module"
         },
         manifest: {
-          name: "I-Bookin",
+          name: "I-Bookin - Brickwork Manager",
           short_name: "I-Bookin",
           description: "Professional construction payment management system for tracking lifts, managing bookings, and streamlining payments for building projects.",
           theme_color: "#2563EB",
@@ -30,6 +30,7 @@ export default defineConfig(({ mode }) => ({
           orientation: "portrait",
           scope: "/",
           start_url: "/",
+          id: "/",
           categories: ["business", "productivity"],
           icons: [
             {
@@ -55,6 +56,12 @@ export default defineConfig(({ mode }) => ({
               sizes: "512x512",
               type: "image/png",
               purpose: "maskable"
+            },
+            {
+              src: "apple-touch-icon.png",
+              sizes: "180x180",
+              type: "image/png",
+              purpose: "any"
             }
           ]
         },
