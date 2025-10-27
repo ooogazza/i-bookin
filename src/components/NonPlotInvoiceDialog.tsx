@@ -235,8 +235,8 @@ export const NonPlotInvoiceDialog = ({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-3xl p-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <div className="max-h-[70vh] overflow-y-auto px-6 py-6 space-y-6">
+        <DialogContent className="max-w-3xl p-0 overflow-hidden max-h-[90vh]" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="overflow-y-auto px-6 py-6 space-y-6 max-h-[calc(90vh-2rem)]">
             <div className="flex items-center gap-2">
               <FileText className="h-7 w-7 text-primary" />
               <h2 className="text-2xl font-bold tracking-tight">Non-Plot Invoice</h2>
