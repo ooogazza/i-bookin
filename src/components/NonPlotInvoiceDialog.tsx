@@ -223,13 +223,27 @@ export const NonPlotInvoiceDialog = ({
     }
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (remainingToAllocate !== 0) {
       toast.error("Please allocate the full invoice amount");
       return;
     }
+    
+    // Get user's full name
+    let userName = user?.email || "Unknown";
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user.id)
+        .single();
+      if (profile?.full_name) {
+        userName = profile.full_name;
+      }
+    }
+    
     const payload = buildInvoice();
-    handleExportPDF(payload);
+    handleExportPDF(payload, userName);
   };
 
   return (

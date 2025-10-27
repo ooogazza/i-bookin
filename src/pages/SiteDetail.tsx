@@ -1008,7 +1008,20 @@ const SiteDetail = () => {
     }
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
+    // Get user's full name
+    let userName = user?.email || "Unknown";
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user.id)
+        .single();
+      if (profile?.full_name) {
+        userName = profile.full_name;
+      }
+    }
+    
     const doc = new jsPDF();
     
     // Blue color for styling
@@ -1079,6 +1092,10 @@ const SiteDetail = () => {
     doc.setFont("helvetica", "normal");
     
     let yPos = 68;
+    
+    // User name
+    doc.text(`Booked by: ${userName}`, 15, yPos);
+    yPos += 7;
     
     // Date
     doc.text(`Date: ${new Date().toLocaleDateString()}`, 15, yPos);

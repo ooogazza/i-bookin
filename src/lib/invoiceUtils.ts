@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
 
 // Export PDF logic
-export const handleExportPDF = async (invoice: any) => {
+export const handleExportPDF = async (invoice: any, userName?: string) => {
   try {
     console.log("Exporting PDF for invoice:", invoice);
 
@@ -67,6 +67,14 @@ export const handleExportPDF = async (invoice: any) => {
       doc.setFont("helvetica", "normal");
 
       let yPos = 68;
+      
+      // User name
+      if (userName) {
+        doc.text(`Booked by: ${userName}`, 15, yPos);
+        yPos += 7;
+      }
+      
+      // Date
       doc.text(`Date: ${new Date().toLocaleDateString()}`, 15, yPos);
       yPos += 12;
 
