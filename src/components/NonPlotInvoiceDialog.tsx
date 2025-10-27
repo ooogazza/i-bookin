@@ -299,7 +299,6 @@ export const NonPlotInvoiceDialog = ({
                     </Label>
                   ) : (
                     <Input
-                      autoFocus
                       value={tempAmount}
                       onChange={(e) => setTempAmount(e.target.value)}
                       onBlur={() => {
@@ -409,7 +408,7 @@ export const NonPlotInvoiceDialog = ({
             </Select>
 
             <Button className="w-full" onClick={handleAddNewMember}>
-              Save and Add to Invoice
+              Add Member
             </Button>
           </div>
         </DialogContent>

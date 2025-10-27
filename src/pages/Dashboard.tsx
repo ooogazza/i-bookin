@@ -342,8 +342,21 @@ const Dashboard = () => {
                   type="number"
                   min="1"
                   max="1000"
-                  value={numberOfPlots}
-                  onChange={(e) => setNumberOfPlots(parseInt(e.target.value) || 1)}
+                  value={numberOfPlots || ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '') {
+                      setNumberOfPlots(0);
+                    } else {
+                      const num = parseInt(val);
+                      if (!isNaN(num)) setNumberOfPlots(num);
+                    }
+                  }}
+                  onBlur={() => {
+                    if (numberOfPlots < 1) {
+                      setNumberOfPlots(1);
+                    }
+                  }}
                   required
                 />
                 <p className="text-sm text-muted-foreground">
