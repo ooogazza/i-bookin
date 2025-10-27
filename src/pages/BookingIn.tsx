@@ -317,10 +317,7 @@ const BookingIn = () => {
 
       if (error) throw error;
 
-      // Close the dialog immediately
-      setDetailsDialogOpen(false);
-
-      // Update local state
+      // Update local state first
       setGroupedInvoices((prev: GroupedInvoice[]) =>
         prev.map((inv: GroupedInvoice) =>
           inv.invoice_number === invoice.invoice_number ? ({ ...inv, is_confirmed: true } as GroupedInvoice) : inv,
@@ -343,6 +340,11 @@ const BookingIn = () => {
       );
 
       toast.success("Invoice confirmed successfully");
+
+      // Wait a moment for the UI to update, then close the dialog
+      setTimeout(() => {
+        setDetailsDialogOpen(false);
+      }, 300);
 
       // Refetch to ensure state is synchronized
       await fetchBookings();
