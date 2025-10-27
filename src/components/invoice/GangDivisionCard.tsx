@@ -102,7 +102,8 @@ export const GangDivisionCard = ({
         {gangMembers.length > 0 && (
           <div className="space-y-3">
             {gangMembers.map((m, i) => {
-              if (!Number.isFinite(m.amount)) return null;
+              const safeAmount =
+                typeof m.amount === "number" && !isNaN(m.amount) ? m.amount : 0;
 
               return (
                 <div key={i} className="p-4 bg-muted rounded-lg space-y-2">
@@ -140,7 +141,7 @@ export const GangDivisionCard = ({
                         className="cursor-pointer hover:text-primary font-medium text-sm block"
                         onClick={() => onStartEditing(i)}
                       >
-                        Amount: £{m.amount.toFixed(2)}
+                        Amount: £{safeAmount.toFixed(2)}
                       </span>
                     ) : (
                       <div className="flex items-center gap-2">
@@ -148,7 +149,7 @@ export const GangDivisionCard = ({
                         <Input
                           autoFocus
                           type="number"
-                          value={m.amount}
+                          value={safeAmount}
                           onBlur={() => onStopEditing(i)}
                           onChange={(e) => {
                             const v = parseFloat(e.target.value) || 0;
@@ -163,7 +164,7 @@ export const GangDivisionCard = ({
                     )}
 
                     <Slider
-                      value={[Number.isFinite(m.amount) ? m.amount : 0]}
+                      value={[safeAmount]}
                       onValueChange={(v) => {
                         const newAmount = v[0];
                         onUpdateMemberAmount(i, newAmount);
