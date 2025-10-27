@@ -30,7 +30,6 @@ const PlotBooking = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [memberName, setMemberName] = useState("");
   const [memberType, setMemberType] = useState("bricklayer");
-  const [memberAmount, setMemberAmount] = useState(0);
 
   const { savedMembers, setSavedMembers, fetchSavedMembers } = useSavedGangMembers();
 
@@ -95,15 +94,45 @@ const PlotBooking = () => {
     toast.success(`${member.name} added`);
   };
 
-  const handleAddMember = () => {
-    addMember({
-      name: memberName.trim(),
-      type: memberType,
-      amount: memberAmount,
-    });
-    setMemberName("");
-    setMemberAmount(0);
-    setDialogOpen(false);
+  const handleAddMember = async () => {
+    if (!memberName.trim() || !user) {
+      toast.error("Name required");
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("saved_gang_members")
+        .insert({
+          user_id: user.id,
+          name: memberName.trim(),
+          type: memberType,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Refresh saved members list
+      await fetchSavedMembers();
+      
+      // Add to current gang with zero amount
+      addMember({
+        id: data.id,
+        name: data.name,
+        type: data.type,
+        amount: 0,
+        editing: false,
+      });
+
+      setMemberName("");
+      setMemberType("bricklayer");
+      setDialogOpen(false);
+      toast.success("Gang member saved");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to save gang member");
+    }
   };
 
   const handleDeletePermanently = async (memberId: string, index: number) => {
@@ -255,13 +284,6 @@ const PlotBooking = () => {
 
         {selectedLiftId && (
           <>
-            <div className="flex items-center gap-2">
-              <Button onClick={() => setDialogOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Member
-              </Button>
-            </div>
-
             <GangDivisionCard
               gangMembers={gangMembers}
               totalValue={bookingValue}
@@ -294,7 +316,7 @@ const PlotBooking = () => {
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
-              <DialogTitle>Add Gang Member</DialogTitle>
+              <DialogTitle>Add New Gang Member</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
@@ -313,18 +335,6 @@ const PlotBooking = () => {
                     <SelectItem value="apprentice">Apprentice</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>
-                  Amount: £{memberAmount.toFixed(2)} (£{remainingToAllocate.toFixed(2)} remaining)
-                </Label>
-                <Slider
-                  value={[memberAmount]}
-                  onValueChange={(value) => setMemberAmount(value[0])}
-                  max={remainingToAllocate}
-                  step={1}
-                  className="w-full"
-                />
               </div>
               <Button onClick={handleAddMember} className="w-full">
                 Add Member
