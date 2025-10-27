@@ -18,6 +18,9 @@ import jsPDF from "jspdf";
 import { developerLogos } from "@/lib/developerLogos";
 import { maskEmail } from "@/lib/emailUtils";
 import logo from "@/assets/logo.png";
+import { GangDivisionCard } from "@/components/invoice/GangDivisionCard";
+import { useSavedGangMembers } from "@/hooks/useSavedGangMembers";
+import type { GangMember as GangDivisionMember } from "@/components/invoice/GangDivisionCard";
 
 interface Site {
   id: string;
@@ -144,20 +147,18 @@ const SiteDetail = () => {
   
   const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>([]);
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
-  const [gangMembers, setGangMembers] = useState<GangMember[]>([]);
+  const [gangMembers, setGangMembers] = useState<GangDivisionMember[]>([]);
   const [gangDialogOpen, setGangDialogOpen] = useState(false);
   const [memberName, setMemberName] = useState("");
   const [memberType, setMemberType] = useState("bricklayer");
-  const [memberAmount, setMemberAmount] = useState(0);
   const [invoiceNotes, setInvoiceNotes] = useState("");
   const [notesAmount, setNotesAmount] = useState(0);
-  const [editingMemberIndex, setEditingMemberIndex] = useState<number | null>(null);
-  const [tempAmount, setTempAmount] = useState("");
-  const [savedGangMembers, setSavedGangMembers] = useState<GangMember[]>([]);
   const [editingNotesAmount, setEditingNotesAmount] = useState(false);
   const [tempNotesAmount, setTempNotesAmount] = useState("");
   const [editingBookingPercentage, setEditingBookingPercentage] = useState(false);
   const [tempBookingPercentage, setTempBookingPercentage] = useState("");
+  
+  const { savedMembers, fetchSavedMembers } = useSavedGangMembers();
   
   const [plotSummaryDialogOpen, setPlotSummaryDialogOpen] = useState(false);
   const [selectedPlotForSummary, setSelectedPlotForSummary] = useState<Plot | null>(null);
@@ -220,24 +221,7 @@ const SiteDetail = () => {
       fetchSiteData();
       if (isAdmin) fetchAvailableUsers();
     }
-    // Load saved gang members from localStorage
-    const saved = localStorage.getItem('savedGangMembers');
-    if (saved) {
-      try {
-        setSavedGangMembers(JSON.parse(saved));
-      } catch (e) {
-        console.error('Failed to load saved gang members:', e);
-      }
-    }
   }, [id, isAdmin]);
-
-  // Auto-load saved gang members when invoice dialog opens
-  useEffect(() => {
-    if (invoiceDialogOpen && gangMembers.length === 0 && savedGangMembers.length > 0) {
-      const membersWithZeroAmount = savedGangMembers.map(m => ({ ...m, amount: 0 }));
-      setGangMembers(membersWithZeroAmount);
-    }
-  }, [invoiceDialogOpen, savedGangMembers]);
 
   const fetchSiteData = async () => {
     try {
@@ -572,40 +556,95 @@ const SiteDetail = () => {
     setInvoiceItems(invoiceItems.filter((_, i) => i !== index));
   };
 
-  const handleAddGangMember = () => {
-    if (!memberName.trim()) {
-      toast.error("Please enter a name");
+  const handleAddGangMember = async () => {
+    if (!memberName.trim() || !user) {
+      toast.error("Name required");
       return;
     }
 
-    const newMember = {
-      name: memberName.trim(),
-      type: memberType,
-      amount: 0
-    };
+    try {
+      const { data, error } = await supabase
+        .from("saved_gang_members")
+        .insert({
+          user_id: user.id,
+          name: memberName.trim(),
+          type: memberType,
+        })
+        .select()
+        .single();
 
-    // Add to both current gang members and saved gang members
-    const updatedSaved = [...savedGangMembers, newMember];
-    setSavedGangMembers(updatedSaved);
-    localStorage.setItem('savedGangMembers', JSON.stringify(updatedSaved));
-    
-    setGangMembers([...gangMembers, newMember]);
-    setMemberName("");
-    setMemberType("bricklayer");
-    setMemberAmount(0);
-    setGangDialogOpen(false);
-    toast.success("Gang member added and saved");
+      if (error) throw error;
+
+      await fetchSavedMembers();
+      
+      setGangMembers([...gangMembers, {
+        id: data.id,
+        name: data.name,
+        type: data.type,
+        amount: 0,
+        editing: false,
+      }]);
+
+      setMemberName("");
+      setMemberType("bricklayer");
+      setGangDialogOpen(false);
+      toast.success("Gang member saved");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to save gang member");
+    }
   };
 
-  const handleDeleteSavedMember = (index: number) => {
-    const updatedSaved = savedGangMembers.filter((_, i) => i !== index);
-    setSavedGangMembers(updatedSaved);
-    localStorage.setItem('savedGangMembers', JSON.stringify(updatedSaved));
-    toast.success("Gang member removed");
+  const handleAddExistingMember = (member: any) => {
+    if (gangMembers.some((m) => m.id === member.id)) {
+      toast.error("Already added");
+      return;
+    }
+    setGangMembers([...gangMembers, { ...member, amount: 0, editing: false }]);
+    toast.success(`${member.name} added`);
+  };
+
+  const handleDeletePermanently = async (memberId: string, index: number) => {
+    if (!confirm("Delete this member permanently from your saved gang members?")) return;
+    
+    try {
+      const { error } = await supabase
+        .from("saved_gang_members")
+        .delete()
+        .eq("id", memberId)
+        .eq("user_id", user?.id);
+
+      if (error) throw error;
+      
+      await fetchSavedMembers();
+      setGangMembers(gangMembers.filter((_, i) => i !== index));
+      toast.success("Member deleted permanently");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to delete member");
+    }
   };
 
   const handleRemoveGangMember = (index: number) => {
     setGangMembers(gangMembers.filter((_, i) => i !== index));
+  };
+
+  const handleStartEditing = (index: number) => {
+    const updated = [...gangMembers];
+    updated[index].editing = true;
+    setGangMembers(updated);
+  };
+
+  const handleStopEditing = (index: number) => {
+    const updated = [...gangMembers];
+    updated[index].editing = false;
+    setGangMembers(updated);
+  };
+
+  const handleUpdateMemberAmount = (index: number, newAmount: number) => {
+    const updated = [...gangMembers];
+    updated[index].amount = newAmount;
+    setGangMembers(updated);
   };
 
   const totalInvoiceValue = invoiceItems.reduce((sum, item) => sum + item.bookedValue, 0) + notesAmount;
@@ -653,30 +692,6 @@ const SiteDetail = () => {
     }
   };
   
-  const handleUpdateMemberAmount = (index: number, percentage: number) => {
-    const calculatedAmount = (totalInvoiceValue * percentage) / 100;
-    const otherMembersTotal = gangMembers.reduce((sum, m, i) => i !== index ? sum + m.amount : sum, 0);
-    const maxAllowed = totalInvoiceValue - otherMembersTotal;
-    const cappedAmount = Math.min(calculatedAmount, maxAllowed);
-    
-    const updated = [...gangMembers];
-    updated[index] = { ...updated[index], amount: cappedAmount };
-    setGangMembers(updated);
-  };
-
-  const handleDirectAmountInput = (index: number, value: string) => {
-    const numValue = parseFloat(value) || 0;
-    const otherMembersTotal = gangMembers.reduce((sum, m, i) => i !== index ? sum + m.amount : sum, 0);
-    const maxAllowed = totalInvoiceValue - otherMembersTotal;
-    const cappedAmount = Math.min(Math.max(0, numValue), maxAllowed);
-    
-    const updated = [...gangMembers];
-    updated[index] = { ...updated[index], amount: cappedAmount };
-    setGangMembers(updated);
-    setEditingMemberIndex(null);
-    setTempAmount("");
-  };
-
   const handlePlotNumberClick = async (plot: Plot) => {
     setSelectedPlotForSummary(plot);
     setPlotSummaryDialogOpen(true);
@@ -929,11 +944,6 @@ const SiteDetail = () => {
         window.scrollTo({ top: y, behavior: 'smooth' });
       }
     }
-  };
-
-  const handleStartEditing = (index: number, currentAmount: number) => {
-    setEditingMemberIndex(index);
-    setTempAmount(currentAmount.toFixed(2));
   };
 
   const handleConfirmInvoice = async () => {
@@ -1922,120 +1932,21 @@ const SiteDetail = () => {
 
               {/* Gang Division */}
               {invoiceItems.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <div className="flex justify-between items-center">
-                      <CardTitle>Gang Division</CardTitle>
-                      <Button onClick={() => setGangDialogOpen(true)} size="sm">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Member
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {gangMembers.length === 0 ? (
-                      <div className="space-y-4">
-                        <p className="text-center text-muted-foreground py-4">
-                          No gang members added yet - add members to allocate payment
-                        </p>
-                        {savedGangMembers.length > 0 && (
-                          <div className="space-y-2">
-                            <p className="text-sm font-medium">Saved Gang Members:</p>
-                            <div className="space-y-2">
-                              {savedGangMembers.map((member, index) => (
-                                <div key={index} className="flex justify-between items-center p-2 bg-muted/50 rounded">
-                                  <div>
-                                    <p className="font-medium text-sm">{member.name}</p>
-                                    <p className="text-xs text-muted-foreground capitalize">{member.type}</p>
-                                  </div>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleDeleteSavedMember(index)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {gangMembers.map((member, index) => (
-                          <div key={index} className="p-3 bg-muted rounded-lg space-y-3">
-                            <div className="flex justify-between items-center">
-                              <div>
-                                <p className="font-medium">{member.name}</p>
-                                <p className="text-sm text-muted-foreground capitalize">{member.type}</p>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleRemoveGangMember(index)}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                            <div className="space-y-2">
-                              <div className="flex justify-between items-center">
-                                {editingMemberIndex === index ? (
-                                  <Input
-                                    type="number"
-                                    value={tempAmount}
-                                    onChange={(e) => setTempAmount(e.target.value)}
-                                    onBlur={() => handleDirectAmountInput(index, tempAmount)}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') {
-                                        handleDirectAmountInput(index, tempAmount);
-                                      }
-                                    }}
-                                    className="w-32"
-                                    autoFocus={false}
-                                    step="0.01"
-                                    min="0"
-                                  />
-                                ) : (
-                                  <Label 
-                                    className="text-sm cursor-pointer hover:text-primary transition-colors"
-                                    onClick={() => handleStartEditing(index, member.amount)}
-                                  >
-                                    Amount: £{member.amount.toFixed(2)}
-                                  </Label>
-                                )}
-                              </div>
-                              <Slider
-                                value={[(member.amount / totalInvoiceValue) * 100]}
-                                onValueChange={(value) => handleUpdateMemberAmount(index, value[0])}
-                                min={0}
-                                max={100}
-                                step={1}
-                              />
-                            </div>
-                          </div>
-                        ))}
-                        
-                        <div className="mt-4 pt-4 border-t space-y-2">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Invoice Total:</span>
-                            <span className="font-semibold">£{totalInvoiceValue.toFixed(2)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Allocated:</span>
-                            <span className="font-semibold">£{totalGangAllocated.toFixed(2)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Remaining:</span>
-                            <span className={`font-semibold ${remainingToAllocate < 0 ? 'text-destructive' : remainingToAllocate > 0 ? 'text-orange-500' : 'text-green-500'}`}>
-                              £{remainingToAllocate.toFixed(2)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                <GangDivisionCard
+                  gangMembers={gangMembers}
+                  totalValue={totalInvoiceValue}
+                  totalAllocated={totalGangAllocated}
+                  remainingToAllocate={remainingToAllocate}
+                  onAddMemberClick={() => setGangDialogOpen(true)}
+                  onRemoveMember={handleRemoveGangMember}
+                  onDeletePermanently={handleDeletePermanently}
+                  onUpdateMemberAmount={handleUpdateMemberAmount}
+                  onStartEditing={handleStartEditing}
+                  onStopEditing={handleStopEditing}
+                  savedMembers={savedMembers}
+                  onAddExistingMember={handleAddExistingMember}
+                  totalValueLabel="Invoice Total"
+                />
               )}
 
               {/* Actions */}
@@ -2066,7 +1977,7 @@ const SiteDetail = () => {
         <Dialog open={gangDialogOpen} onOpenChange={setGangDialogOpen}>
           <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
-              <DialogTitle>Add Gang Member</DialogTitle>
+              <DialogTitle>Add New Gang Member</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
