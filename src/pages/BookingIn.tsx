@@ -20,11 +20,12 @@ interface BookingData {
   status: string;
   created_at: string;
   notes: string | null;
+  is_non_plot?: boolean;
   profiles: {
     full_name: string;
     email: string;
   };
-  plots: {
+  plots?: {
     plot_number: number;
     house_types: {
       name: string;
@@ -33,7 +34,7 @@ interface BookingData {
       };
     };
   };
-  lift_values: {
+  lift_values?: {
     lift_type: string;
   };
   gang_divisions: {
@@ -96,7 +97,8 @@ const BookingIn = () => {
     if (!user) return;
 
     try {
-      let query = supabase
+      // Fetch regular plot-based bookings
+      let plotQuery = supabase
         .from("bookings")
         .select(
           `
@@ -131,16 +133,61 @@ const BookingIn = () => {
 
       // Filter by user if not admin
       if (!isAdmin) {
-        query = query.eq("booked_by", user.id);
+        plotQuery = plotQuery.eq("booked_by", user.id);
       }
 
-      const { data, error } = await query;
+      const { data: plotBookings, error: plotError } = await plotQuery;
+      if (plotError) throw plotError;
 
-      if (error) throw error;
-      setBookings((data as any) || []);
+      // Fetch non-plot invoices
+      let nonPlotQuery = supabase
+        .from("non_plot_invoices")
+        .select(
+          `
+          *,
+          profiles!non_plot_invoices_user_id_fkey (
+            full_name,
+            email
+          ),
+          non_plot_gang_divisions (
+            member_name,
+            member_type,
+            amount
+          )
+        `,
+        )
+        .eq("status", "sent")
+        .order("created_at", { ascending: false });
+
+      // Filter by user if not admin
+      if (!isAdmin) {
+        nonPlotQuery = nonPlotQuery.eq("user_id", user.id);
+      }
+
+      const { data: nonPlotInvoices, error: nonPlotError } = await nonPlotQuery;
+      if (nonPlotError) throw nonPlotError;
+
+      // Transform non-plot invoices to match booking structure
+      const transformedNonPlot = (nonPlotInvoices || []).map((invoice: any) => ({
+        id: invoice.id,
+        percentage: 100,
+        booked_value: invoice.total_amount,
+        invoice_number: invoice.invoice_number,
+        status: "confirmed",
+        created_at: invoice.created_at,
+        notes: invoice.notes,
+        confirmed_by_admin: true,
+        is_non_plot: true,
+        profiles: invoice.profiles,
+        gang_divisions: invoice.non_plot_gang_divisions || [],
+      }));
+
+      // Combine both types
+      const allBookings = [...(plotBookings || []), ...transformedNonPlot];
+      setBookings(allBookings as any);
 
       // Group bookings by invoice number
-      const grouped = ((data as any) || []).reduce((acc: { [key: string]: GroupedInvoice }, booking: any) => {
+      const grouped = allBookings.reduce((acc: { [key: string]: GroupedInvoice }, booking: any) => {
         if (!acc[booking.invoice_number]) {
           acc[booking.invoice_number] = {
             invoice_number: booking.invoice_number,
@@ -393,7 +440,12 @@ const BookingIn = () => {
           doc.addPage();
           yPos = 20;
         }
-        const text = `Plot ${item.plots.plot_number} - ${LIFT_LABELS[item.lift_values.lift_type as keyof typeof LIFT_LABELS]}: ${item.percentage}% = £${item.booked_value.toFixed(2)}`;
+        let text = '';
+        if (item.is_non_plot) {
+          text = `Non-Plot Work: £${item.booked_value.toFixed(2)}`;
+        } else if (item.plots && item.lift_values) {
+          text = `Plot ${item.plots.plot_number} - ${LIFT_LABELS[item.lift_values.lift_type as keyof typeof LIFT_LABELS]}: ${item.percentage}% = £${item.booked_value.toFixed(2)}`;
+        }
         doc.text(text, 15, yPos);
         yPos += 6;
       });
@@ -554,8 +606,11 @@ const BookingIn = () => {
             <h3 style={{ color: "#2563EB", fontSize: "15px", fontWeight: "bold", marginBottom: "8px" }}>ITEMS:</h3>
             {selectedInvoice.items.map((item, index) => (
               <p key={index} style={{ fontSize: "13px", marginBottom: "5px" }}>
-                Plot {item.plots.plot_number} - {LIFT_LABELS[item.lift_values.lift_type as keyof typeof LIFT_LABELS]}:{" "}
-                {item.percentage}% = £{item.booked_value.toFixed(2)}
+                {item.is_non_plot
+                  ? `Non-Plot Work: £${item.booked_value.toFixed(2)}`
+                  : item.plots && item.lift_values
+                    ? `Plot ${item.plots.plot_number} - ${LIFT_LABELS[item.lift_values.lift_type as keyof typeof LIFT_LABELS]}: ${item.percentage}% = £${item.booked_value.toFixed(2)}`
+                    : ""}
               </p>
             ))}
           </div>
@@ -666,7 +721,13 @@ const BookingIn = () => {
                               if (!confirm(`Delete all invoices for ${userGroup.full_name}?`)) return;
                               try {
                                 const invoiceNumbers = userGroup.invoices.map((inv) => inv.invoice_number);
+                                
+                                // Delete from bookings table
                                 await supabase.from("bookings").delete().in("invoice_number", invoiceNumbers);
+                                
+                                // Delete from non_plot_invoices table
+                                await supabase.from("non_plot_invoices").delete().in("invoice_number", invoiceNumbers);
+                                
                                 toast.success("User invoices deleted");
                                 fetchBookings();
                               } catch (error: any) {
@@ -948,22 +1009,34 @@ const BookingIn = () => {
                   <div className="space-y-2">
                     {selectedInvoice.items.map((item, index) => (
                       <div key={index} className="p-3 bg-muted rounded-lg">
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <p className="font-medium">
-                              Plot {item.plots.plot_number} - {item.plots.house_types.name}
-                            </p>
-                            <p className="text-sm text-muted-foreground">{item.plots.house_types.sites.name}</p>
+                        {item.is_non_plot ? (
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-medium">Non-Plot Work</p>
+                              <p className="text-sm text-muted-foreground">General brickwork</p>
+                            </div>
+                            <p className="font-bold text-primary">£{item.booked_value.toFixed(2)}</p>
                           </div>
-                          <p className="font-bold text-primary">£{item.booked_value.toFixed(2)}</p>
-                        </div>
-                        <div className="text-sm">
-                          <span className="font-medium">
-                            {LIFT_LABELS[item.lift_values.lift_type as keyof typeof LIFT_LABELS]}
-                          </span>
-                          {" - "}
-                          <span className="text-muted-foreground">{item.percentage}%</span>
-                        </div>
+                        ) : (
+                          <>
+                            <div className="flex justify-between items-start mb-2">
+                              <div>
+                                <p className="font-medium">
+                                  Plot {item.plots?.plot_number} - {item.plots?.house_types.name}
+                                </p>
+                                <p className="text-sm text-muted-foreground">{item.plots?.house_types.sites.name}</p>
+                              </div>
+                              <p className="font-bold text-primary">£{item.booked_value.toFixed(2)}</p>
+                            </div>
+                            <div className="text-sm">
+                              <span className="font-medium">
+                                {item.lift_values && LIFT_LABELS[item.lift_values.lift_type as keyof typeof LIFT_LABELS]}
+                              </span>
+                              {" - "}
+                              <span className="text-muted-foreground">{item.percentage}%</span>
+                            </div>
+                          </>
+                        )}
                       </div>
                     ))}
                     <div className="flex justify-between items-center pt-2 border-t font-bold text-lg">
