@@ -33,7 +33,14 @@ interface Plot {
   };
 }
 
+interface SavedGangMember {
+  id: string;
+  name: string;
+  type: string;
+}
+
 interface GangMember {
+  id?: string;
   name: string;
   type: string;
   amount: number;
@@ -68,6 +75,7 @@ const PlotBooking = () => {
   const [selectedLiftId, setSelectedLiftId] = useState("");
   const [percentage, setPercentage] = useState(100);
   const [gangMembers, setGangMembers] = useState<GangMember[]>([]);
+  const [savedMembers, setSavedMembers] = useState<SavedGangMember[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   
   const [memberName, setMemberName] = useState("");
@@ -78,7 +86,25 @@ const PlotBooking = () => {
 
   useEffect(() => {
     if (id) fetchPlotData();
-  }, [id]);
+    if (user) fetchSavedMembers();
+  }, [id, user]);
+
+  const fetchSavedMembers = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from("saved_gang_members")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("name");
+
+      if (error) throw error;
+      setSavedMembers(data || []);
+    } catch (error: any) {
+      console.error("Failed to load saved members:", error);
+    }
+  };
 
   const fetchPlotData = async () => {
     try {
@@ -146,7 +172,9 @@ const PlotBooking = () => {
     return plot.house_types.lift_values.filter(lv => lv.id && lv.id !== "" && getRemainingPercentage(lv.id) > 0);
   };
 
-  const handleAddMember = () => {
+  const handleAddMember = async () => {
+    if (!user) return;
+
     try {
       // Validate input
       gangMemberSchema.parse({
@@ -155,8 +183,35 @@ const PlotBooking = () => {
         amount: memberAmount,
       });
 
+      const trimmedName = memberName.trim();
+
+      // Check if this member already exists in saved members
+      const existingMember = savedMembers.find(
+        m => m.name.toLowerCase() === trimmedName.toLowerCase() && m.type === memberType
+      );
+
+      let memberId = existingMember?.id;
+
+      // If not, save to database
+      if (!existingMember) {
+        const { data, error } = await supabase
+          .from("saved_gang_members")
+          .insert({
+            user_id: user.id,
+            name: trimmedName,
+            type: memberType
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        memberId = data.id;
+        setSavedMembers([...savedMembers, data]);
+      }
+
       setGangMembers([...gangMembers, {
-        name: memberName.trim(),
+        id: memberId,
+        name: trimmedName,
         type: memberType,
         amount: memberAmount
       }]);
@@ -170,6 +225,47 @@ const PlotBooking = () => {
       } else {
         toast.error("Invalid input. Please check all fields.");
       }
+    }
+  };
+
+  const handleAddExistingMember = (member: SavedGangMember) => {
+    // Check if already added
+    if (gangMembers.some(m => m.id === member.id)) {
+      toast.error("This member is already added");
+      return;
+    }
+
+    setGangMembers([...gangMembers, {
+      id: member.id,
+      name: member.name,
+      type: member.type,
+      amount: 0
+    }]);
+    toast.success(`${member.name} added`);
+  };
+
+  const handleDeletePermanently = async (memberId: string, index: number) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from("saved_gang_members")
+        .delete()
+        .eq("id", memberId)
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+
+      // Remove from saved members list
+      setSavedMembers(savedMembers.filter(m => m.id !== memberId));
+      
+      // Also remove from current gang members if present
+      setGangMembers(gangMembers.filter((_, i) => i !== index));
+      
+      toast.success("Gang member deleted permanently");
+    } catch (error: any) {
+      toast.error("Failed to delete gang member");
+      console.error("Delete error:", error);
     }
   };
 
@@ -428,9 +524,12 @@ const PlotBooking = () => {
               remainingToAllocate={remainingToAllocate}
               onAddMemberClick={() => setDialogOpen(true)}
               onRemoveMember={handleRemoveMember}
+              onDeletePermanently={handleDeletePermanently}
               onUpdateMemberAmount={handleUpdateMemberAmount}
               onStartEditing={startEditingMember}
               onStopEditing={stopEditingMember}
+              savedMembers={savedMembers}
+              onAddExistingMember={handleAddExistingMember}
               totalValueLabel="Booking Value"
             />
           )}
