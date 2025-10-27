@@ -1520,7 +1520,7 @@ const SiteDetail = () => {
 
         {/* House Type Dialog */}
         <Dialog open={houseTypeDialogOpen} onOpenChange={setHouseTypeDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>
                 {editingHouseType ? "Edit House Type" : "Add House Type"}
@@ -1584,7 +1584,7 @@ const SiteDetail = () => {
 
         {/* Plot Assignment Dialog */}
         <Dialog open={plotDialogOpen} onOpenChange={setPlotDialogOpen}>
-          <DialogContent>
+          <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>Manage Plot {selectedPlot?.plot_number}</DialogTitle>
             </DialogHeader>
@@ -1611,7 +1611,7 @@ const SiteDetail = () => {
 
         {/* User Assignment Dialog */}
         <Dialog open={userAssignDialogOpen} onOpenChange={setUserAssignDialogOpen}>
-          <DialogContent>
+          <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>Assign User to Plot {selectedPlot?.plot_number}</DialogTitle>
             </DialogHeader>
@@ -1641,7 +1641,7 @@ const SiteDetail = () => {
 
         {/* Invite User Dialog */}
         <Dialog open={inviteUserDialogOpen} onOpenChange={setInviteUserDialogOpen}>
-          <DialogContent>
+          <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>Invite Bricklayer to Site</DialogTitle>
             </DialogHeader>
@@ -1665,7 +1665,7 @@ const SiteDetail = () => {
 
         {/* Booking Dialog */}
         <Dialog open={bookingDialogOpen} onOpenChange={setBookingDialogOpen}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>Book Work</DialogTitle>
             </DialogHeader>
@@ -1762,7 +1762,7 @@ const SiteDetail = () => {
 
         {/* Invoice Dialog */}
         <Dialog open={invoiceDialogOpen} onOpenChange={setInvoiceDialogOpen}>
-          <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
@@ -1858,7 +1858,7 @@ const SiteDetail = () => {
                               }
                             }}
                             className="w-40"
-                            autoFocus
+                            autoFocus={false}
                             step="10"
                             min="0"
                             max="5000"
@@ -2034,7 +2034,7 @@ const SiteDetail = () => {
 
         {/* Add Gang Member Dialog */}
         <Dialog open={gangDialogOpen} onOpenChange={setGangDialogOpen}>
-          <DialogContent>
+          <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>Add Gang Member</DialogTitle>
             </DialogHeader>
@@ -2070,7 +2070,7 @@ const SiteDetail = () => {
 
         {/* Plot Summary Dialog */}
         <Dialog open={plotSummaryDialogOpen} onOpenChange={setPlotSummaryDialogOpen}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg" onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>Plot {selectedPlotForSummary?.plot_number} Summary</DialogTitle>
             </DialogHeader>

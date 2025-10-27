@@ -547,7 +547,7 @@ const PlotBooking = () => {
         </div>
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent>
+          <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>Add Gang Member</DialogTitle>
             </DialogHeader>

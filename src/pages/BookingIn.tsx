@@ -788,7 +788,7 @@ const BookingIn = () => {
 
         {/* User Invoices Dialog */}
         <Dialog open={userInvoicesDialogOpen} onOpenChange={setUserInvoicesDialogOpen}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>
                 {selectedUser && (
@@ -896,7 +896,7 @@ const BookingIn = () => {
 
         {/* Invoice Details Dialog */}
         <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
-          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader className="no-print">
               <DialogTitle>Invoice Details</DialogTitle>
             </DialogHeader>

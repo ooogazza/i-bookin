@@ -293,7 +293,7 @@ const Dashboard = () => {
 
         {/* Create Site Dialog */}
         <Dialog open={createSiteDialogOpen} onOpenChange={setCreateSiteDialogOpen}>
-          <DialogContent>
+          <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>Create New Site</DialogTitle>
             </DialogHeader>

@@ -223,7 +223,7 @@ const Sites = () => {
         </Card>
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent>
+          <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>{editingSite ? "Edit Site" : "Create New Site"}</DialogTitle>
             </DialogHeader>
