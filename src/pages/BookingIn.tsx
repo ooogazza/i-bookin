@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
-import { FileText, Printer, Trash2 } from "lucide-react";
+import { FileText, Printer, Trash2, Send } from "lucide-react";
 import { maskEmail } from "@/lib/emailUtils";
 import jsPDF from "jspdf";
 import logo from "@/assets/logo.png";
@@ -88,6 +88,7 @@ const BookingIn = () => {
   const [userInvoicesDialogOpen, setUserInvoicesDialogOpen] = useState(false);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [unviewedCount, setUnviewedCount] = useState(0);
+  const [sendingToAdmin, setSendingToAdmin] = useState(false);
 
   useEffect(() => {
     fetchBookings();
@@ -539,6 +540,177 @@ const BookingIn = () => {
     setTimeout(() => {
       window.print();
     }, 100);
+  };
+
+  const handleSendToAdmin = async (invoice: GroupedInvoice) => {
+    setSendingToAdmin(true);
+    try {
+      // Generate PDF
+      const doc = new jsPDF();
+      const blueColor: [number, number, number] = [37, 99, 235];
+
+      // Add logo with rounded corners
+      const img = new Image();
+      img.src = logo;
+      
+      await new Promise<void>((resolve) => {
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          const width = 120;
+          const height = 80;
+          const radius = 10;
+          canvas.width = width;
+          canvas.height = height;
+
+          if (ctx) {
+            ctx.beginPath();
+            ctx.moveTo(radius, 0);
+            ctx.lineTo(width - radius, 0);
+            ctx.quadraticCurveTo(width, 0, width, radius);
+            ctx.lineTo(width, height - radius);
+            ctx.quadraticCurveTo(width, height, width - radius, height);
+            ctx.lineTo(radius, height);
+            ctx.quadraticCurveTo(0, height, 0, height - radius);
+            ctx.lineTo(0, radius);
+            ctx.quadraticCurveTo(0, 0, radius, 0);
+            ctx.closePath();
+            ctx.clip();
+            ctx.drawImage(img, 0, 0, width, height);
+
+            const roundedLogo = canvas.toDataURL("image/png");
+            try {
+              doc.addImage(roundedLogo, "PNG", 90, 10, 30, 20);
+            } catch (e) {
+              console.error("Failed to add logo to PDF", e);
+            }
+          }
+          resolve();
+        };
+      });
+
+      // Invoice content
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "normal");
+      doc.text("Brickwork Manager", 105, 38, { align: "center" });
+
+      // Invoice number
+      doc.setFillColor(...blueColor);
+      doc.rect(10, 45, 190, 12, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text(`INVOICE: ${invoice.invoice_number}`, 105, 53, { align: "center" });
+
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+
+      let yPos = 68;
+      doc.text(`Date: ${new Date(invoice.created_at).toLocaleDateString()}`, 15, yPos);
+      yPos += 10;
+
+      doc.setTextColor(...blueColor);
+      doc.setFont("helvetica", "bold");
+      doc.text("BOOKED BY:", 15, yPos);
+      doc.setTextColor(0, 0, 0);
+      doc.setFont("helvetica", "normal");
+      yPos += 7;
+      doc.text(`Name: ${invoice.booked_by.full_name}`, 15, yPos);
+      yPos += 12;
+
+      doc.setTextColor(...blueColor);
+      doc.setFont("helvetica", "bold");
+      doc.text("ITEMS:", 15, yPos);
+      doc.setTextColor(0, 0, 0);
+      doc.setFont("helvetica", "normal");
+      yPos += 7;
+
+      invoice.items.forEach((item) => {
+        if (yPos > 270) {
+          doc.addPage();
+          yPos = 20;
+        }
+        let text = '';
+        if (item.is_non_plot) {
+          text = `Non-Plot Work: £${item.booked_value.toFixed(2)}`;
+        } else if (item.plots && item.lift_values) {
+          text = `Plot ${item.plots.plot_number} - ${LIFT_LABELS[item.lift_values.lift_type as keyof typeof LIFT_LABELS]}: ${item.percentage}% = £${item.booked_value.toFixed(2)}`;
+        }
+        doc.text(text, 15, yPos);
+        yPos += 6;
+      });
+
+      yPos += 6;
+
+      if (invoice.notes) {
+        doc.setTextColor(...blueColor);
+        doc.setFont("helvetica", "bold");
+        doc.text("NOTES:", 15, yPos);
+        doc.setTextColor(0, 0, 0);
+        doc.setFont("helvetica", "normal");
+        yPos += 7;
+        const noteLines = doc.splitTextToSize(invoice.notes, 180);
+        doc.text(noteLines, 15, yPos);
+        yPos += noteLines.length * 6 + 6;
+      }
+
+      doc.setFillColor(...blueColor);
+      doc.rect(10, yPos, 190, 10, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.text(`Total Value: £${invoice.total_value.toFixed(2)}`, 105, yPos + 7, { align: "center" });
+      yPos += 18;
+
+      const gangDivisions = invoice.items[0]?.gang_divisions || [];
+      if (gangDivisions.length > 0) {
+        doc.setTextColor(...blueColor);
+        doc.setFont("helvetica", "bold");
+        doc.text("GANG DIVISION:", 15, yPos);
+        doc.setTextColor(0, 0, 0);
+        doc.setFont("helvetica", "normal");
+        yPos += 7;
+
+        gangDivisions.forEach((member) => {
+          if (yPos > 270) {
+            doc.addPage();
+            yPos = 20;
+          }
+          doc.text(`${member.member_name} (${member.member_type}): £${member.amount.toFixed(2)}`, 15, yPos);
+          yPos += 6;
+        });
+
+        yPos += 4;
+        doc.setFont("helvetica", "bold");
+        doc.text(`Total Allocated: £${gangDivisions.reduce((sum, m) => sum + m.amount, 0).toFixed(2)}`, 15, yPos);
+      }
+
+      // Convert PDF to base64
+      const pdfBase64 = doc.output("dataurlstring").split(",")[1];
+
+      // Send to edge function
+      const { error } = await supabase.functions.invoke("send-invoice-to-admin", {
+        body: {
+          invoiceNumber: invoice.invoice_number,
+          pdfBase64,
+          invoiceDetails: {
+            bookedBy: invoice.booked_by.full_name,
+            totalValue: invoice.total_value,
+            createdAt: invoice.created_at,
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success("Invoice sent to admin successfully");
+    } catch (error: any) {
+      console.error("Error sending invoice:", error);
+      toast.error("Failed to send invoice to admin");
+    } finally {
+      setSendingToAdmin(false);
+    }
   };
 
   return (
@@ -1203,6 +1375,21 @@ const BookingIn = () => {
                     <FileText className="mr-2 h-4 w-4" />
                     Export PDF
                   </Button>
+                  {!isAdmin && (
+                    <Button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleSendToAdmin(selectedInvoice);
+                      }}
+                      className="flex-1"
+                      variant="default"
+                      type="button"
+                      disabled={sendingToAdmin}
+                    >
+                      <Send className="mr-2 h-4 w-4" />
+                      {sendingToAdmin ? "Sending..." : "Send to Admin"}
+                    </Button>
+                  )}
                   {isAdmin && !selectedInvoice.is_confirmed && (
                     <Button
                       onClick={() => handleConfirmInvoice(selectedInvoice)}

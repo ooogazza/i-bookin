@@ -11,7 +11,7 @@ import { Slider } from "@/components/ui/slider";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Settings, Plus, Users, Trash2, ShoppingCart, FileText, X, ArrowUp, ChevronDown } from "lucide-react";
+import { Settings, Plus, Users, Trash2, ShoppingCart, FileText, X, ArrowUp, ChevronDown, Send } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import jsPDF from "jspdf";
@@ -962,6 +962,152 @@ const SiteDetail = () => {
     try {
       const invoiceNumber = `INV-${Date.now()}`;
       
+      // Generate PDF for email
+      const doc = new jsPDF();
+      const blueColor: [number, number, number] = [37, 99, 235];
+
+      // Add logo
+      const img = new Image();
+      img.src = logo;
+      await new Promise<void>((resolve) => {
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          const width = 120;
+          const height = 80;
+          const radius = 10;
+          canvas.width = width;
+          canvas.height = height;
+
+          if (ctx) {
+            ctx.beginPath();
+            ctx.moveTo(radius, 0);
+            ctx.lineTo(width - radius, 0);
+            ctx.quadraticCurveTo(width, 0, width, radius);
+            ctx.lineTo(width, height - radius);
+            ctx.quadraticCurveTo(width, height, width - radius, height);
+            ctx.lineTo(radius, height);
+            ctx.quadraticCurveTo(0, height, 0, height - radius);
+            ctx.lineTo(0, radius);
+            ctx.quadraticCurveTo(0, 0, radius, 0);
+            ctx.closePath();
+            ctx.clip();
+            ctx.drawImage(img, 0, 0, width, height);
+
+            const roundedLogo = canvas.toDataURL("image/png");
+            try {
+              doc.addImage(roundedLogo, "PNG", 90, 10, 30, 20);
+            } catch (e) {
+              console.error("Failed to add logo to PDF", e);
+            }
+          }
+          resolve();
+        };
+      });
+
+      // PDF content
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "normal");
+      doc.text("Brickwork Manager", 105, 38, { align: "center" });
+
+      doc.setFillColor(...blueColor);
+      doc.rect(10, 45, 190, 12, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text(`INVOICE: ${invoiceNumber}`, 105, 53, { align: "center" });
+
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+
+      let yPos = 68;
+      doc.text(`Date: ${new Date().toLocaleDateString()}`, 15, yPos);
+      yPos += 10;
+
+      if (site) {
+        doc.setTextColor(...blueColor);
+        doc.setFont("helvetica", "bold");
+        doc.text("SITE:", 15, yPos);
+        doc.setTextColor(0, 0, 0);
+        doc.setFont("helvetica", "normal");
+        yPos += 7;
+        doc.text(`${site.name}`, 15, yPos);
+        yPos += 12;
+      }
+
+      doc.setTextColor(...blueColor);
+      doc.setFont("helvetica", "bold");
+      doc.text("ITEMS:", 15, yPos);
+      doc.setTextColor(0, 0, 0);
+      doc.setFont("helvetica", "normal");
+      yPos += 7;
+
+      invoiceItems.forEach((item) => {
+        if (yPos > 270) {
+          doc.addPage();
+          yPos = 20;
+        }
+        const text = `Plot ${item.plot.plot_number} - ${LIFT_LABELS[item.liftType as keyof typeof LIFT_LABELS]}: ${item.percentage}% = £${item.bookedValue.toFixed(2)}`;
+        doc.text(text, 15, yPos);
+        yPos += 6;
+      });
+
+      yPos += 6;
+
+      if (invoiceNotes) {
+        doc.setTextColor(...blueColor);
+        doc.setFont("helvetica", "bold");
+        doc.text("NOTES:", 15, yPos);
+        doc.setTextColor(0, 0, 0);
+        doc.setFont("helvetica", "normal");
+        yPos += 7;
+        const noteLines = doc.splitTextToSize(invoiceNotes, 180);
+        doc.text(noteLines, 15, yPos);
+        yPos += noteLines.length * 6 + 6;
+      }
+
+      doc.setFillColor(...blueColor);
+      doc.rect(10, yPos, 190, 10, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.text(`Total Value: £${totalInvoiceValue.toFixed(2)}`, 105, yPos + 7, { align: "center" });
+      yPos += 18;
+
+      if (gangMembers.length > 0) {
+        doc.setTextColor(...blueColor);
+        doc.setFont("helvetica", "bold");
+        doc.text("GANG DIVISION:", 15, yPos);
+        doc.setTextColor(0, 0, 0);
+        doc.setFont("helvetica", "normal");
+        yPos += 7;
+
+        gangMembers.forEach((member) => {
+          if (yPos > 270) {
+            doc.addPage();
+            yPos = 20;
+          }
+          doc.text(`${member.name} (${member.type}): £${member.amount.toFixed(2)}`, 15, yPos);
+          yPos += 6;
+        });
+
+        yPos += 4;
+        doc.setFont("helvetica", "bold");
+        doc.text(`Total Allocated: £${totalGangAllocated.toFixed(2)}`, 15, yPos);
+      }
+
+      // Convert PDF to base64
+      const pdfBase64 = doc.output("dataurlstring").split(",")[1];
+
+      // Get user profile
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user.id)
+        .single();
+
+      // Create bookings and send email in parallel
       for (const item of invoiceItems) {
         const { data: booking, error: bookingError } = await supabase
           .from("bookings")
@@ -994,9 +1140,27 @@ const SiteDetail = () => {
         if (gangError) throw gangError;
       }
 
-      toast.success("Invoice sent to admin successfully");
+      // Send email to admins
+      const { error: emailError } = await supabase.functions.invoke("send-invoice-to-admin", {
+        body: {
+          invoiceNumber,
+          pdfBase64,
+          invoiceDetails: {
+            bookedBy: profile?.full_name || user.email || "User",
+            totalValue: totalInvoiceValue,
+            createdAt: new Date().toISOString(),
+          },
+        },
+      });
+
+      if (emailError) {
+        console.error("Email error:", emailError);
+        toast.success("Invoice created! (Email notification may be delayed)");
+      } else {
+        toast.success("Invoice sent to admin successfully");
+      }
+
       setInvoiceItems([]);
-      // Reset gang members amounts but keep them for next invoice
       setGangMembers(gangMembers.map(m => ({ ...m, amount: 0 })));
       setInvoiceNotes("");
       setNotesAmount(0);
