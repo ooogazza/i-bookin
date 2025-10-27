@@ -317,14 +317,17 @@ const BookingIn = () => {
 
       if (error) throw error;
 
-      // Update local state first
+      // Close the details dialog immediately so the background is visible
+      setDetailsDialogOpen(false);
+
+      // Update main grouped list
       setGroupedInvoices((prev: GroupedInvoice[]) =>
         prev.map((inv: GroupedInvoice) =>
           inv.invoice_number === invoice.invoice_number ? ({ ...inv, is_confirmed: true } as GroupedInvoice) : inv,
         ),
       );
 
-      // Update userInvoices state
+      // Update admin grouped-by-user list
       setUserInvoices((prev: UserInvoices[]) =>
         prev.map((user: UserInvoices) => ({
           ...user,
@@ -334,20 +337,27 @@ const BookingIn = () => {
         })),
       );
 
-      // Update selectedInvoice state to show green immediately
+      // Update the open user dialog snapshot so highlight shows instantly
+      setSelectedUser((prev: UserInvoices | null) =>
+        prev
+          ? {
+              ...prev,
+              invoices: prev.invoices.map((inv: GroupedInvoice) =>
+                inv.invoice_number === invoice.invoice_number ? ({ ...inv, is_confirmed: true } as GroupedInvoice) : inv,
+              ),
+            }
+          : prev,
+      );
+
+      // Update selectedInvoice state (not strictly needed since dialog closes)
       setSelectedInvoice((prev: GroupedInvoice | null) =>
         prev ? ({ ...prev, is_confirmed: true } as GroupedInvoice) : prev,
       );
 
       toast.success("Invoice confirmed successfully");
 
-      // Wait a moment for the UI to update, then close the dialog
-      setTimeout(() => {
-        setDetailsDialogOpen(false);
-      }, 300);
-
-      // Refetch to ensure state is synchronized
-      await fetchBookings();
+      // Refresh in background to sync any other changes
+      fetchBookings();
     } catch (error: any) {
       toast.error("Failed to confirm invoice");
       console.error("Error:", error);
