@@ -119,6 +119,7 @@ const SiteDetail = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [availableUsers, setAvailableUsers] = useState<AvailableUser[]>([]);
+  const [pendingInvitations, setPendingInvitations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [houseTypeDialogOpen, setHouseTypeDialogOpen] = useState(false);
@@ -319,6 +320,17 @@ const SiteDetail = () => {
 
         if (usersError) throw usersError;
         setUsers(usersData as any || []);
+
+        // Fetch pending invitations
+        const { data: invitationsData, error: invitationsError } = await supabase
+          .from("invitations")
+          .select("*")
+          .eq("site_id", id)
+          .eq("status", "pending");
+
+        if (!invitationsError && invitationsData) {
+          setPendingInvitations(invitationsData);
+        }
       }
     } catch (error: any) {
       toast.error("Failed to load site data");
@@ -1630,12 +1642,23 @@ const SiteDetail = () => {
                     <SelectValue placeholder="Select user" />
                   </SelectTrigger>
                   <SelectContent>
-                    
                     {users.map(u => (
                       <SelectItem key={u.user_id} value={u.user_id}>
                         {u.profiles.full_name} ({plots.filter(p => p.assigned_to === u.user_id).length} plots)
                       </SelectItem>
                     ))}
+                    {pendingInvitations.length > 0 && (
+                      <>
+                        <SelectItem key="pending-header" value="pending-header" disabled>
+                          <span className="text-xs text-muted-foreground font-semibold">--- Pending Invitations ---</span>
+                        </SelectItem>
+                        {pendingInvitations.map(inv => (
+                          <SelectItem key={inv.id} value={inv.id} disabled>
+                            <span className="text-muted-foreground">{maskEmail(inv.email)} (Pending)</span>
+                          </SelectItem>
+                        ))}
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -2077,88 +2100,87 @@ const SiteDetail = () => {
 
         {/* Plot Summary Dialog */}
         <Dialog open={plotSummaryDialogOpen} onOpenChange={setPlotSummaryDialogOpen}>
-          <DialogContent className="max-w-lg" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="max-w-lg max-h-[80vh]" onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>Plot {selectedPlotForSummary?.plot_number} Summary</DialogTitle>
             </DialogHeader>
-            {selectedPlotForSummary && (
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">House Type</p>
-                  <p className="font-semibold text-lg">
-                    {selectedPlotForSummary.house_types?.name || "Not assigned"}
-                  </p>
-                </div>
-
-                {isAdmin && (
-                  <div className="border-t pt-4">
-                    <p className="text-sm text-muted-foreground mb-3">Assignment History</p>
-                    {plotAssignmentHistory.length > 0 ? (
-                      <div className="space-y-2 max-h-64 overflow-y-auto">
-                        {plotAssignmentHistory.map((history) => (
-                          <div 
-                            key={history.id} 
-                            className={`p-3 rounded-lg ${history.removed_at ? 'bg-muted/50' : 'bg-muted'}`}
-                          >
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <p className="font-semibold">
-                                  {history.profiles?.full_name || 'Unknown'}
-                                </p>
-                                <p className="text-sm text-muted-foreground">
-                                  {maskEmail(history.profiles?.email || '')}
-                                </p>
-                                <div className="mt-1 text-xs text-muted-foreground">
-                                  <p>Assigned: {new Date(history.assigned_at).toLocaleDateString()}</p>
-                                  {history.removed_at && (
-                                    <p>Removed: {new Date(history.removed_at).toLocaleDateString()}</p>
-                                  )}
-                                </div>
-                              </div>
-                              {!history.removed_at && (
-                                <Badge variant="default" className="ml-2">Current</Badge>
-                              )}
-                              {history.removed_at && (
-                                <Badge variant="secondary" className="ml-2">Past</Badge>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">No bricklayer has been assigned to this plot yet</p>
-                    )}
+            <div className="overflow-y-auto max-h-[calc(80vh-8rem)] pr-2">
+              {selectedPlotForSummary && (
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">House Type</p>
+                    <p className="font-semibold text-lg">
+                      {selectedPlotForSummary.house_types?.name || "Not assigned"}
+                    </p>
                   </div>
-                )}
 
-                {selectedPlotForSummary.house_types && (
-                  <>
+                  {isAdmin && (
                     <div className="border-t pt-4">
-                      <p className="font-semibold mb-3">Lift Values</p>
-                      <div className="space-y-2">
-                        {selectedPlotForSummary.house_types.lift_values.map((lift) => (
-                          <div key={lift.id} className="flex justify-between items-center p-2 bg-muted rounded">
-                            <span className="text-sm">
-                              {LIFT_LABELS[lift.lift_type as keyof typeof LIFT_LABELS]}
-                            </span>
-                            <span className="font-medium">£{lift.value.toFixed(2)}</span>
-                          </div>
-                        ))}
-                      </div>
+                      <p className="text-sm text-muted-foreground mb-3">Assignment History</p>
+                      {plotAssignmentHistory.length > 0 ? (
+                        <div className="space-y-2">
+                          {plotAssignmentHistory.map((history) => (
+                            <div 
+                              key={history.id} 
+                              className={`p-3 rounded-lg ${history.removed_at ? 'bg-muted/50' : 'bg-muted'}`}
+                            >
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <p className="font-semibold">
+                                    {history.profiles?.full_name || 'Unknown'}
+                                  </p>
+                                  <div className="mt-1 text-xs text-muted-foreground">
+                                    <p>Assigned: {new Date(history.assigned_at).toLocaleDateString()}</p>
+                                    {history.removed_at && (
+                                      <p>Removed: {new Date(history.removed_at).toLocaleDateString()}</p>
+                                    )}
+                                  </div>
+                                </div>
+                                {!history.removed_at && (
+                                  <Badge variant="default" className="ml-2">Current</Badge>
+                                )}
+                                {history.removed_at && (
+                                  <Badge variant="secondary" className="ml-2">Past</Badge>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No bricklayer has been assigned to this plot yet</p>
+                      )}
                     </div>
+                  )}
 
-                    <div className="border-t pt-4">
-                      <div className="flex justify-between items-center">
-                        <span className="font-bold text-lg">Total Value:</span>
-                        <span className="font-bold text-2xl text-primary">
-                          £{selectedPlotForSummary.house_types.total_value.toFixed(2)}
-                        </span>
+                  {selectedPlotForSummary.house_types && (
+                    <>
+                      <div className="border-t pt-4">
+                        <p className="font-semibold mb-3">Lift Values</p>
+                        <div className="space-y-2">
+                          {selectedPlotForSummary.house_types.lift_values.map((lift) => (
+                            <div key={lift.id} className="flex justify-between items-center p-2 bg-muted rounded">
+                              <span className="text-sm">
+                                {LIFT_LABELS[lift.lift_type as keyof typeof LIFT_LABELS]}
+                              </span>
+                              <span className="font-medium">£{lift.value.toFixed(2)}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
+
+                      <div className="border-t pt-4">
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-lg">Total Value:</span>
+                          <span className="font-bold text-2xl text-primary">
+                            £{selectedPlotForSummary.house_types.total_value.toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
           </DialogContent>
         </Dialog>
 

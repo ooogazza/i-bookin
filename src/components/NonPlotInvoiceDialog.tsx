@@ -211,9 +211,6 @@ export const NonPlotInvoiceDialog = ({
         .insert(divisions);
       if (divisionsError) throw divisionsError;
 
-      const payload = buildInvoice();
-      await handleSendToAdmin(payload);
-
       setInvoiceAmount(0);
       setNotes("");
       setGangMembers([]);
