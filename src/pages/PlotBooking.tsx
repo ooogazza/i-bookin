@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { FileText, Plus } from "lucide-react";
+import { FileText, Plus, Users } from "lucide-react";
 import { gangMemberSchema, bookingSchema } from "@/lib/validations";
 import { GangDivisionCard } from "@/components/invoice/GangDivisionCard";
 
@@ -71,13 +71,13 @@ const PlotBooking = () => {
   const [plot, setPlot] = useState<Plot | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   const [selectedLiftId, setSelectedLiftId] = useState("");
   const [percentage, setPercentage] = useState(100);
   const [gangMembers, setGangMembers] = useState<GangMember[]>([]);
   const [savedMembers, setSavedMembers] = useState<SavedGangMember[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
-  
+
   const [memberName, setMemberName] = useState("");
   const [memberType, setMemberType] = useState("bricklayer");
   const [memberAmount, setMemberAmount] = useState(0);
@@ -91,14 +91,12 @@ const PlotBooking = () => {
 
   const fetchSavedMembers = async () => {
     if (!user) return;
-    
     try {
       const { data, error } = await supabase
         .from("saved_gang_members")
         .select("*")
         .eq("user_id", user.id)
         .order("name");
-
       if (error) throw error;
       setSavedMembers(data || []);
     } catch (error: any) {
@@ -123,23 +121,18 @@ const PlotBooking = () => {
         `)
         .eq("id", id)
         .single();
-
       if (error) throw error;
       setPlot(data as any);
 
-      // Fetch existing bookings for this plot
       const { data: bookingsData, error: bookingsError } = await supabase
         .from("bookings")
         .select("id, lift_value_id, percentage")
         .eq("plot_id", id);
-
       if (bookingsError) throw bookingsError;
       setBookings(bookingsData || []);
     } catch (error: any) {
       toast.error("Failed to load plot data");
-      if (import.meta.env.DEV) {
-        console.error("Error:", error);
-      }
+      if (import.meta.env.DEV) console.error("Error:", error);
     } finally {
       setLoading(false);
     }
@@ -157,111 +150,65 @@ const PlotBooking = () => {
     return lift ? lift.id : "";
   };
 
-  const getTotalBooked = (liftValueId: string): number => {
-    return bookings
-      .filter(b => b.lift_value_id === liftValueId)
-      .reduce((sum, b) => sum + b.percentage, 0);
-  };
+  const getTotalBooked = (liftValueId: string): number =>
+    bookings.filter(b => b.lift_value_id === liftValueId).reduce((sum, b) => sum + b.percentage, 0);
 
-  const getRemainingPercentage = (liftValueId: string): number => {
-    return 100 - getTotalBooked(liftValueId);
-  };
+  const getRemainingPercentage = (liftValueId: string): number =>
+    100 - getTotalBooked(liftValueId);
 
   const getAvailableLifts = () => {
     if (!plot) return [];
-    return plot.house_types.lift_values.filter(lv => lv.id && lv.id !== "" && getRemainingPercentage(lv.id) > 0);
+    return plot.house_types.lift_values.filter(lv => lv.id && getRemainingPercentage(lv.id) > 0);
   };
 
   const handleAddMember = async () => {
     if (!user) return;
-
     try {
-      // Validate input
-      gangMemberSchema.parse({
-        name: memberName,
-        type: memberType,
-        amount: memberAmount,
-      });
-
+      gangMemberSchema.parse({ name: memberName, type: memberType, amount: memberAmount });
       const trimmedName = memberName.trim();
-
-      // Check if this member already exists in saved members
       const existingMember = savedMembers.find(
         m => m.name.toLowerCase() === trimmedName.toLowerCase() && m.type === memberType
       );
-
       let memberId = existingMember?.id;
-
-      // If not, save to database
       if (!existingMember) {
         const { data, error } = await supabase
           .from("saved_gang_members")
-          .insert({
-            user_id: user.id,
-            name: trimmedName,
-            type: memberType
-          })
+          .insert({ user_id: user.id, name: trimmedName, type: memberType })
           .select()
           .single();
-
         if (error) throw error;
         memberId = data.id;
         setSavedMembers([...savedMembers, data]);
       }
-
-      setGangMembers([...gangMembers, {
-        id: memberId,
-        name: trimmedName,
-        type: memberType,
-        amount: memberAmount
-      }]);
-      
+      setGangMembers([...gangMembers, { id: memberId, name: trimmedName, type: memberType, amount: memberAmount }]);
       setMemberName("");
       setMemberAmount(0);
       setDialogOpen(false);
     } catch (error: any) {
-      if (error.errors?.[0]?.message) {
-        toast.error(error.errors[0].message);
-      } else {
-        toast.error("Invalid input. Please check all fields.");
-      }
+      toast.error(error.errors?.[0]?.message || "Invalid input. Please check all fields.");
     }
   };
 
   const handleAddExistingMember = (member: SavedGangMember) => {
-    // Check if already added
     if (gangMembers.some(m => m.id === member.id)) {
       toast.error("This member is already added");
       return;
     }
-
-    setGangMembers([...gangMembers, {
-      id: member.id,
-      name: member.name,
-      type: member.type,
-      amount: 0
-    }]);
+    setGangMembers([...gangMembers, { id: member.id, name: member.name, type: member.type, amount: 0 }]);
     toast.success(`${member.name} added`);
   };
 
   const handleDeletePermanently = async (memberId: string, index: number) => {
     if (!user) return;
-
     try {
       const { error } = await supabase
         .from("saved_gang_members")
         .delete()
         .eq("id", memberId)
         .eq("user_id", user.id);
-
       if (error) throw error;
-
-      // Remove from saved members list
       setSavedMembers(savedMembers.filter(m => m.id !== memberId));
-      
-      // Also remove from current gang members if present
       setGangMembers(gangMembers.filter((_, i) => i !== index));
-      
       toast.success("Gang member deleted permanently");
     } catch (error: any) {
       toast.error("Failed to delete gang member");
@@ -291,9 +238,9 @@ const PlotBooking = () => {
     setGangMembers(updated);
   };
 
-  const totalAllocated = gangMembers.reduce((sum, m) => sum + m.amount, 0);
-  const selectedLiftValue = selectedLiftId ? 
-    plot?.house_types.lift_values.find(lv => lv.id === selectedLiftId)?.value || 0 
+    const totalAllocated = gangMembers.reduce((sum, m) => sum + m.amount, 0);
+  const selectedLiftValue = selectedLiftId
+    ? plot?.house_types.lift_values.find(lv => lv.id === selectedLiftId)?.value || 0
     : 0;
   const remainingPercentageForLift = selectedLiftId ? getRemainingPercentage(selectedLiftId) : 100;
   const maxBookingPercentage = Math.min(percentage, remainingPercentageForLift);
@@ -301,7 +248,6 @@ const PlotBooking = () => {
   const remainingToAllocate = bookingValue - totalAllocated;
 
   useEffect(() => {
-    // Reset percentage when selecting a new lift
     if (selectedLiftId) {
       const remaining = getRemainingPercentage(selectedLiftId);
       setPercentage(Math.min(100, remaining));
@@ -322,15 +268,9 @@ const PlotBooking = () => {
     }
 
     try {
-      // Validate booking data
-      bookingSchema.parse({
-        percentage,
-        invoiceNumber: null,
-        notes: null,
-      });
-
+      bookingSchema.parse({ percentage, invoiceNumber: null, notes: null });
       const invoiceNumber = `INV-${Date.now()}`;
-      
+
       const { data: booking, error: bookingError } = await supabase
         .from("bookings")
         .insert({
@@ -363,14 +303,8 @@ const PlotBooking = () => {
       toast.success("Booking created successfully");
       navigate("/booking-in");
     } catch (error: any) {
-      if (error.errors?.[0]?.message) {
-        toast.error(error.errors[0].message);
-      } else {
-        toast.error("Failed to create booking");
-      }
-      if (import.meta.env.DEV) {
-        console.error("Error:", error);
-      }
+      toast.error(error.errors?.[0]?.message || "Failed to create booking");
+      if (import.meta.env.DEV) console.error("Error:", error);
     }
   };
 
@@ -399,7 +333,6 @@ const PlotBooking = () => {
   return (
     <div className="min-h-screen bg-secondary/30">
       <Header showBackButton />
-      
       <main className="container py-8">
         <div className="mb-8">
           <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
@@ -426,7 +359,6 @@ const PlotBooking = () => {
                     </SelectTrigger>
                     <SelectContent>
                       {getAvailableLifts().map(lv => {
-                        const totalBooked = getTotalBooked(lv.id);
                         const remaining = getRemainingPercentage(lv.id);
                         return (
                           <SelectItem key={lv.id} value={lv.id}>
@@ -476,11 +408,11 @@ const PlotBooking = () => {
                             }}
                             className="w-32"
                             autoFocus
-                            step="1"
-                            min="1"
+                            step={1}
+                            min={1}
                           />
                         ) : (
-                          <Label 
+                          <Label
                             className="cursor-pointer hover:text-primary transition-colors"
                             onClick={() => {
                               setTempPercentage(percentage.toString());
@@ -517,27 +449,53 @@ const PlotBooking = () => {
           </Card>
 
           {selectedLiftId && (
-            <GangDivisionCard
-              gangMembers={gangMembers}
-              totalValue={bookingValue}
-              totalAllocated={totalAllocated}
-              remainingToAllocate={remainingToAllocate}
-              onAddMemberClick={() => setDialogOpen(true)}
-              onRemoveMember={handleRemoveMember}
-              onDeletePermanently={handleDeletePermanently}
-              onUpdateMemberAmount={handleUpdateMemberAmount}
-              onStartEditing={startEditingMember}
-              onStopEditing={stopEditingMember}
-              savedMembers={savedMembers}
-              onAddExistingMember={handleAddExistingMember}
-              totalValueLabel="Booking Value"
-            />
+            <>
+              <div className="flex items-center gap-2 mb-4">
+                <Button onClick={() => setDialogOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Member
+                </Button>
+
+                <div className="relative group">
+                  <Button variant="outline" size="icon" aria-label="Quick Add">
+                    <Users className="h-5 w-5" />
+                  </Button>
+                  <div className="absolute z-10 mt-2 bg-white border rounded shadow w-48 hidden group-hover:block">
+                    {savedMembers.map((member) => (
+                      <button
+                        key={member.id}
+                        onClick={() => handleAddExistingMember(member)}
+                        className="w-full text-left px-3 py-2 hover:bg-muted"
+                      >
+                        {member.name} ({member.type})
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <GangDivisionCard
+                gangMembers={gangMembers}
+                totalValue={bookingValue}
+                totalAllocated={totalAllocated}
+                remainingToAllocate={remainingToAllocate}
+                onAddMemberClick={() => setDialogOpen(true)}
+                onRemoveMember={handleRemoveMember}
+                onDeletePermanently={handleDeletePermanently}
+                onUpdateMemberAmount={handleUpdateMemberAmount}
+                onStartEditing={startEditingMember}
+                onStopEditing={stopEditingMember}
+                savedMembers={savedMembers}
+                                onAddExistingMember={handleAddExistingMember}
+                totalValueLabel="Booking Value"
+              />
+            </>
           )}
 
           {selectedLiftId && gangMembers.length > 0 && (
-            <Button 
-              onClick={handleCreateBooking} 
-              size="lg" 
+            <Button
+              onClick={handleCreateBooking}
+              size="lg"
               className="w-full"
               disabled={Math.abs(remainingToAllocate) > 0.01}
             >
@@ -575,7 +533,9 @@ const PlotBooking = () => {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Amount: £{memberAmount.toFixed(2)} (£{remainingToAllocate.toFixed(2)} remaining)</Label>
+                <Label>
+                  Amount: £{memberAmount.toFixed(2)} (£{remainingToAllocate.toFixed(2)} remaining)
+                </Label>
                 <Slider
                   value={[memberAmount]}
                   onValueChange={(value) => setMemberAmount(value[0])}
