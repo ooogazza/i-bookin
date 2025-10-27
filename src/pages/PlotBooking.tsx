@@ -11,8 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { FileText, Plus, X } from "lucide-react";
+import { FileText, Plus } from "lucide-react";
 import { gangMemberSchema, bookingSchema } from "@/lib/validations";
+import { GangDivisionCard } from "@/components/invoice/GangDivisionCard";
 
 interface Plot {
   id: string;
@@ -36,6 +37,7 @@ interface GangMember {
   name: string;
   type: string;
   amount: number;
+  editing?: boolean;
 }
 
 interface Booking {
@@ -176,16 +178,20 @@ const PlotBooking = () => {
   };
 
   const handleUpdateMemberAmount = (index: number, newAmount: number) => {
-    const member = gangMembers[index];
-    const otherMembersTotal = gangMembers
-      .filter((_, i) => i !== index)
-      .reduce((sum, m) => sum + m.amount, 0);
-    
-    const maxAllowed = bookingValue - otherMembersTotal;
-    const finalAmount = Math.min(newAmount, maxAllowed);
-
     const updated = [...gangMembers];
-    updated[index] = { ...member, amount: finalAmount };
+    updated[index].amount = newAmount;
+    setGangMembers(updated);
+  };
+
+  const startEditingMember = (index: number) => {
+    const updated = [...gangMembers];
+    updated[index].editing = true;
+    setGangMembers(updated);
+  };
+
+  const stopEditingMember = (index: number) => {
+    const updated = [...gangMembers];
+    updated[index].editing = false;
     setGangMembers(updated);
   };
 
@@ -415,94 +421,18 @@ const PlotBooking = () => {
           </Card>
 
           {selectedLiftId && (
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <CardTitle>Gang Division</CardTitle>
-                  <Button onClick={() => setDialogOpen(true)} size="sm">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Member
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {gangMembers.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-4">
-                    No gang members added yet
-                  </p>
-                ) : (
-                  <div className="space-y-3">
-                    {gangMembers.map((member, index) => {
-                      const otherMembersTotal = gangMembers
-                        .filter((_, i) => i !== index)
-                        .reduce((sum, m) => sum + m.amount, 0);
-                      const maxForThisMember = bookingValue - otherMembersTotal;
-
-                      return (
-                        <div key={index} className="p-4 bg-muted rounded-lg space-y-2">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <p className="font-semibold text-base">{member.name}</p>
-                              <p className="text-sm text-muted-foreground capitalize">{member.type}</p>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRemoveMember(index)}
-                            >
-                              <X className="h-5 w-5" />
-                            </Button>
-                          </div>
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium">Amount:</span>
-                              <Input
-                                type="number"
-                                value={member.amount}
-                                onChange={(e) => {
-                                  const val = parseFloat(e.target.value) || 0;
-                                  if (val <= maxForThisMember) {
-                                    handleUpdateMemberAmount(index, val);
-                                  }
-                                }}
-                                className="w-24 h-8"
-                                step="10"
-                                min="0"
-                                max={maxForThisMember}
-                              />
-                            </div>
-                            <Slider
-                              value={[member.amount]}
-                              onValueChange={(value) => handleUpdateMemberAmount(index, value[0])}
-                              max={maxForThisMember}
-                              step={10}
-                              className="w-full"
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                    
-                    <div className="mt-4 pt-4 border-t space-y-1">
-                      <div className="flex justify-between text-sm text-muted-foreground">
-                        <span>Booking Value:</span>
-                        <span className="font-semibold">£{bookingValue.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm text-muted-foreground">
-                        <span>Allocated:</span>
-                        <span className="font-semibold">£{totalAllocated.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Remaining:</span>
-                        <span className={`font-semibold ${remainingToAllocate < 0 ? 'text-destructive' : remainingToAllocate > 0 ? 'text-orange-500' : 'text-green-600'}`}>
-                          £{remainingToAllocate.toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <GangDivisionCard
+              gangMembers={gangMembers}
+              totalValue={bookingValue}
+              totalAllocated={totalAllocated}
+              remainingToAllocate={remainingToAllocate}
+              onAddMemberClick={() => setDialogOpen(true)}
+              onRemoveMember={handleRemoveMember}
+              onUpdateMemberAmount={handleUpdateMemberAmount}
+              onStartEditing={startEditingMember}
+              onStopEditing={stopEditingMember}
+              totalValueLabel="Booking Value"
+            />
           )}
 
           {selectedLiftId && gangMembers.length > 0 && (

@@ -7,11 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, X, FileText, Trash2 } from "lucide-react";
+import { FileText } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { handleExportPDF, handleSendToAdmin } from "@/lib/invoiceUtils";
+import { GangDivisionCard } from "@/components/invoice/GangDivisionCard";
 
 interface SavedGangMember {
   id: string;
@@ -338,132 +339,21 @@ export const NonPlotInvoiceDialog = ({
 
             {/* Gang Division */}
             {invoiceAmount > 0 && (
-              <Card>
-                <CardHeader>
-                  <div className="flex justify-between items-center">
-                    <CardTitle>Gang Division</CardTitle>
-                    <Button size="sm" onClick={() => setDialogOpen(true)}>
-                      <Plus className="mr-2 h-4 w-4" /> Add Member
-                    </Button>
-                  </div>
-                </CardHeader>
-
-                <CardContent>
-                  {/* Saved members quick add */}
-                  {savedMembers.length > 0 && (
-                    <div className="mb-4">
-                      <Label className="text-sm text-muted-foreground mb-2 block">
-                        Quick Add from Saved Members:
-                      </Label>
-                      <div className="flex flex-wrap gap-2">
-                        {savedMembers.map((member) => (
-                          <Button
-                            key={member.id}
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleAddExistingMember(member)}
-                            disabled={gangMembers.some(m => m.id === member.id)}
-                          >
-                            <Plus className="mr-1 h-3 w-3" />
-                            {member.name}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {gangMembers.length === 0 && (
-                    <p className="text-center text-muted-foreground py-4">No gang members added yet</p>
-                  )}
-
-                  <div className="space-y-3">
-                    {gangMembers.map((m, i) => (
-                      <div key={i} className="p-4 bg-muted rounded-lg space-y-2">
-                        <div className="flex justify-between">
-                          <div>
-                            <p className="font-semibold">{m.name}</p>
-                            <p className="text-sm text-muted-foreground capitalize">{m.type}</p>
-                          </div>
-                          <div className="flex gap-1">
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => handleRemoveMemberFromInvoice(i)}
-                              title="Remove from this invoice"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                            {m.id && (
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                onClick={() => handleDeleteMemberPermanently(m.id!, i)}
-                                className="text-destructive hover:text-destructive"
-                                title="Delete permanently"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-
-                        {!m.editing ? (
-                          <span
-                            className="cursor-pointer hover:text-primary font-medium text-sm"
-                            onClick={() => startEditingMember(i)}
-                          >
-                            Amount: £{m.amount.toFixed(2)}
-                          </span>
-                        ) : (
-                          <Input
-                            autoFocus
-                            value={m.amount}
-                            onBlur={() => stopEditingMember(i)}
-                            onChange={(e) => {
-                              const v = parseFloat(e.target.value) || 0;
-                              handleUpdateMemberAmount(i, v);
-                            }}
-                            onKeyDown={(e) => e.key === "Enter" && stopEditingMember(i)}
-                            className="w-20 h-8"
-                          />
-                        )}
-
-                        <Slider
-                          value={[m.amount]}
-                          onValueChange={(v) => handleUpdateMemberAmount(i, v[0])}
-                          max={invoiceAmount}
-                          step={10}
-                        />
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="mt-4 pt-4 border-t space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span>Total:</span>
-                      <span className="font-semibold">£{invoiceAmount.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Allocated:</span>
-                      <span className="font-semibold">£{totalAllocated.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Remaining:</span>
-                      <span
-                        className={`font-semibold ${
-                          remainingToAllocate < 0
-                            ? "text-destructive"
-                            : remainingToAllocate > 0
-                              ? "text-orange-500"
-                              : "text-green-600"
-                        }`}
-                      >
-                        £{remainingToAllocate.toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <GangDivisionCard
+                gangMembers={gangMembers}
+                totalValue={invoiceAmount}
+                totalAllocated={totalAllocated}
+                remainingToAllocate={remainingToAllocate}
+                onAddMemberClick={() => setDialogOpen(true)}
+                onRemoveMember={handleRemoveMemberFromInvoice}
+                onDeletePermanently={handleDeleteMemberPermanently}
+                onUpdateMemberAmount={handleUpdateMemberAmount}
+                onStartEditing={startEditingMember}
+                onStopEditing={stopEditingMember}
+                savedMembers={savedMembers}
+                onAddExistingMember={handleAddExistingMember}
+                totalValueLabel="Total"
+              />
             )}
 
             {/* ACTIONS — side-by-side */}
