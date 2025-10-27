@@ -1,47 +1,55 @@
 import { useState, useEffect } from "react";
-import {
-  Card, CardContent, CardHeader, CardTitle,
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-  Input, Label, Slider, Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-  Textarea, Button
-} from "@/components/ui";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { FileText } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { handleExportPDF, handleSendToAdmin } from "@/lib/invoiceUtils";
 import { GangDivisionCard } from "@/components/invoice/GangDivisionCard";
-import { useGangDivision } from "@/hooks/useGangDivision";
-import { useSavedGangMembers } from "@/hooks/useSavedGangMembers";
+
+interface SavedGangMember {
+  id: string;
+  name: string;
+  type: string;
+}
+
+interface GangMember {
+  id?: string;
+  name: string;
+  type: string;
+  amount: number;
+  editing?: boolean;
+}
 
 interface NonPlotInvoiceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialogProps) => {
+export const NonPlotInvoiceDialog = ({
+  open,
+  onOpenChange,
+}: NonPlotInvoiceDialogProps) => {
   const { user } = useAuth();
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [invoiceAmount, setInvoiceAmount] = useState(0);
   const [editingAmount, setEditingAmount] = useState(false);
   const [tempAmount, setTempAmount] = useState("0");
   const [notes, setNotes] = useState("");
+
+  const [gangMembers, setGangMembers] = useState<GangMember[]>([]);
+  const [savedMembers, setSavedMembers] = useState<SavedGangMember[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
+
   const [memberName, setMemberName] = useState("");
   const [memberType, setMemberType] = useState("bricklayer");
-
-  const { savedMembers, setSavedMembers } = useSavedGangMembers();
-  const {
-    gangMembers,
-    totalAllocated,
-    remainingToAllocate,
-    updateMemberAmount,
-    addMember,
-    removeMember,
-    startEditing,
-    stopEditing,
-    setGangMembers,
-  } = useGangDivision([], invoiceAmount);
 
   useEffect(() => {
     if (open) {
@@ -60,7 +68,38 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
       .select("*")
       .eq("user_id", user.id)
       .order("name");
-    if (!error && data) setSavedMembers(data);
+    if (error) {
+      console.error("Error loading saved members:", error);
+      return;
+    }
+    setSavedMembers(data || []);
+  };
+
+  const totalAllocated = gangMembers.reduce((sum, m) => sum + m.amount, 0);
+  const remainingToAllocate = invoiceAmount - totalAllocated;
+
+  const handleUpdateMemberAmount = (index: number, newAmount: number) => {
+    const current = gangMembers[index].amount;
+    if (newAmount > current) {
+      if (remainingToAllocate <= 0) return;
+      const maxIncrease = current + remainingToAllocate;
+      newAmount = Math.min(newAmount, maxIncrease);
+    }
+    const updated = [...gangMembers];
+    updated[index].amount = Math.max(0, newAmount);
+    setGangMembers(updated);
+  };
+
+  const startEditingMember = (index: number) => {
+    const updated = [...gangMembers];
+    updated[index].editing = true;
+    setGangMembers(updated);
+  };
+
+  const stopEditingMember = (index: number) => {
+    const updated = [...gangMembers];
+    updated[index].editing = false;
+    setGangMembers(updated);
   };
 
   const handleAddNewMember = async () => {
@@ -68,101 +107,132 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
       toast.error("Name required");
       return;
     }
-
-    const { data, error } = await supabase
-      .from("saved_gang_members")
-      .insert({ user_id: user.id, name: memberName.trim(), type: memberType })
-      .select()
-      .single();
-
-    if (error) {
+    try {
+      const { data, error } = await supabase
+        .from("saved_gang_members")
+        .insert({
+          user_id: user.id,
+          name: memberName.trim(),
+          type: memberType,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      setSavedMembers([...savedMembers, data]);
+      setGangMembers([...gangMembers, {
+        id: data.id,
+        name: data.name,
+        type: data.type,
+        amount: 0,
+        editing: false
+      }]);
+      setMemberName("");
+      setDialogOpen(false);
+      toast.success("Gang member saved");
+    } catch (err) {
+      console.error(err);
       toast.error("Failed to save gang member");
-      return;
     }
-
-    setSavedMembers([...savedMembers, data]);
-    addMember({ id: data.id, name: data.name, type: data.type, amount: 0 });
-    setMemberName("");
-    setDialogOpen(false);
-    toast.success("Gang member saved");
   };
 
-  const handleAddExistingMember = (member) => {
+  const handleAddExistingMember = (member: SavedGangMember) => {
     if (gangMembers.some(m => m.id === member.id)) {
-      toast.error("Already added");
+      toast.error("Member already added to this invoice");
       return;
     }
-    addMember({ ...member, amount: 0 });
-    toast.success(`${member.name} added`);
+    setGangMembers([...gangMembers, {
+      id: member.id,
+      name: member.name,
+      type: member.type,
+      amount: 0,
+      editing: false
+    }]);
+    toast.success(`${member.name} added to invoice`);
+  };
+
+  const handleRemoveMemberFromInvoice = (idx: number) => {
+    setGangMembers(gangMembers.filter((_, i) => i !== idx));
+    toast.success("Member removed from invoice");
   };
 
   const handleDeleteMemberPermanently = async (memberId: string, idx: number) => {
-    const { error } = await supabase
-      .from("saved_gang_members")
-      .delete()
-      .eq("id", memberId);
-    if (error) {
+    if (!confirm("Delete this member permanently from your saved gang members?")) return;
+    try {
+      const { error } = await supabase
+        .from("saved_gang_members")
+        .delete()
+        .eq("id", memberId);
+      if (error) throw error;
+      setSavedMembers(savedMembers.filter(m => m.id !== memberId));
+      setGangMembers(gangMembers.filter((_, i) => i !== idx));
+      toast.success("Member deleted permanently");
+    } catch (err) {
+      console.error(err);
       toast.error("Failed to delete member");
-      return;
     }
-    setSavedMembers(savedMembers.filter(m => m.id !== memberId));
-    removeMember(idx);
-    toast.success("Deleted permanently");
   };
 
+  const buildInvoice = () => ({
+    invoiceNumber,
+    total: invoiceAmount,
+    notes,
+    gangMembers,
+  });
+
   const handleSaveInvoice = async () => {
-    if (!user || remainingToAllocate !== 0) {
-      toast.error("Please allocate full amount");
+    if (!user) return;
+    if (remainingToAllocate !== 0) {
+      toast.error("Please allocate the full invoice amount");
       return;
     }
+    try {
+      const { data: invoice, error: invoiceError } = await supabase
+        .from("non_plot_invoices")
+        .insert({
+          invoice_number: invoiceNumber,
+          user_id: user.id,
+          total_amount: invoiceAmount,
+          notes,
+          status: "sent",
+        })
+        .select()
+        .single();
+      if (invoiceError) throw invoiceError;
 
-    const { data: invoice, error } = await supabase
-      .from("non_plot_invoices")
-      .insert({
-        invoice_number: invoiceNumber,
-        user_id: user.id,
-        total_amount: invoiceAmount,
-        notes,
-        status: "sent",
-      })
-      .select()
-      .single();
+      const divisions = gangMembers.map(m => ({
+        invoice_id: invoice.id,
+        member_name: m.name,
+        member_type: m.type,
+        amount: m.amount,
+      }));
 
-    if (error) {
+      const { error: divisionsError } = await supabase
+        .from("non_plot_gang_divisions")
+        .insert(divisions);
+      if (divisionsError) throw divisionsError;
+
+      const payload = buildInvoice();
+      await handleSendToAdmin(payload);
+
+      setInvoiceAmount(0);
+      setNotes("");
+      setGangMembers([]);
+      onOpenChange(false);
+
+      toast.success("Invoice saved and sent to admin");
+    } catch (err) {
+      console.error(err);
       toast.error("Failed to save invoice");
-      return;
     }
-
-    const divisions = gangMembers.map(m => ({
-      invoice_id: invoice.id,
-      member_name: m.name,
-      member_type: m.type,
-      amount: m.amount,
-    }));
-
-    const { error: divError } = await supabase
-      .from("non_plot_gang_divisions")
-      .insert(divisions);
-
-    if (divError) {
-      toast.error("Failed to save divisions");
-      return;
-    }
-
-    await handleSendToAdmin({ invoiceNumber, total: invoiceAmount, notes, gangMembers });
-    setInvoiceAmount(0);
-    setNotes("");
-    setGangMembers([]);
-    onOpenChange(false);
-    toast.success("Invoice sent to admin");
   };
 
   const handleExport = () => {
     if (remainingToAllocate !== 0) {
-      toast.error("Please allocate full amount");
+      toast.error("Please allocate the full invoice amount");
       return;
     }
-    handleExportPDF({ invoiceNumber, total: invoiceAmount, notes, gangMembers });
+    const payload = buildInvoice();
+    handleExportPDF(payload);
   };
 
   return (
@@ -176,7 +246,9 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
             </div>
 
             <Card>
-              <CardHeader><CardTitle>Invoice Amount</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle>Invoice Amount</CardTitle>
+              </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {!editingAmount ? (
@@ -193,7 +265,7 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
                     <Input
                       value={tempAmount}
                       onChange={(e) => setTempAmount(e.target.value)}
-                      onBlur={() => {
+                                           onBlur={() => {
                         const v = parseFloat(tempAmount);
                         if (!isNaN(v)) setInvoiceAmount(v);
                         setEditingAmount(false);
@@ -212,7 +284,8 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
                   <Slider
                     value={[invoiceAmount]}
                     onValueChange={(v) => {
-                      if (v[0] >= 0) setInvoiceAmount(v[0]);
+                      if (v[0] < 0) return;
+                      setInvoiceAmount(v[0]);
                     }}
                     step={50}
                     max={20000}
@@ -227,6 +300,7 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
               </CardContent>
             </Card>
 
+            {/* Gang Division */}
             {invoiceAmount > 0 && (
               <GangDivisionCard
                 gangMembers={gangMembers}
@@ -234,23 +308,40 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
                 totalAllocated={totalAllocated}
                 remainingToAllocate={remainingToAllocate}
                 onAddMemberClick={() => setDialogOpen(true)}
-                onRemoveMember={removeMember}
+                onRemoveMember={handleRemoveMemberFromInvoice}
                 onDeletePermanently={handleDeleteMemberPermanently}
-                onUpdateMemberAmount={updateMemberAmount}
-                onStartEditing={startEditing}
-                onStopEditing={stopEditing}
+                onUpdateMemberAmount={handleUpdateMemberAmount}
+                onStartEditing={startEditingMember}
+                onStopEditing={stopEditingMember}
                 savedMembers={savedMembers}
                 onAddExistingMember={handleAddExistingMember}
                 totalValueLabel="Total"
               />
             )}
 
+            {/* ACTIONS */}
             {invoiceAmount > 0 && gangMembers.length > 0 && (
               <div className="flex gap-3" onClick={(e) => e.stopPropagation()}>
-                <Button variant="outline" className="flex-1" disabled={remainingToAllocate !== 0} onClick={handleExport}>
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  disabled={remainingToAllocate !== 0}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleExport();
+                  }}
+                >
                   Export PDF
                 </Button>
-                <Button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white" disabled={remainingToAllocate !== 0} onClick={handleSaveInvoice}>
+
+                <Button
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                  disabled={remainingToAllocate !== 0}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSaveInvoice();
+                  }}
+                >
                   Send to Admin
                 </Button>
               </div>
@@ -259,7 +350,8 @@ export const NonPlotInvoiceDialog = ({ open, onOpenChange }: NonPlotInvoiceDialo
         </DialogContent>
       </Dialog>
 
-           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      {/* Add Member Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>Add New Gang Member</DialogTitle>
