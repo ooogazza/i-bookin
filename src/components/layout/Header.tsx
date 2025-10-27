@@ -80,8 +80,8 @@ export const Header = ({
               size="sm"
               className="whitespace-nowrap"
             >
-              <FileText className="mr-2 h-4 w-4" />
-              <span>Invoices</span>
+              <FileText className="md:mr-2 h-4 w-4" />
+              <span className="hidden md:inline">Invoices</span>
             </Button>
           )}
 
