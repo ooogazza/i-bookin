@@ -696,67 +696,119 @@ const BookingIn = () => {
                   <p className="text-muted-foreground">No bookings yet</p>
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Invoice #</TableHead>
-                      <TableHead>Gang Members</TableHead>
-                      <TableHead className="text-right">Total Value</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                <>
+                  {/* Desktop View */}
+                  <div className="hidden md:block">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Invoice #</TableHead>
+                          <TableHead>Gang Members</TableHead>
+                          <TableHead className="text-right">Total Value</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {groupedInvoices.map((invoice) => (
+                          <TableRow
+                            key={invoice.invoice_number}
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() => handleViewDetails(invoice)}
+                          >
+                            <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
+                            <TableCell>
+                              <div className="space-y-1">
+                                {invoice.items[0]?.gang_divisions.map((member, idx) => (
+                                  <div key={idx} className="text-sm">
+                                    <span className="font-medium">{member.member_name}</span>
+                                    {" - "}
+                                    <span className="text-muted-foreground capitalize">£{member.amount.toFixed(2)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right font-bold text-primary">
+                              £{invoice.total_value.toFixed(2)}
+                            </TableCell>
+                            <TableCell>{new Date(invoice.created_at).toLocaleDateString()}</TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handlePrintInvoice(invoice);
+                                }}
+                                title="Print"
+                              >
+                                <Printer className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                      <TableFooter>
+                        <TableRow>
+                          <TableCell colSpan={2} className="text-right font-bold">
+                            Total
+                          </TableCell>
+                          <TableCell className="text-right font-bold text-lg">
+                            £{groupedInvoices.reduce((sum, inv) => sum + inv.total_value, 0).toFixed(2)}
+                          </TableCell>
+                          <TableCell colSpan={2}></TableCell>
+                        </TableRow>
+                      </TableFooter>
+                    </Table>
+                  </div>
+
+                  {/* Mobile View */}
+                  <div className="md:hidden space-y-3">
                     {groupedInvoices.map((invoice) => (
-                      <TableRow
+                      <Card
                         key={invoice.invoice_number}
                         className="cursor-pointer hover:bg-muted/50"
                         onClick={() => handleViewDetails(invoice)}
                       >
-                        <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            {invoice.items[0]?.gang_divisions.map((member, idx) => (
-                              <div key={idx} className="text-sm">
-                                <span className="font-medium">{member.member_name}</span>
-                                {" - "}
-                                <span className="text-muted-foreground capitalize">£{member.amount.toFixed(2)}</span>
-                              </div>
-                            ))}
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex-1">
+                              <p className="font-semibold">{invoice.invoice_number}</p>
+                              <p className="text-2xl font-bold text-primary mt-1">£{invoice.total_value.toFixed(2)}</p>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {new Date(invoice.created_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handlePrintInvoice(invoice);
+                                }}
+                                title="Print"
+                              >
+                                <Printer className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleExportInvoice(invoice);
+                                }}
+                                title="Export PDF"
+                              >
+                                <FileText className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
-                        </TableCell>
-                        <TableCell className="text-right font-bold text-primary">
-                          £{invoice.total_value.toFixed(2)}
-                        </TableCell>
-                        <TableCell>{new Date(invoice.created_at).toLocaleDateString()}</TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handlePrintInvoice(invoice);
-                            }}
-                            title="Print"
-                          >
-                            <Printer className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
+                        </CardContent>
+                      </Card>
                     ))}
-                  </TableBody>
-                  <TableFooter>
-                    <TableRow>
-                      <TableCell colSpan={2} className="text-right font-bold">
-                        Total
-                      </TableCell>
-                      <TableCell className="text-right font-bold text-lg">
-                        £{groupedInvoices.reduce((sum, inv) => sum + inv.total_value, 0).toFixed(2)}
-                      </TableCell>
-                      <TableCell colSpan={2}></TableCell>
-                    </TableRow>
-                  </TableFooter>
-                </Table>
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>

@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface SavedGangMember {
   id: string;
@@ -7,11 +9,27 @@ export interface SavedGangMember {
 }
 
 export function useSavedGangMembers() {
-  const [savedMembers] = useState<SavedGangMember[]>([
-    { id: "1", name: "John Smith", type: "labourer" },
-    { id: "2", name: "Sarah Jones", type: "bricklayer" },
-    { id: "3", name: "Ali Khan", type: "plumber" },
-  ]);
+  const { user } = useAuth();
+  const [savedMembers, setSavedMembers] = useState<SavedGangMember[]>([]);
 
-  return savedMembers;
+  useEffect(() => {
+    if (user) {
+      fetchSavedMembers();
+    }
+  }, [user]);
+
+  const fetchSavedMembers = async () => {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from("saved_gang_members")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("name");
+    
+    if (!error && data) {
+      setSavedMembers(data);
+    }
+  };
+
+  return { savedMembers, setSavedMembers, fetchSavedMembers };
 }

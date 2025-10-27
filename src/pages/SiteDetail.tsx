@@ -507,6 +507,13 @@ const SiteDetail = () => {
       return;
     }
 
+    // Check if lift has a price
+    const liftValue = getLiftValue(plot.house_types, liftType);
+    if (liftValue === 0) {
+      toast.error("No price set for this lift");
+      return;
+    }
+
     const totalBooked = getTotalBooked(plot, liftType);
 
     // Open booking dialog for all users

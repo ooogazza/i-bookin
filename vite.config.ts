@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => ({
           type: "module"
         },
         manifest: {
-          name: "I-Bookin - Brickwork Manager",
+          name: "I-Bookin",
           short_name: "I-Bookin",
           description: "Professional construction payment management system for tracking lifts, managing bookings, and streamlining payments for building projects.",
           theme_color: "#2563EB",

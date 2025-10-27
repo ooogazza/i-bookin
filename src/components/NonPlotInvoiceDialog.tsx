@@ -287,7 +287,7 @@ export const NonPlotInvoiceDialog = ({
                       if (v[0] < 0) return;
                       setInvoiceAmount(v[0]);
                     }}
-                    step={50}
+                    step={1}
                     max={20000}
                   />
 

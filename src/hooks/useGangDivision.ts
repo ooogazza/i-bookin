@@ -30,6 +30,18 @@ export function useGangDivision(initialMembers: GangMember[], totalValue: number
     setGangMembers(updated);
   };
 
+  const startEditing = (index: number) => {
+    const updated = [...gangMembers];
+    updated[index].editing = true;
+    setGangMembers(updated);
+  };
+
+  const stopEditing = (index: number) => {
+    const updated = [...gangMembers];
+    updated[index].editing = false;
+    setGangMembers(updated);
+  };
+
   return {
     gangMembers,
     totalAllocated,
@@ -37,6 +49,8 @@ export function useGangDivision(initialMembers: GangMember[], totalValue: number
     updateMemberAmount,
     addMember,
     removeMember,
+    startEditing,
+    stopEditing,
     setGangMembers,
   };
 }

@@ -32,7 +32,7 @@ const PlotBooking = () => {
   const [memberType, setMemberType] = useState("bricklayer");
   const [memberAmount, setMemberAmount] = useState(0);
 
-  const { savedMembers, setSavedMembers } = useSavedGangMembers();
+  const { savedMembers, setSavedMembers, fetchSavedMembers } = useSavedGangMembers();
 
   const selectedLiftValue = useMemo(() => {
     if (!plot || !selectedLiftId) return 0;
@@ -58,7 +58,6 @@ const PlotBooking = () => {
 
   useEffect(() => {
     if (id) fetchPlotData();
-    if (user) fetchSavedMembers();
   }, [id, user]);
 
   const fetchPlotData = async () => {
@@ -75,11 +74,6 @@ const PlotBooking = () => {
       .eq("plot_id", id);
     setBookings(bookingsData || []);
     setLoading(false);
-  };
-
-  const fetchSavedMembers = async () => {
-    const { data, error } = await supabase.from("saved_gang_members").select("*").eq("user_id", user?.id).order("name");
-    if (!error && data) setSavedMembers(data);
   };
 
   const getTotalBooked = (liftValueId: string): number =>
@@ -115,7 +109,7 @@ const PlotBooking = () => {
   const handleDeletePermanently = async (memberId: string, index: number) => {
     const { error } = await supabase.from("saved_gang_members").delete().eq("id", memberId).eq("user_id", user?.id);
     if (!error) {
-      setSavedMembers(savedMembers.filter((m) => m.id !== memberId));
+      await fetchSavedMembers();
       removeMember(index);
       toast.success("Deleted permanently");
     }
@@ -328,7 +322,7 @@ const PlotBooking = () => {
                   value={[memberAmount]}
                   onValueChange={(value) => setMemberAmount(value[0])}
                   max={remainingToAllocate}
-                  step={10}
+                  step={1}
                   className="w-full"
                 />
               </div>

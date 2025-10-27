@@ -1,4 +1,3 @@
-// Same imports as before...
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +7,35 @@ import { Slider } from "@/components/ui/slider";
 import { Plus, X, Trash2, UserPlus } from "lucide-react";
 import { StickySplitButton } from "@/components/StickySplitButton";
 
-// Interfaces unchanged...
+export interface GangMember {
+  id?: string;
+  name: string;
+  type: string;
+  amount: number;
+  editing?: boolean;
+}
+
+export interface SavedGangMember {
+  id: string;
+  name: string;
+  type: string;
+}
+
+export interface GangDivisionCardProps {
+  gangMembers: GangMember[];
+  totalValue: number;
+  totalAllocated: number;
+  remainingToAllocate: number;
+  onAddMemberClick: () => void;
+  onRemoveMember: (index: number) => void;
+  onDeletePermanently?: (memberId: string, index: number) => void;
+  onUpdateMemberAmount: (index: number, newAmount: number) => void;
+  onStartEditing: (index: number) => void;
+  onStopEditing: (index: number) => void;
+  savedMembers?: SavedGangMember[];
+  onAddExistingMember?: (member: SavedGangMember) => void;
+  totalValueLabel?: string;
+}
 
 export const GangDivisionCard = ({
   gangMembers,
