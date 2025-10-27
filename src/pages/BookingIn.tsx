@@ -715,15 +715,18 @@ const BookingIn = () => {
                     <CardContent>
                       <div className="space-y-3">
                         <div className="flex justify-between items-center pb-3 border-b">
-                          <span className="text-sm text-muted-foreground">Total Invoices</span>
+                          <span className="text-sm text-muted-foreground md:hidden">Tot. INV</span>
+                          <span className="text-sm text-muted-foreground hidden md:block">Total Invoices</span>
                           <span className="font-semibold">{userGroup.invoices.length}</span>
                         </div>
                         <div className="flex justify-between items-center pb-3 border-b">
-                          <span className="text-sm text-muted-foreground">Confirmed</span>
+                          <span className="text-sm text-muted-foreground md:hidden">Conf.</span>
+                          <span className="text-sm text-muted-foreground hidden md:block">Confirmed</span>
                           <span className="font-semibold text-green-600">{confirmedInvoices}</span>
                         </div>
                         <div className="flex justify-between items-center pb-3 border-b">
-                          <span className="text-sm text-muted-foreground">Total Value</span>
+                          <span className="text-sm text-muted-foreground md:hidden">Tot. Val</span>
+                          <span className="text-sm text-muted-foreground hidden md:block">Total Value</span>
                           <span className="text-xl font-bold text-primary">£{userGroup.total_value.toFixed(2)}</span>
                         </div>
                         <div className="flex gap-2 pt-2">
@@ -733,7 +736,8 @@ const BookingIn = () => {
                             className="flex-1"
                             onClick={() => handleViewUserInvoices(userGroup)}
                           >
-                            View Invoices
+                            <span className="md:hidden">View</span>
+                            <span className="hidden md:inline">View Invoices</span>
                           </Button>
                           <Button
                             variant="destructive"
@@ -853,16 +857,27 @@ const BookingIn = () => {
                         className="cursor-pointer hover:bg-muted/50"
                         onClick={() => handleViewDetails(invoice)}
                       >
-                        <CardContent className="p-4">
-                          <div className="flex justify-between items-start mb-2">
-                            <div className="flex-1">
-                              <p className="font-semibold">{invoice.invoice_number}</p>
-                              <p className="text-2xl font-bold text-primary mt-1">£{invoice.total_value.toFixed(2)}</p>
-                              <p className="text-sm text-muted-foreground mt-1">
-                                {new Date(invoice.created_at).toLocaleDateString()}
+                        <CardContent className="p-3">
+                          <div className="flex justify-between items-start gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <p className="text-xs text-muted-foreground">INV</p>
+                                <p className="font-semibold text-sm">...{invoice.invoice_number.slice(-4)}</p>
+                              </div>
+                              <p className="text-xl font-bold text-primary">£{invoice.total_value.toFixed(2)}</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {new Date(invoice.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
                               </p>
+                              {invoice.items[0]?.gang_divisions && invoice.items[0].gang_divisions.length > 0 && (
+                                <div className="mt-2">
+                                  <p className="text-xs text-muted-foreground mb-1">Gang:</p>
+                                  <p className="text-xs font-medium truncate">
+                                    {invoice.items[0].gang_divisions.map(m => m.member_name).join(', ')}
+                                  </p>
+                                </div>
+                              )}
                             </div>
-                            <div className="flex gap-1">
+                            <div className="flex flex-col gap-1">
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -871,8 +886,9 @@ const BookingIn = () => {
                                   handlePrintInvoice(invoice);
                                 }}
                                 title="Print"
+                                className="h-8 w-8 p-0"
                               >
-                                <Printer className="h-4 w-4" />
+                                <Printer className="h-3.5 w-3.5" />
                               </Button>
                               <Button
                                 variant="outline"
@@ -882,8 +898,9 @@ const BookingIn = () => {
                                   handleExportInvoice(invoice);
                                 }}
                                 title="Export PDF"
+                                className="h-8 w-8 p-0"
                               >
-                                <FileText className="h-4 w-4" />
+                                <FileText className="h-3.5 w-3.5" />
                               </Button>
                             </div>
                           </div>
@@ -913,59 +930,125 @@ const BookingIn = () => {
               <div className="space-y-4">
                 <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
                   <div>
-                    <p className="text-sm text-muted-foreground">Total Invoices</p>
+                    <p className="text-sm text-muted-foreground md:hidden">Tot. INV</p>
+                    <p className="text-sm text-muted-foreground hidden md:block">Total Invoices</p>
                     <p className="text-2xl font-bold">{selectedUser.invoices.length}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-muted-foreground">Total Value</p>
+                    <p className="text-sm text-muted-foreground md:hidden">Tot. Val</p>
+                    <p className="text-sm text-muted-foreground hidden md:block">Total Value</p>
                     <p className="text-2xl font-bold text-primary">£{selectedUser.total_value.toFixed(2)}</p>
                   </div>
                 </div>
 
                 <div>
                   <h4 className="font-semibold mb-3">Invoices</h4>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Invoice #</TableHead>
-                        <TableHead>Gang Members</TableHead>
-                        <TableHead className="text-right">Value</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {selectedUser.invoices.map((invoice) => (
-                        <TableRow
-                          key={invoice.invoice_number}
-                          className={`cursor-pointer ${invoice.is_confirmed ? "bg-green-100 dark:bg-green-900/20 hover:bg-green-200 dark:hover:bg-green-900/30" : "hover:bg-muted/50"}`}
-                          onClick={() => handleViewDetails(invoice)}
-                        >
-                          <TableCell className="font-medium">
-                            <div className="flex items-center gap-2">
-                              {!invoice.is_viewed && !invoice.is_confirmed && (
-                                <div className="h-2 w-2 rounded-full bg-primary" />
-                              )}
-                              {invoice.invoice_number}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="space-y-1">
-                              {invoice.items[0]?.gang_divisions.map((member, idx) => (
-                                <div key={idx} className="text-sm">
-                                  <span className="font-medium">{member.member_name}</span>
-                                  {" - "}
-                                  <span className="text-muted-foreground capitalize">£{member.amount.toFixed(2)}</span>
+                  {/* Desktop table */}
+                  <div className="hidden md:block">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Invoice #</TableHead>
+                          <TableHead>Gang Members</TableHead>
+                          <TableHead className="text-right">Value</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {selectedUser.invoices.map((invoice) => (
+                          <TableRow
+                            key={invoice.invoice_number}
+                            className={`cursor-pointer ${invoice.is_confirmed ? "bg-green-100 dark:bg-green-900/20 hover:bg-green-200 dark:hover:bg-green-900/30" : "hover:bg-muted/50"}`}
+                            onClick={() => handleViewDetails(invoice)}
+                          >
+                            <TableCell className="font-medium">
+                              <div className="flex items-center gap-2">
+                                {!invoice.is_viewed && !invoice.is_confirmed && (
+                                  <div className="h-2 w-2 rounded-full bg-primary" />
+                                )}
+                                {invoice.invoice_number}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="space-y-1">
+                                {invoice.items[0]?.gang_divisions.map((member, idx) => (
+                                  <div key={idx} className="text-sm">
+                                    <span className="font-medium">{member.member_name}</span>
+                                    {" - "}
+                                    <span className="text-muted-foreground capitalize">£{member.amount.toFixed(2)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right font-bold text-primary">
+                              £{invoice.total_value.toFixed(2)}
+                            </TableCell>
+                            <TableCell>{new Date(invoice.created_at).toLocaleDateString()}</TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex gap-1">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handlePrintInvoice(invoice);
+                                  }}
+                                  title="Print"
+                                >
+                                  <Printer className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleExportInvoice(invoice);
+                                  }}
+                                  title="Export PDF"
+                                >
+                                  <FileText className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Mobile list */}
+                  <div className="md:hidden space-y-2">
+                    {selectedUser.invoices.map((invoice) => (
+                      <Card
+                        key={invoice.invoice_number}
+                        className={`cursor-pointer ${invoice.is_confirmed ? "bg-green-100 dark:bg-green-900/20" : ""}`}
+                        onClick={() => handleViewDetails(invoice)}
+                      >
+                        <CardContent className="p-3">
+                          <div className="flex justify-between items-start gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                {!invoice.is_viewed && !invoice.is_confirmed && (
+                                  <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
+                                )}
+                                <p className="text-xs text-muted-foreground">INV</p>
+                                <p className="font-semibold text-sm">...{invoice.invoice_number.slice(-4)}</p>
+                              </div>
+                              <p className="text-lg font-bold text-primary">£{invoice.total_value.toFixed(2)}</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {new Date(invoice.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                              </p>
+                              {invoice.items[0]?.gang_divisions && invoice.items[0].gang_divisions.length > 0 && (
+                                <div className="mt-2">
+                                  <p className="text-xs text-muted-foreground mb-1">Gang:</p>
+                                  <p className="text-xs font-medium truncate">
+                                    {invoice.items[0].gang_divisions.map(m => m.member_name).join(', ')}
+                                  </p>
                                 </div>
-                              ))}
+                              )}
                             </div>
-                          </TableCell>
-                          <TableCell className="text-right font-bold text-primary">
-                            £{invoice.total_value.toFixed(2)}
-                          </TableCell>
-                          <TableCell>{new Date(invoice.created_at).toLocaleDateString()}</TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex gap-1">
+                            <div className="flex flex-col gap-1">
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -974,8 +1057,9 @@ const BookingIn = () => {
                                   handlePrintInvoice(invoice);
                                 }}
                                 title="Print"
+                                className="h-8 w-8 p-0"
                               >
-                                <Printer className="h-4 w-4" />
+                                <Printer className="h-3.5 w-3.5" />
                               </Button>
                               <Button
                                 variant="outline"
@@ -985,15 +1069,16 @@ const BookingIn = () => {
                                   handleExportInvoice(invoice);
                                 }}
                                 title="Export PDF"
+                                className="h-8 w-8 p-0"
                               >
-                                <FileText className="h-4 w-4" />
+                                <FileText className="h-3.5 w-3.5" />
                               </Button>
                             </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
