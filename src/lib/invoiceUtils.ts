@@ -28,9 +28,9 @@ const createRoundedLogo = (): Promise<string> => {
     img.onload = () => {
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
-      const width = 200;
-      const height = 133;
-      const radius = 15;
+      const width = 300;
+      const height = 200;
+      const radius = 20;
 
       canvas.width = width;
       canvas.height = height;
@@ -59,14 +59,103 @@ const createRoundedLogo = (): Promise<string> => {
   });
 };
 
-// Helper to generate PDF content with letterhead
-const generatePDFContent = (doc: jsPDF, invoice: any, userName: string | undefined, roundedLogo: string, letterhead: any) => {
+// Generate PDF with ORIGINAL centered layout (no letterhead)
+const generateOriginalPDFContent = (doc: jsPDF, invoice: any, userName: string | undefined, roundedLogo: string) => {
   const blueColor: [number, number, number] = [37, 99, 235];
   
-  // If letterhead exists and is PNG, add as background
+  // Add centered logo
+  try {
+    doc.addImage(roundedLogo, "PNG", 90, 10, 30, 20);
+  } catch (e) {
+    console.error("Failed to add logo to PDF", e);
+  }
+
+  // Company name centered
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "normal");
+  doc.text("Brickwork Manager", 105, 38, { align: "center" });
+
+  // Blue header bar with invoice number - CENTERED
+  doc.setFillColor(...blueColor);
+  doc.rect(10, 45, 190, 12, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text(`INVOICE: ${invoice.invoiceNumber}`, 105, 53, { align: "center" });
+
+  // Reset text color for body
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+
+  let yPos = 68;
+
+  // User name
+  if (userName) {
+    doc.text(`Booked by: ${userName}`, 15, yPos);
+    yPos += 7;
+  }
+
+  // Date
+  doc.text(`Date: ${new Date().toLocaleDateString()}`, 15, yPos);
+  yPos += 12;
+
+  // Total amount
+  doc.setTextColor(...blueColor);
+  doc.setFont("helvetica", "bold");
+  doc.text("TOTAL AMOUNT:", 15, yPos);
+  doc.setTextColor(0, 0, 0);
+  doc.setFont("helvetica", "normal");
+  yPos += 7;
+  doc.text(`£${invoice.total.toFixed(2)}`, 15, yPos);
+  yPos += 12;
+
+  // Notes section
+  if (invoice.notes) {
+    doc.setTextColor(...blueColor);
+    doc.setFont("helvetica", "bold");
+    doc.text("NOTES:", 15, yPos);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont("helvetica", "normal");
+    yPos += 7;
+    const noteLines = doc.splitTextToSize(invoice.notes, 180);
+    doc.text(noteLines, 15, yPos);
+    yPos += noteLines.length * 6 + 6;
+  }
+
+  // Gang division section
+  if (invoice.gangMembers && invoice.gangMembers.length > 0) {
+    doc.setTextColor(...blueColor);
+    doc.setFont("helvetica", "bold");
+    doc.text("GANG DIVISION:", 15, yPos);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont("helvetica", "normal");
+    yPos += 7;
+
+    invoice.gangMembers.forEach((member: any) => {
+      if (yPos > 270) {
+        doc.addPage();
+        yPos = 20;
+      }
+      doc.text(`${member.name} (${member.type}): £${member.amount.toFixed(2)}`, 15, yPos);
+      yPos += 6;
+    });
+
+    yPos += 4;
+    doc.setFont("helvetica", "bold");
+    const total = invoice.gangMembers.reduce((sum: number, m: any) => sum + m.amount, 0);
+    doc.text(`Total Allocated: £${total.toFixed(2)}`, 15, yPos);
+  }
+};
+
+// Generate PDF with NEW left-aligned layout (with letterhead)
+const generateLetterheadPDFContent = (doc: jsPDF, invoice: any, userName: string | undefined, roundedLogo: string, letterhead: any) => {
+  const blueColor: [number, number, number] = [37, 99, 235];
+  
+  // Add letterhead as full-page background
   if (letterhead && letterhead.file_type === "image/png") {
     try {
-      // Add letterhead as full-page background
       doc.addImage(letterhead.file_url, "PNG", 0, 0, 210, 297);
     } catch (e) {
       console.error("Failed to add letterhead to PDF", e);
@@ -75,23 +164,23 @@ const generatePDFContent = (doc: jsPDF, invoice: any, userName: string | undefin
 
   // Position content on LEFT side with space at TOP and RIGHT for letterhead
   const leftMargin = 15;
-  const contentWidth = 120; // Narrower to leave right space
-  const startY = 50; // Start lower to leave top space
+  const contentWidth = 120;
+  const startY = 50;
 
-  // Add logo on top left
+  // Add logo on top left (smaller)
   try {
     doc.addImage(roundedLogo, "PNG", leftMargin, 10, 25, 17);
   } catch (e) {
     console.error("Failed to add logo to PDF", e);
   }
 
-  // Add company name below logo
+  // Company name below logo
   doc.setTextColor(0, 0, 0);
   doc.setFontSize(12);
   doc.setFont("helvetica", "normal");
   doc.text("Brickwork Manager", leftMargin, 32);
 
-  // Blue header bar with invoice number - LEFT aligned
+  // Blue header bar - LEFT aligned
   doc.setFillColor(...blueColor);
   doc.rect(leftMargin, startY, contentWidth, 12, "F");
   doc.setTextColor(255, 255, 255);
@@ -99,24 +188,20 @@ const generatePDFContent = (doc: jsPDF, invoice: any, userName: string | undefin
   doc.setFont("helvetica", "bold");
   doc.text(`INVOICE: ${invoice.invoiceNumber}`, leftMargin + 5, startY + 8);
 
-  // Reset text color for body
   doc.setTextColor(0, 0, 0);
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
 
   let yPos = startY + 20;
 
-  // User name
   if (userName) {
     doc.text(`Booked by: ${userName}`, leftMargin, yPos);
     yPos += 7;
   }
 
-  // Date
   doc.text(`Date: ${new Date().toLocaleDateString()}`, leftMargin, yPos);
   yPos += 12;
 
-  // Total amount
   doc.setTextColor(...blueColor);
   doc.setFont("helvetica", "bold");
   doc.text("TOTAL AMOUNT:", leftMargin, yPos);
@@ -126,7 +211,6 @@ const generatePDFContent = (doc: jsPDF, invoice: any, userName: string | undefin
   doc.text(`£${invoice.total.toFixed(2)}`, leftMargin, yPos);
   yPos += 12;
 
-  // Notes section
   if (invoice.notes) {
     doc.setTextColor(...blueColor);
     doc.setFont("helvetica", "bold");
@@ -139,7 +223,6 @@ const generatePDFContent = (doc: jsPDF, invoice: any, userName: string | undefin
     yPos += noteLines.length * 6 + 6;
   }
 
-  // Gang division section
   if (invoice.gangMembers && invoice.gangMembers.length > 0) {
     doc.setTextColor(...blueColor);
     doc.setFont("helvetica", "bold");
@@ -151,7 +234,6 @@ const generatePDFContent = (doc: jsPDF, invoice: any, userName: string | undefin
     invoice.gangMembers.forEach((member: any) => {
       if (yPos > 270) {
         doc.addPage();
-        // Add letterhead to new page if exists
         if (letterhead && letterhead.file_type === "image/png") {
           try {
             doc.addImage(letterhead.file_url, "PNG", 0, 0, 210, 297);
@@ -185,13 +267,19 @@ export const handleExportPDF = async (invoice: any, userName?: string) => {
     
     // Fetch active letterhead
     const letterhead = await getActiveLetterhead();
-    console.log("Letterhead fetched:", letterhead);
+    console.log("Letterhead detected:", letterhead ? "YES" : "NO");
     
     // Create rounded logo
     const roundedLogo = await createRoundedLogo();
 
-    // Generate PDF with letterhead
-    generatePDFContent(doc, invoice, userName, roundedLogo, letterhead);
+    // Use appropriate layout based on letterhead presence
+    if (letterhead) {
+      console.log("Using NEW letterhead layout");
+      generateLetterheadPDFContent(doc, invoice, userName, roundedLogo, letterhead);
+    } else {
+      console.log("Using ORIGINAL centered layout");
+      generateOriginalPDFContent(doc, invoice, userName, roundedLogo);
+    }
 
     doc.save(`${invoice.invoiceNumber}.pdf`);
     toast.success("PDF exported successfully");
@@ -201,25 +289,27 @@ export const handleExportPDF = async (invoice: any, userName?: string) => {
   }
 };
 
-// Send to Admin logic - generates PDF and emails it to admins
+// Send to Admin logic
 export const handleSendToAdmin = async (invoice: any, userName: string) => {
   try {
     const doc = new jsPDF();
 
-    // Fetch active letterhead
     const letterhead = await getActiveLetterhead();
-    console.log("Letterhead fetched for email:", letterhead);
+    console.log("Letterhead detected for email:", letterhead ? "YES" : "NO");
 
-    // Create rounded logo
     const roundedLogo = await createRoundedLogo();
 
-    // Generate PDF with letterhead
-    generatePDFContent(doc, invoice, userName, roundedLogo, letterhead);
+    // Use appropriate layout based on letterhead presence
+    if (letterhead) {
+      console.log("Using NEW letterhead layout for email");
+      generateLetterheadPDFContent(doc, invoice, userName, roundedLogo, letterhead);
+    } else {
+      console.log("Using ORIGINAL centered layout for email");
+      generateOriginalPDFContent(doc, invoice, userName, roundedLogo);
+    }
 
-    // Convert PDF to base64
     const pdfBase64 = doc.output("dataurlstring").split(",")[1];
 
-    // Send to edge function
     const { error } = await supabase.functions.invoke("send-invoice-to-admin", {
       body: {
         invoiceNumber: invoice.invoiceNumber,
