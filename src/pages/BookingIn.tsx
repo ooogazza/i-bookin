@@ -681,7 +681,6 @@ const BookingIn = () => {
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <CardTitle className="text-xl">{userGroup.full_name}</CardTitle>
-                          <p className="text-sm text-muted-foreground mt-1">{maskEmail(userGroup.email)}</p>
                         </div>
                         {unviewedInvoices > 0 && (
                           <div className="flex items-center gap-1 bg-primary text-primary-foreground px-2 py-1 rounded-full text-xs font-semibold">
@@ -883,9 +882,6 @@ const BookingIn = () => {
                 {selectedUser && (
                   <div>
                     <div className="text-2xl">{selectedUser.full_name}</div>
-                    <div className="text-sm font-normal text-muted-foreground mt-1">
-                      {maskEmail(selectedUser.email)}
-                    </div>
                   </div>
                 )}
               </DialogTitle>
