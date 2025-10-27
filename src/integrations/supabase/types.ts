@@ -266,6 +266,74 @@ export type Database = {
           },
         ]
       }
+      non_plot_gang_divisions: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          invoice_id: string
+          member_name: string
+          member_type: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          invoice_id: string
+          member_name: string
+          member_type: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          invoice_id?: string
+          member_name?: string
+          member_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "non_plot_gang_divisions_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "non_plot_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      non_plot_invoices: {
+        Row: {
+          created_at: string
+          id: string
+          invoice_number: string
+          notes: string | null
+          status: string
+          total_amount: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invoice_number: string
+          notes?: string | null
+          status?: string
+          total_amount: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invoice_number?: string
+          notes?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       plot_assignment_history: {
         Row: {
           assigned_at: string
@@ -373,6 +441,33 @@ export type Database = {
           full_name?: string | null
           id?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      saved_gang_members: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

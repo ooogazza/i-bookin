@@ -8,7 +8,6 @@ import logo from "@/assets/logo.png";
 import { ReactNode, useState } from "react";
 import { NonPlotInvoiceDialog } from "@/components/NonPlotInvoiceDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { handleExportPDF, handleSendToAdmin } from "@/lib/invoiceUtils";
 
 interface HeaderProps {
   showBackButton?: boolean;
@@ -107,8 +106,6 @@ export const Header = ({
       <NonPlotInvoiceDialog
         open={invoiceDialogOpen}
         onOpenChange={setInvoiceDialogOpen}
-        handleExportPDF={(invoice) => currentInvoiceId && handleExportPDF(invoice)}
-        handleSendToAdmin={(invoice) => currentInvoiceId && handleSendToAdmin(invoice)}
       />
     </header>
   );

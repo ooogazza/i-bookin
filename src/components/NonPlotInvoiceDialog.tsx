@@ -7,11 +7,20 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, X, FileText } from "lucide-react";
+import { Plus, X, FileText, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { DialogClose } from "@radix-ui/react-dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { handleExportPDF, handleSendToAdmin } from "@/lib/invoiceUtils";
+
+interface SavedGangMember {
+  id: string;
+  name: string;
+  type: string;
+}
 
 interface GangMember {
+  id?: string;
   name: string;
   type: string;
   amount: number;
@@ -21,16 +30,13 @@ interface GangMember {
 interface NonPlotInvoiceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  handleExportPDF: (invoice?: any) => void;
-  handleSendToAdmin: (invoice?: any) => void;
 }
 
 export const NonPlotInvoiceDialog = ({
   open,
   onOpenChange,
-  handleExportPDF,
-  handleSendToAdmin,
 }: NonPlotInvoiceDialogProps) => {
+  const { user } = useAuth();
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [invoiceAmount, setInvoiceAmount] = useState(0);
   const [editingAmount, setEditingAmount] = useState(false);
@@ -38,16 +44,36 @@ export const NonPlotInvoiceDialog = ({
   const [notes, setNotes] = useState("");
 
   const [gangMembers, setGangMembers] = useState<GangMember[]>([]);
+  const [savedMembers, setSavedMembers] = useState<SavedGangMember[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const [memberName, setMemberName] = useState("");
   const [memberType, setMemberType] = useState("bricklayer");
+
+  // Load saved gang members
+  const loadSavedMembers = async () => {
+    if (!user) return;
+    
+    const { data, error } = await supabase
+      .from("saved_gang_members")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("name");
+
+    if (error) {
+      console.error("Error loading saved members:", error);
+      return;
+    }
+
+    setSavedMembers(data || []);
+  };
 
   // Generate invoice number + prevent page background scroll
   useEffect(() => {
     if (open) {
       setInvoiceNumber(`NPINV-${Date.now()}`);
       document.body.style.overflow = "hidden";
+      loadSavedMembers();
     } else {
       document.body.style.overflow = "auto";
     }
@@ -85,15 +111,91 @@ export const NonPlotInvoiceDialog = ({
     setGangMembers(updated);
   };
 
-  const handleAddMember = () => {
-    if (!memberName.trim()) return toast.error("Name required");
-    setGangMembers([...gangMembers, { name: memberName.trim(), type: memberType, amount: 0, editing: false }]);
-    setMemberName("");
-    setDialogOpen(false);
+  const handleAddNewMember = async () => {
+    if (!memberName.trim() || !user) {
+      toast.error("Name required");
+      return;
+    }
+
+    try {
+      // Save to database
+      const { data, error } = await supabase
+        .from("saved_gang_members")
+        .insert({
+          user_id: user.id,
+          name: memberName.trim(),
+          type: memberType,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Add to saved members list
+      setSavedMembers([...savedMembers, data]);
+      
+      // Add to current invoice with 0 amount
+      setGangMembers([...gangMembers, { 
+        id: data.id,
+        name: data.name, 
+        type: data.type, 
+        amount: 0, 
+        editing: false 
+      }]);
+      
+      setMemberName("");
+      setDialogOpen(false);
+      toast.success("Gang member saved");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to save gang member");
+    }
   };
 
-  const handleRemoveMember = (idx: number) => {
+  const handleAddExistingMember = (member: SavedGangMember) => {
+    // Check if already added
+    if (gangMembers.some(m => m.id === member.id)) {
+      toast.error("Member already added to this invoice");
+      return;
+    }
+    
+    setGangMembers([...gangMembers, { 
+      id: member.id,
+      name: member.name, 
+      type: member.type, 
+      amount: 0, 
+      editing: false 
+    }]);
+    toast.success(`${member.name} added to invoice`);
+  };
+
+  const handleRemoveMemberFromInvoice = (idx: number) => {
     setGangMembers(gangMembers.filter((_, i) => i !== idx));
+    toast.success("Member removed from invoice");
+  };
+
+  const handleDeleteMemberPermanently = async (memberId: string, idx: number) => {
+    if (!confirm("Delete this member permanently from your saved gang members?")) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("saved_gang_members")
+        .delete()
+        .eq("id", memberId);
+
+      if (error) throw error;
+
+      // Remove from both lists
+      setSavedMembers(savedMembers.filter(m => m.id !== memberId));
+      setGangMembers(gangMembers.filter((_, i) => i !== idx));
+      
+      toast.success("Member deleted permanently");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to delete member");
+    }
   };
 
   const buildInvoice = () => ({
@@ -103,30 +205,68 @@ export const NonPlotInvoiceDialog = ({
     gangMembers,
   });
 
-  // Callback-safe
-  const safeSend = () => {
-    const payload = buildInvoice();
+  const handleSaveInvoice = async () => {
+    if (!user) return;
+    
+    if (remainingToAllocate !== 0) {
+      toast.error("Please allocate the full invoice amount");
+      return;
+    }
+
     try {
-      if (handleSendToAdmin.length === 0) handleSendToAdmin();
-      else handleSendToAdmin(payload);
-      toast.success("Invoice sent to admin");
+      // Create invoice
+      const { data: invoice, error: invoiceError } = await supabase
+        .from("non_plot_invoices")
+        .insert({
+          invoice_number: invoiceNumber,
+          user_id: user.id,
+          total_amount: invoiceAmount,
+          notes,
+          status: "sent",
+        })
+        .select()
+        .single();
+
+      if (invoiceError) throw invoiceError;
+
+      // Create gang divisions
+      const divisions = gangMembers.map(m => ({
+        invoice_id: invoice.id,
+        member_name: m.name,
+        member_type: m.type,
+        amount: m.amount,
+      }));
+
+      const { error: divisionsError } = await supabase
+        .from("non_plot_gang_divisions")
+        .insert(divisions);
+
+      if (divisionsError) throw divisionsError;
+
+      const payload = buildInvoice();
+      await handleSendToAdmin(payload);
+      
+      // Reset form
+      setInvoiceAmount(0);
+      setNotes("");
+      setGangMembers([]);
       onOpenChange(false);
+      
+      toast.success("Invoice saved and sent to admin");
     } catch (err) {
       console.error(err);
-      toast.error("Send callback failed");
+      toast.error("Failed to save invoice");
     }
   };
 
-  const safeExport = () => {
-    const payload = buildInvoice();
-    try {
-      if (handleExportPDF.length === 0) handleExportPDF();
-      else handleExportPDF(payload);
-      toast.success("PDF exported");
-    } catch (err) {
-      console.error(err);
-      toast.error("Export callback failed");
+  const handleExport = () => {
+    if (remainingToAllocate !== 0) {
+      toast.error("Please allocate the full invoice amount");
+      return;
     }
+    
+    const payload = buildInvoice();
+    handleExportPDF(payload);
   };
 
   return (
@@ -209,6 +349,29 @@ export const NonPlotInvoiceDialog = ({
                 </CardHeader>
 
                 <CardContent>
+                  {/* Saved members quick add */}
+                  {savedMembers.length > 0 && (
+                    <div className="mb-4">
+                      <Label className="text-sm text-muted-foreground mb-2 block">
+                        Quick Add from Saved Members:
+                      </Label>
+                      <div className="flex flex-wrap gap-2">
+                        {savedMembers.map((member) => (
+                          <Button
+                            key={member.id}
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleAddExistingMember(member)}
+                            disabled={gangMembers.some(m => m.id === member.id)}
+                          >
+                            <Plus className="mr-1 h-3 w-3" />
+                            {member.name}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {gangMembers.length === 0 && (
                     <p className="text-center text-muted-foreground py-4">No gang members added yet</p>
                   )}
@@ -221,9 +384,27 @@ export const NonPlotInvoiceDialog = ({
                             <p className="font-semibold">{m.name}</p>
                             <p className="text-sm text-muted-foreground capitalize">{m.type}</p>
                           </div>
-                          <Button variant="ghost" size="sm" onClick={() => handleRemoveMember(i)}>
-                            <X />
-                          </Button>
+                          <div className="flex gap-1">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => handleRemoveMemberFromInvoice(i)}
+                              title="Remove from this invoice"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                            {m.id && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => handleDeleteMemberPermanently(m.id!, i)}
+                                className="text-destructive hover:text-destructive"
+                                title="Delete permanently"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
 
                         {!m.editing ? (
@@ -294,7 +475,7 @@ export const NonPlotInvoiceDialog = ({
                   disabled={remainingToAllocate !== 0}
                   onClick={(e) => {
                     e.stopPropagation();
-                    safeExport();
+                    handleExport();
                   }}
                 >
                   Export PDF
@@ -305,7 +486,7 @@ export const NonPlotInvoiceDialog = ({
                   disabled={remainingToAllocate !== 0}
                   onClick={(e) => {
                     e.stopPropagation();
-                    safeSend();
+                    handleSaveInvoice();
                   }}
                 >
                   Send to Admin
@@ -320,7 +501,7 @@ export const NonPlotInvoiceDialog = ({
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Gang Member</DialogTitle>
+            <DialogTitle>Add New Gang Member</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -337,8 +518,8 @@ export const NonPlotInvoiceDialog = ({
               </SelectContent>
             </Select>
 
-            <Button className="w-full" onClick={handleAddMember}>
-              Add Member
+            <Button className="w-full" onClick={handleAddNewMember}>
+              Save and Add to Invoice
             </Button>
           </div>
         </DialogContent>
