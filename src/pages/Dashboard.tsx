@@ -216,7 +216,7 @@ const Dashboard = () => {
           <div>
             <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
             <p className="text-muted-foreground">
-              {isAdmin ? "Manage all developers and sites" : "View your assigned developers and sites"}
+              {isAdmin ? "Manage all developers and sites" : "View your assigned sites"}
             </p>
           </div>
         </div>
