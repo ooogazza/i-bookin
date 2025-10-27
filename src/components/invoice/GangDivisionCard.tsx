@@ -6,6 +6,12 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Plus, X, Trash2, UserPlus } from "lucide-react";
 import { StickySplitButton } from "@/components/StickySplitButton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export interface GangMember {
   id?: string;
@@ -59,40 +65,48 @@ export const GangDivisionCard = ({
       <CardHeader>
         <div className="flex justify-between items-center">
           <CardTitle>Gang Division</CardTitle>
-          <Button size="sm" onClick={onAddMemberClick}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Member
-          </Button>
+          <div className="flex gap-2">
+            {savedMembers && savedMembers.length > 0 && onAddExistingMember && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="outline">
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Saved Members
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  {savedMembers.map((member) => {
+                    const alreadyAdded = gangMembers.some((m) => m.id === member.id);
+                    return (
+                      <DropdownMenuItem
+                        key={member.id}
+                        onClick={() => onAddExistingMember(member)}
+                        disabled={alreadyAdded}
+                        className="cursor-pointer"
+                      >
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        <div className="flex flex-col">
+                          <span>{member.name}</span>
+                          <span className="text-xs text-muted-foreground capitalize">{member.type}</span>
+                        </div>
+                        {alreadyAdded && (
+                          <span className="ml-auto text-xs text-muted-foreground">Added</span>
+                        )}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            <Button size="sm" onClick={onAddMemberClick}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Member
+            </Button>
+          </div>
         </div>
       </CardHeader>
 
       <CardContent>
-        {savedMembers && savedMembers.length > 0 && onAddExistingMember && (
-          <div className="mb-4">
-            <Label className="text-sm text-muted-foreground mb-2 block">
-              Quick Add from Saved Members:
-            </Label>
-            <div className="flex flex-wrap gap-2">
-              {savedMembers.map((member) => {
-                const alreadyAdded = gangMembers.some((m) => m.id === member.id);
-                return (
-                  <Button
-                    key={member.id}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onAddExistingMember(member)}
-                    disabled={alreadyAdded}
-                    title={alreadyAdded ? "Already added" : "Add to invoice"}
-                  >
-                    <UserPlus className="mr-1 h-3 w-3" />
-                    {member.name}
-                  </Button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
         {gangMembers.length === 0 && (
           <p className="text-center text-muted-foreground py-4">
             No gang members added yet
