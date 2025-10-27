@@ -317,6 +317,9 @@ const BookingIn = () => {
 
       if (error) throw error;
 
+      // Close the dialog immediately
+      setDetailsDialogOpen(false);
+
       // Update local state
       setGroupedInvoices((prev: GroupedInvoice[]) =>
         prev.map((inv: GroupedInvoice) =>
