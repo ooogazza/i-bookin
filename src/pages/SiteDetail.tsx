@@ -2342,15 +2342,20 @@ const SiteDetail = () => {
                     const progressKey = `${file.name}-${index}`;
                     if (uploadProgress[progressKey]) return null; // Don't show if uploading
                     
+                    const fileUrl = URL.createObjectURL(file);
+                    
                     return (
-                      <Card key={`new-${index}`} className="overflow-hidden border-2 border-primary/50">
+                      <Card 
+                        key={`new-${index}`} 
+                        className="overflow-hidden border-2 border-primary/50 cursor-pointer hover:border-primary transition-colors"
+                        onClick={() => window.open(fileUrl, '_blank')}
+                      >
                         <CardContent className="p-4 space-y-2">
                           {file.type.startsWith('image/') ? (
                             <img 
-                              src={URL.createObjectURL(file)} 
+                              src={fileUrl} 
                               alt={file.name}
-                              className="w-full h-48 object-contain bg-muted rounded cursor-pointer"
-                              onClick={() => window.open(URL.createObjectURL(file), '_blank')}
+                              className="w-full h-48 object-contain bg-muted rounded"
                             />
                           ) : (
                             <div className="w-full h-48 flex items-center justify-center bg-muted rounded">
@@ -2362,13 +2367,16 @@ const SiteDetail = () => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleRemoveUploadedDrawing(index)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRemoveUploadedDrawing(index);
+                              }}
                               title="Remove"
                             >
                               <X className="h-4 w-4" />
                             </Button>
                           </div>
-                          <p className="text-xs text-primary font-medium">New - Not yet saved</p>
+                          <p className="text-xs text-primary font-medium">New - Not yet saved • Click to view</p>
                         </CardContent>
                       </Card>
                     );
@@ -2376,14 +2384,17 @@ const SiteDetail = () => {
                   
                   {/* Existing Saved Drawings */}
                   {existingDrawings.map((drawing) => (
-                    <Card key={drawing.id} className="overflow-hidden">
+                    <Card 
+                      key={drawing.id} 
+                      className="overflow-hidden cursor-pointer hover:border-primary transition-colors"
+                      onClick={() => window.open(drawing.file_url, '_blank')}
+                    >
                       <CardContent className="p-4 space-y-2">
                         {drawing.file_type.startsWith('image/') ? (
                           <img 
                             src={drawing.file_url} 
                             alt={drawing.file_name}
-                            className="w-full h-48 object-contain bg-muted rounded cursor-pointer"
-                            onClick={() => window.open(drawing.file_url, '_blank')}
+                            className="w-full h-48 object-contain bg-muted rounded"
                           />
                         ) : (
                           <div className="w-full h-48 flex items-center justify-center bg-muted rounded">
@@ -2396,33 +2407,28 @@ const SiteDetail = () => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleDeleteExistingDrawing(drawing.id, drawing.file_url)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteExistingDrawing(drawing.id, drawing.file_url);
+                              }}
                               title="Delete"
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
                           )}
                         </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex-1"
-                            onClick={() => window.open(drawing.file_url, '_blank')}
-                          >
-                            <FileText className="h-4 w-4 mr-2" />
-                            View
-                          </Button>
-                          <Button
-                            variant="default"
-                            size="sm"
-                            className="flex-1"
-                            onClick={() => handleExportDrawing(drawing.file_url, drawing.file_name)}
-                          >
-                            <ShoppingCart className="h-4 w-4 mr-2" />
-                            Export
-                          </Button>
-                        </div>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="w-full"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleExportDrawing(drawing.file_url, drawing.file_name);
+                          }}
+                        >
+                          <ShoppingCart className="h-4 w-4 mr-2" />
+                          Export
+                        </Button>
                       </CardContent>
                     </Card>
                   ))}
