@@ -2292,8 +2292,8 @@ const SiteDetail = () => {
         <Dialog open={drawingsDialogOpen} onOpenChange={setDrawingsDialogOpen}>
           <DialogContent className="max-w-3xl max-h-[85vh]" onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
-              <div className="flex items-center justify-between">
-                <DialogTitle>
+              <div className="flex items-center gap-4">
+                <DialogTitle className="flex-shrink-0">
                   {selectedHouseTypeForDrawings?.name} - Drawings
                 </DialogTitle>
                 {isAdmin && (existingDrawings.length > 0 || uploadedDrawings.length > 0) && (
@@ -2347,21 +2347,31 @@ const SiteDetail = () => {
                     return (
                       <Card 
                         key={`new-${index}`} 
-                        className="overflow-hidden border-2 border-primary/50 cursor-pointer hover:border-primary transition-colors"
-                        onClick={() => window.open(fileUrl, '_blank')}
+                        className="overflow-hidden border-2 border-primary/50"
                       >
                         <CardContent className="p-4 space-y-2">
-                          {file.type.startsWith('image/') ? (
-                            <img 
-                              src={fileUrl} 
-                              alt={file.name}
-                              className="w-full h-48 object-contain bg-muted rounded"
-                            />
-                          ) : (
-                            <div className="w-full h-48 flex items-center justify-center bg-muted rounded">
-                              <FileText className="h-16 w-16 text-muted-foreground" />
-                            </div>
-                          )}
+                          <a 
+                            href={fileUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="block"
+                          >
+                            {file.type.startsWith('image/') ? (
+                              <img 
+                                src={fileUrl} 
+                                alt={file.name}
+                                className="w-full h-48 object-contain bg-muted rounded cursor-pointer hover:opacity-90 transition-opacity"
+                                onError={(e) => {
+                                  console.error('Failed to load image:', file.name);
+                                  e.currentTarget.src = '';
+                                }}
+                              />
+                            ) : (
+                              <div className="w-full h-48 flex items-center justify-center bg-muted rounded cursor-pointer hover:bg-muted/80 transition-colors">
+                                <FileText className="h-16 w-16 text-muted-foreground" />
+                              </div>
+                            )}
+                          </a>
                           <div className="flex items-center justify-between">
                             <p className="text-sm font-medium truncate flex-1">{file.name}</p>
                             <Button
@@ -2386,21 +2396,35 @@ const SiteDetail = () => {
                   {existingDrawings.map((drawing) => (
                     <Card 
                       key={drawing.id} 
-                      className="overflow-hidden cursor-pointer hover:border-primary transition-colors"
-                      onClick={() => window.open(drawing.file_url, '_blank')}
+                      className="overflow-hidden"
                     >
                       <CardContent className="p-4 space-y-2">
-                        {drawing.file_type.startsWith('image/') ? (
-                          <img 
-                            src={drawing.file_url} 
-                            alt={drawing.file_name}
-                            className="w-full h-48 object-contain bg-muted rounded"
-                          />
-                        ) : (
-                          <div className="w-full h-48 flex items-center justify-center bg-muted rounded">
-                            <FileText className="h-16 w-16 text-muted-foreground" />
-                          </div>
-                        )}
+                        <a 
+                          href={drawing.file_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="block"
+                        >
+                          {drawing.file_type.startsWith('image/') ? (
+                            <img 
+                              src={drawing.file_url} 
+                              alt={drawing.file_name}
+                              className="w-full h-48 object-contain bg-muted rounded cursor-pointer hover:opacity-90 transition-opacity"
+                              crossOrigin="anonymous"
+                              onError={(e) => {
+                                console.error('Failed to load image:', drawing.file_name, drawing.file_url);
+                                const target = e.currentTarget;
+                                target.onerror = null; // Prevent infinite loop
+                                target.style.display = 'none';
+                                target.parentElement!.innerHTML = '<div class="w-full h-48 flex flex-col items-center justify-center bg-muted rounded"><svg class="h-16 w-16 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg><p class="text-xs text-muted-foreground mt-2">Image preview unavailable</p></div>';
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-48 flex items-center justify-center bg-muted rounded cursor-pointer hover:bg-muted/80 transition-colors">
+                              <FileText className="h-16 w-16 text-muted-foreground" />
+                            </div>
+                          )}
+                        </a>
                         <div className="flex items-center justify-between">
                           <p className="text-sm font-medium truncate flex-1">{drawing.file_name}</p>
                           {isAdmin && (
