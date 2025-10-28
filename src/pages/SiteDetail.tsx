@@ -394,8 +394,6 @@ const SiteDetail = () => {
       // Calculate total value from all lift values
       const totalValue = Object.values(liftValues).reduce((sum, value) => sum + (value || 0), 0);
 
-      let houseTypeId: string;
-
       if (editingHouseType) {
         await supabase
           .from("house_types")
@@ -416,7 +414,6 @@ const SiteDetail = () => {
           }
         }
 
-        houseTypeId = editingHouseType.id;
         toast.success("House type updated");
       } else {
         const { data: newHouseType, error } = await supabase
@@ -437,148 +434,23 @@ const SiteDetail = () => {
           await supabase.from("lift_values").insert(liftValuesArray);
         }
 
-        houseTypeId = newHouseType.id;
+        // Set editing house type so uploads can reference it
+        setEditingHouseType({
+          ...newHouseType,
+          lift_values: liftValuesArray.map((lv, index) => ({
+            id: `temp-${index}`,
+            house_type_id: newHouseType.id,
+            lift_type: lv.lift_type,
+            value: lv.value,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }))
+        });
         toast.success("House type created");
       }
 
-      // Close dialog immediately and upload in background
-      const drawingsToUpload = [...uploadedDrawings];
-      const previewsToUpload = {...pdfPreviewUrls};
-      const existingDrawingsCount = existingDrawings.length;
-      
-      setUploadedDrawings([]);
-      setPdfPreviewUrls({});
       setHouseTypeDialogOpen(false);
-      
-      // Upload drawings in background
-      if (drawingsToUpload.length > 0) {
-        console.log(`Starting background upload of ${drawingsToUpload.length} drawings`);
-        toast.info(`Uploading ${drawingsToUpload.length} drawing(s) in background...`);
-        
-        let successCount = 0;
-        let failCount = 0;
-        
-        for (let i = 0; i < drawingsToUpload.length; i++) {
-          const file = drawingsToUpload[i];
-          const progressKey = `${file.name}-${i}`;
-          
-          try {
-            // Set initial progress (0%)
-            setUploadProgress(prev => ({ ...prev, [progressKey]: 0 }));
-            
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${houseTypeId}/${Date.now()}_${i}.${fileExt}`;
-
-            const { error: uploadError } = await supabase.storage
-              .from('house-type-drawings')
-              .upload(fileName, file);
-
-            if (uploadError) {
-              console.error(`Upload error for ${file.name}:`, uploadError);
-              failCount++;
-              setUploadProgress(prev => {
-                const newProgress = { ...prev };
-                delete newProgress[progressKey];
-                return newProgress;
-              });
-              continue;
-            }
-
-            // Set progress to 50% after file upload
-            setUploadProgress(prev => ({ ...prev, [progressKey]: 50 }));
-
-            const { data: { publicUrl } } = supabase.storage
-              .from('house-type-drawings')
-              .getPublicUrl(fileName);
-
-            // Upload preview image if it exists for PDFs
-            let previewUrl = null;
-            const previewImage = previewsToUpload[file.name];
-            if (previewImage && file.type === 'application/pdf') {
-              try {
-                setUploadProgress(prev => ({ ...prev, [progressKey]: 75 }));
-                const response = await fetch(previewImage);
-                const blob = await response.blob();
-                const previewFileName = `${houseTypeId}/preview_${Date.now()}_${i}.png`;
-                
-                const { error: previewUploadError } = await supabase.storage
-                  .from('house-type-drawings')
-                  .upload(previewFileName, blob);
-                
-                if (!previewUploadError) {
-                  const { data: { publicUrl: previewPublicUrl } } = supabase.storage
-                    .from('house-type-drawings')
-                    .getPublicUrl(previewFileName);
-                  previewUrl = previewPublicUrl;
-                }
-              } catch (error) {
-                console.error('Error uploading preview:', error);
-              }
-            }
-
-            // Set progress to 90% before DB insert
-            setUploadProgress(prev => ({ ...prev, [progressKey]: 90 }));
-
-            const { error: insertError } = await supabase
-              .from('house_type_drawings')
-              .insert({
-                house_type_id: houseTypeId,
-                file_url: publicUrl,
-                file_name: file.name,
-                file_type: file.type,
-                preview_url: previewUrl,
-                display_order: existingDrawingsCount + i,
-                uploaded_by: user.id
-              });
-            
-            if (insertError) {
-              console.error(`Insert error for ${file.name}:`, insertError);
-              failCount++;
-              setUploadProgress(prev => {
-                const newProgress = { ...prev };
-                delete newProgress[progressKey];
-                return newProgress;
-              });
-            } else {
-              // Complete - set to 100% briefly before removing
-              setUploadProgress(prev => ({ ...prev, [progressKey]: 100 }));
-              setTimeout(() => {
-                setUploadProgress(prev => {
-                  const newProgress = { ...prev };
-                  delete newProgress[progressKey];
-                  return newProgress;
-                });
-              }, 500);
-              successCount++;
-            }
-            
-            // Show progress every 10 files
-            if ((i + 1) % 10 === 0) {
-              toast.info(`Uploaded ${i + 1} of ${drawingsToUpload.length} drawings...`);
-            }
-          } catch (error) {
-            console.error(`Error uploading ${file.name}:`, error);
-            failCount++;
-            setUploadProgress(prev => {
-              const newProgress = { ...prev };
-              delete newProgress[progressKey];
-              return newProgress;
-            });
-          }
-        }
-        
-        if (successCount > 0) {
-          toast.success(`Successfully uploaded ${successCount} drawing(s)`);
-        }
-        if (failCount > 0) {
-          toast.error(`Failed to upload ${failCount} drawing(s)`);
-        }
-        
-        console.log(`Upload complete: ${successCount} success, ${failCount} failed`);
-        fetchSiteData();
-      } else {
-        fetchSiteData();
-      }
+      fetchSiteData();
     } catch (error: any) {
       toast.error("Failed to save house type");
       console.error("Error:", error);
@@ -655,6 +527,11 @@ const SiteDetail = () => {
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!editingHouseType) {
+      toast.error("Please save the house type first before uploading drawings");
+      return;
+    }
+
     const files = Array.from(e.target.files || []);
     
     // Validate file types and sizes
@@ -720,11 +597,134 @@ const SiteDetail = () => {
     console.log(`Total processed files: ${processedFiles.length}`);
     setPdfPreviewUrls(prev => ({ ...prev, ...newPreviews }));
     setUploadedDrawings([...uploadedDrawings, ...processedFiles]);
-    toast.success(`${processedFiles.length} file(s) ready to save!`);
+    
+    // Auto-upload starts here
+    toast.success(`Uploading ${processedFiles.length} file(s)...`);
+    
+    // Start uploading in background
+    setTimeout(async () => {
+      try {
+        let uploadedCount = 0;
+        
+        for (let i = 0; i < processedFiles.length; i++) {
+          const file = processedFiles[i];
+          const progressKey = `${file.name}-${uploadedDrawings.length + i}`;
+          
+          try {
+            // Update progress: 0%
+            setUploadProgress(prev => ({ ...prev, [progressKey]: 0 }));
+            
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${editingHouseType.id}/${Date.now()}-${i}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+            
+            // Update progress: 50%
+            setUploadProgress(prev => ({ ...prev, [progressKey]: 50 }));
+            
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('house-type-drawings')
+              .upload(fileName, file, {
+                contentType: file.type,
+                upsert: false
+              });
+
+            if (uploadError) throw uploadError;
+
+            // Update progress: 75%
+            setUploadProgress(prev => ({ ...prev, [progressKey]: 75 }));
+
+            const { data: { publicUrl } } = supabase.storage
+              .from('house-type-drawings')
+              .getPublicUrl(fileName);
+
+            let previewUrl = null;
+            if (file.type === 'application/pdf') {
+              const preview = newPreviews[file.name];
+              if (preview) {
+                const previewBlob = await fetch(preview).then(r => r.blob());
+                const previewFileName = `${editingHouseType.id}/preview-${Date.now()}-${i}.png`;
+                
+                const { error: previewError } = await supabase.storage
+                  .from('house-type-drawings')
+                  .upload(previewFileName, previewBlob, {
+                    contentType: 'image/png',
+                    upsert: false
+                  });
+
+                if (!previewError) {
+                  const { data: { publicUrl: previewPublicUrl } } = supabase.storage
+                    .from('house-type-drawings')
+                    .getPublicUrl(previewFileName);
+                  previewUrl = previewPublicUrl;
+                }
+              }
+            }
+
+            // Update progress: 90%
+            setUploadProgress(prev => ({ ...prev, [progressKey]: 90 }));
+
+            await supabase
+              .from('house_type_drawings')
+              .insert({
+                house_type_id: editingHouseType.id,
+                file_name: file.name,
+                file_url: publicUrl,
+                file_type: file.type,
+                preview_url: previewUrl,
+                uploaded_by: user.id,
+                display_order: i
+              });
+
+            // Update progress: 100%
+            setUploadProgress(prev => ({ ...prev, [progressKey]: 100 }));
+            uploadedCount++;
+            
+            // Show progress every 5 files
+            if (uploadedCount % 5 === 0) {
+              toast.info(`Uploaded ${uploadedCount} of ${processedFiles.length} files...`);
+            }
+
+            // Remove from progress after a short delay
+            setTimeout(() => {
+              setUploadProgress(prev => {
+                const newProgress = { ...prev };
+                delete newProgress[progressKey];
+                return newProgress;
+              });
+            }, 1000);
+
+          } catch (error) {
+            console.error('Upload error:', error);
+            toast.error(`Failed to upload ${file.name}`);
+            setUploadProgress(prev => {
+              const newProgress = { ...prev };
+              delete newProgress[progressKey];
+              return newProgress;
+            });
+          }
+        }
+
+        toast.success(`Successfully uploaded ${uploadedCount} of ${processedFiles.length} files!`);
+        
+        // Clear the uploaded drawings list but keep the indicator
+        // Don't clear uploadedDrawings here - keep the green tick
+        
+        // Refresh to show new drawings
+        await fetchSiteData();
+        
+      } catch (error: any) {
+        console.error('Upload process error:', error);
+        toast.error('Some files failed to upload');
+      }
+    }, 100);
   };
 
   const handleRemoveUploadedDrawing = (index: number) => {
-    setUploadedDrawings(uploadedDrawings.filter((_, i) => i !== index));
+    const newDrawings = uploadedDrawings.filter((_, i) => i !== index);
+    setUploadedDrawings(newDrawings);
+    // Clear the green tick if no files left
+    if (newDrawings.length === 0) {
+      setPdfPreviewUrls({});
+    }
   };
 
   const handleDeleteExistingDrawing = async (drawingId: string, fileUrl: string) => {
