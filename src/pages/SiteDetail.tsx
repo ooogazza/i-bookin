@@ -179,7 +179,7 @@ const SiteDetail = () => {
   const mainScrollRef = useRef<HTMLDivElement>(null);
   
   const { containerRef: pinchZoomContainerRef, scale: zoomScale, position: zoomPosition, style: zoomStyle } = usePinchZoom({
-    minScale: 1,
+    minScale: 0.5,
     maxScale: 3,
     onlyMobile: true,
   });
