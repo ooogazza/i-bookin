@@ -1946,12 +1946,11 @@ const SiteDetail = () => {
                       {plot.plot_number}
                     </td>
                     <td 
-                      className={`p-2 ${plot.house_types ? 'cursor-pointer hover:bg-primary/10' : ''}`}
+                      className={`p-2 ${(isAdmin || plot.house_types) ? 'cursor-pointer hover:bg-primary/10' : ''}`}
                       onClick={() => {
-                        if (!plot.house_types) return;
                         if (isAdmin) {
                           handlePlotClick(plot);
-                        } else {
+                        } else if (plot.house_types) {
                           openDrawingsDialog(plot.house_types);
                         }
                       }}
