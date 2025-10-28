@@ -2034,50 +2034,15 @@ const SiteDetail = () => {
                     Multi-page PDFs will be automatically split into individual pages.
                   </p>
                   <div className="space-y-2">
-                    {/* Existing Drawings */}
-                    {existingDrawings.length > 0 && (
-                      <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">Existing Drawings:</p>
-                        {existingDrawings.map((drawing) => (
-                          <div key={drawing.id} className="flex items-center justify-between p-2 bg-muted rounded">
-                            <span className="text-sm truncate flex-1">{drawing.file_name}</span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteExistingDrawing(drawing.id, drawing.file_url)}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    
-                    {/* New Uploads */}
-                    {uploadedDrawings.length > 0 && (
-                      <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">New Drawings:</p>
-                        {uploadedDrawings.map((file, index) => (
-                          <div key={index} className="flex items-center justify-between p-2 bg-muted rounded">
-                            <span className="text-sm truncate flex-1">{file.name}</span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRemoveUploadedDrawing(index)}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    
                     <Input
                       type="file"
                       accept=".pdf,.png,.jpg,.jpeg"
                       multiple
                       onChange={handleFileSelect}
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Upload drawings to view them in the View Drawings dialog
+                    </p>
                   </div>
                 </div>
               )}
@@ -2259,10 +2224,43 @@ const SiteDetail = () => {
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 overflow-y-auto max-h-[70vh]">
-              {existingDrawings.length === 0 ? (
+              {existingDrawings.length === 0 && uploadedDrawings.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">No drawings available</p>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Newly Uploaded Drawings (Not Yet Saved) */}
+                  {uploadedDrawings.map((file, index) => (
+                    <Card key={`new-${index}`} className="overflow-hidden border-2 border-primary/50">
+                      <CardContent className="p-4 space-y-2">
+                        {file.type.startsWith('image/') ? (
+                          <img 
+                            src={URL.createObjectURL(file)} 
+                            alt={file.name}
+                            className="w-full h-48 object-contain bg-muted rounded cursor-pointer"
+                            onClick={() => window.open(URL.createObjectURL(file), '_blank')}
+                          />
+                        ) : (
+                          <div className="w-full h-48 flex items-center justify-center bg-muted rounded">
+                            <FileText className="h-16 w-16 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium truncate flex-1">{file.name}</p>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveUploadedDrawing(index)}
+                            title="Remove"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">New - Not yet saved</p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                  
+                  {/* Existing Saved Drawings */}
                   {existingDrawings.map((drawing) => (
                     <Card key={drawing.id} className="overflow-hidden">
                       <CardContent className="p-4 space-y-2">
@@ -2278,7 +2276,19 @@ const SiteDetail = () => {
                             <FileText className="h-16 w-16 text-muted-foreground" />
                           </div>
                         )}
-                        <p className="text-sm font-medium truncate">{drawing.file_name}</p>
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium truncate flex-1">{drawing.file_name}</p>
+                          {isAdmin && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteExistingDrawing(drawing.id, drawing.file_url)}
+                              title="Delete"
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          )}
+                        </div>
                         <div className="flex gap-2">
                           <Button
                             variant="outline"
