@@ -133,6 +133,7 @@ const SiteDetail = () => {
   const [liftValues, setLiftValues] = useState<Record<string, number>>({});
   const [uploadedDrawings, setUploadedDrawings] = useState<File[]>([]);
   const [existingDrawings, setExistingDrawings] = useState<any[]>([]);
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const [drawingsDialogOpen, setDrawingsDialogOpen] = useState(false);
   const [selectedHouseTypeForDrawings, setSelectedHouseTypeForDrawings] = useState<HouseType | null>(null);
   
@@ -378,6 +379,7 @@ const SiteDetail = () => {
       setExistingDrawings([]);
     }
     setUploadedDrawings([]);
+    setUploadProgress({});
     setHouseTypeDialogOpen(true);
   };
 
@@ -439,6 +441,11 @@ const SiteDetail = () => {
       if (uploadedDrawings.length > 0) {
         for (let i = 0; i < uploadedDrawings.length; i++) {
           const file = uploadedDrawings[i];
+          const progressKey = `${file.name}-${i}`;
+          
+          // Set initial progress
+          setUploadProgress(prev => ({ ...prev, [progressKey]: 0 }));
+          
           const fileExt = file.name.split('.').pop();
           const fileName = `${houseTypeId}/${Date.now()}_${i}.${fileExt}`;
 
@@ -446,7 +453,17 @@ const SiteDetail = () => {
             .from('house-type-drawings')
             .upload(fileName, file);
 
-          if (uploadError) throw uploadError;
+          if (uploadError) {
+            setUploadProgress(prev => {
+              const newProgress = { ...prev };
+              delete newProgress[progressKey];
+              return newProgress;
+            });
+            throw uploadError;
+          }
+
+          // Set progress to 50% after upload
+          setUploadProgress(prev => ({ ...prev, [progressKey]: 50 }));
 
           const { data: { publicUrl } } = supabase.storage
             .from('house-type-drawings')
@@ -462,10 +479,19 @@ const SiteDetail = () => {
               display_order: existingDrawings.length + i,
               uploaded_by: user.id
             });
+          
+          // Complete - remove from progress
+          setUploadProgress(prev => {
+            const newProgress = { ...prev };
+            delete newProgress[progressKey];
+            return newProgress;
+          });
         }
         toast.success("Drawings uploaded");
       }
 
+      setUploadedDrawings([]);
+      setUploadProgress({});
       setHouseTypeDialogOpen(false);
       fetchSiteData();
     } catch (error: any) {
@@ -2035,14 +2061,21 @@ const SiteDetail = () => {
                   </p>
                   <div className="space-y-2">
                     <Input
+                      id="drawing-upload"
                       type="file"
                       accept=".pdf,.png,.jpg,.jpeg"
                       multiple
                       onChange={handleFileSelect}
                     />
-                    <p className="text-xs text-muted-foreground">
-                      Upload drawings to view them in the View Drawings dialog
-                    </p>
+                    {uploadedDrawings.length > 0 ? (
+                      <p className="text-xs text-success font-medium">
+                        ✓ {uploadedDrawings.length} file{uploadedDrawings.length > 1 ? 's' : ''} selected - Click "View Drawings" to preview
+                      </p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        No files chosen - Upload drawings to view them in the View Drawings dialog
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
@@ -2224,41 +2257,70 @@ const SiteDetail = () => {
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 overflow-y-auto max-h-[70vh]">
-              {existingDrawings.length === 0 && uploadedDrawings.length === 0 ? (
+              {existingDrawings.length === 0 && uploadedDrawings.length === 0 && Object.keys(uploadProgress).length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">No drawings available</p>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Newly Uploaded Drawings (Not Yet Saved) */}
-                  {uploadedDrawings.map((file, index) => (
-                    <Card key={`new-${index}`} className="overflow-hidden border-2 border-primary/50">
-                      <CardContent className="p-4 space-y-2">
-                        {file.type.startsWith('image/') ? (
-                          <img 
-                            src={URL.createObjectURL(file)} 
-                            alt={file.name}
-                            className="w-full h-48 object-contain bg-muted rounded cursor-pointer"
-                            onClick={() => window.open(URL.createObjectURL(file), '_blank')}
-                          />
-                        ) : (
-                          <div className="w-full h-48 flex items-center justify-center bg-muted rounded">
-                            <FileText className="h-16 w-16 text-muted-foreground" />
+                  {/* Upload Progress Indicators */}
+                  {Object.entries(uploadProgress).map(([key, progress]) => {
+                    const fileName = key.split('-')[0];
+                    return (
+                      <Card key={key} className="overflow-hidden border-2 border-primary">
+                        <CardContent className="p-4 space-y-2">
+                          <div className="w-full h-48 flex flex-col items-center justify-center bg-muted rounded">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+                            <p className="text-sm font-medium">Uploading...</p>
+                            <div className="w-full max-w-[200px] h-2 bg-muted-foreground/20 rounded-full mt-2 overflow-hidden">
+                              <div 
+                                className="h-full bg-primary transition-all duration-300"
+                                style={{ width: `${progress}%` }}
+                              />
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">{progress}%</p>
                           </div>
-                        )}
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium truncate flex-1">{file.name}</p>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveUploadedDrawing(index)}
-                            title="Remove"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        <p className="text-xs text-muted-foreground">New - Not yet saved</p>
-                      </CardContent>
-                    </Card>
-                  ))}
+                          <p className="text-sm font-medium truncate">{fileName}</p>
+                          <p className="text-xs text-muted-foreground">Processing upload...</p>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                  
+                  {/* Newly Uploaded Drawings (Not Yet Saved) */}
+                  {uploadedDrawings.map((file, index) => {
+                    const progressKey = `${file.name}-${index}`;
+                    if (uploadProgress[progressKey]) return null; // Don't show if uploading
+                    
+                    return (
+                      <Card key={`new-${index}`} className="overflow-hidden border-2 border-primary/50">
+                        <CardContent className="p-4 space-y-2">
+                          {file.type.startsWith('image/') ? (
+                            <img 
+                              src={URL.createObjectURL(file)} 
+                              alt={file.name}
+                              className="w-full h-48 object-contain bg-muted rounded cursor-pointer"
+                              onClick={() => window.open(URL.createObjectURL(file), '_blank')}
+                            />
+                          ) : (
+                            <div className="w-full h-48 flex items-center justify-center bg-muted rounded">
+                              <FileText className="h-16 w-16 text-muted-foreground" />
+                            </div>
+                          )}
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-medium truncate flex-1">{file.name}</p>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveUploadedDrawing(index)}
+                              title="Remove"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <p className="text-xs text-primary font-medium">New - Not yet saved</p>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                   
                   {/* Existing Saved Drawings */}
                   {existingDrawings.map((drawing) => (
