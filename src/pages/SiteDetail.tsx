@@ -541,12 +541,6 @@ const SiteDetail = () => {
       }
     }
 
-    const totalFiles = uploadedDrawings.length + existingDrawings.length + processedFiles.length;
-    if (totalFiles > 6) {
-      toast.error(`Cannot add ${processedFiles.length} files. Maximum 6 files total (currently have ${uploadedDrawings.length + existingDrawings.length})`);
-      return;
-    }
-
     setUploadedDrawings([...uploadedDrawings, ...processedFiles]);
   };
 
@@ -2035,7 +2029,7 @@ const SiteDetail = () => {
               {/* File Upload Section */}
               {isAdmin && (
                 <div className="space-y-2">
-                  <Label>Drawings (PDF/PNG, max 6 files, 50MB each)</Label>
+                  <Label>Drawings (PDF/PNG, up to 50MB each)</Label>
                   <p className="text-sm text-muted-foreground mb-2">
                     Multi-page PDFs will be automatically split into individual pages.
                   </p>
@@ -2078,14 +2072,12 @@ const SiteDetail = () => {
                       </div>
                     )}
                     
-                    {(existingDrawings.length + uploadedDrawings.length) < 6 && (
-                      <Input
-                        type="file"
-                        accept=".pdf,.png,.jpg,.jpeg"
-                        multiple
-                        onChange={handleFileSelect}
-                      />
-                    )}
+                    <Input
+                      type="file"
+                      accept=".pdf,.png,.jpg,.jpeg"
+                      multiple
+                      onChange={handleFileSelect}
+                    />
                   </div>
                 </div>
               )}
