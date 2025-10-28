@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -2452,56 +2452,51 @@ const SiteDetail = () => {
 
         {/* Drawing Viewer Dialog */}
         <Dialog open={viewerOpen} onOpenChange={setViewerOpen}>
-          <DialogContent className="max-w-5xl max-h-[95vh] p-0">
-            <DialogHeader className="p-6 pb-2">
-              <DialogTitle className="flex items-center justify-between">
-                <span>{viewerContent?.name}</span>
-                <a 
-                  href={viewerContent?.url} 
-                  download={viewerContent?.name}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-primary hover:underline flex items-center gap-2"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <ShoppingCart className="h-4 w-4" />
-                  Download
-                </a>
-              </DialogTitle>
+          <DialogContent className="max-w-3xl max-h-[90vh] p-0">
+            <DialogHeader className="p-6 pb-4">
+              <DialogTitle>{viewerContent?.name}</DialogTitle>
+              <DialogDescription>
+                View or download the drawing file
+              </DialogDescription>
             </DialogHeader>
-            <div className="p-6 pt-2 overflow-auto max-h-[calc(95vh-120px)]">
+            <div className="p-6 pt-0 overflow-auto">
               {viewerContent && (
                 <>
                   {viewerContent.type.startsWith('image/') ? (
                     <img 
                       src={viewerContent.url} 
                       alt={viewerContent.name}
-                      className="w-full h-auto max-h-[calc(95vh-200px)] object-contain bg-muted rounded"
+                      className="w-full h-auto max-h-[60vh] object-contain bg-muted rounded"
                     />
                   ) : viewerContent.type === 'application/pdf' ? (
-                    <div className="space-y-4">
-                      <iframe
-                        src={`${viewerContent.url}#view=FitH`}
-                        className="w-full h-[calc(95vh-200px)] border-0 rounded bg-muted"
-                        title={viewerContent.name}
-                      />
-                      <p className="text-xs text-center text-muted-foreground">
-                        If the PDF doesn't display, click Download above
-                      </p>
+                    <div className="flex flex-col items-center justify-center py-12 space-y-6">
+                      <FileText className="h-32 w-32 text-primary" />
+                      <div className="text-center space-y-2">
+                        <p className="text-lg font-semibold">PDF Document</p>
+                        <p className="text-sm text-muted-foreground">Click below to open in a new tab</p>
+                      </div>
+                      <a 
+                        href={viewerContent.url} 
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                      >
+                        <FileText className="h-5 w-5" />
+                        Open PDF
+                      </a>
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center justify-center h-96">
+                    <div className="flex flex-col items-center justify-center py-12">
                       <FileText className="h-24 w-24 text-muted-foreground mb-4" />
-                      <p className="text-muted-foreground mb-4">Preview not available for this file type</p>
+                      <p className="text-muted-foreground mb-6">Preview not available for this file type</p>
                       <a 
                         href={viewerContent.url} 
                         download={viewerContent.name}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-primary hover:underline flex items-center gap-2"
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
                       >
-                        <ShoppingCart className="h-4 w-4" />
-                        Download to view
+                        Download File
                       </a>
                     </div>
                   )}
