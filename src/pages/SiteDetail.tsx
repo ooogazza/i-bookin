@@ -633,8 +633,30 @@ const SiteDetail = () => {
     }
   };
 
-  const handleViewDrawing = (url: string, type: string, name: string) => {
+  const handleViewDrawing = async (url: string, type: string, name: string) => {
     console.log('Opening viewer:', { url, type, name });
+    
+    // For PDFs, download directly instead of trying to open in browser
+    if (type === 'application/pdf') {
+      try {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(downloadUrl);
+        toast.success('PDF downloaded successfully');
+      } catch (error) {
+        console.error('Error downloading PDF:', error);
+        toast.error('Failed to download PDF');
+      }
+      return;
+    }
+    
     setViewerContent({ url, type, name });
     setViewerOpen(true);
   };
