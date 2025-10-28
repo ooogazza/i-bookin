@@ -22,6 +22,7 @@ import { GangDivisionCard } from "@/components/invoice/GangDivisionCard";
 import { useSavedGangMembers } from "@/hooks/useSavedGangMembers";
 import type { GangMember as GangDivisionMember } from "@/components/invoice/GangDivisionCard";
 import { usePinchZoom } from "@/hooks/usePinchZoom";
+import { PDFDocument } from 'pdf-lib';
 
 interface Site {
   id: string;
@@ -473,20 +474,80 @@ const SiteDetail = () => {
     }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const splitPdfPages = async (file: File): Promise<File[]> => {
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdfDoc = await PDFDocument.load(arrayBuffer);
+      const pageCount = pdfDoc.getPageCount();
+      
+      if (pageCount <= 1) {
+        return [file];
+      }
+
+      const splitFiles: File[] = [];
+      const baseName = file.name.replace('.pdf', '');
+      
+      for (let i = 0; i < pageCount; i++) {
+        const newPdf = await PDFDocument.create();
+        const [copiedPage] = await newPdf.copyPages(pdfDoc, [i]);
+        newPdf.addPage(copiedPage);
+        
+        const pdfBytes = await newPdf.save();
+        const blob = new Blob([pdfBytes as any], { type: 'application/pdf' });
+        const newFile = new File([blob], `${baseName}_Page_${i + 1}.pdf`, { type: 'application/pdf' });
+        splitFiles.push(newFile);
+      }
+      
+      return splitFiles;
+    } catch (error) {
+      console.error('Error splitting PDF:', error);
+      toast.error('Failed to process PDF');
+      return [file];
+    }
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
+    
+    // Validate file types and sizes
     const validFiles = files.filter(file => {
       const isValidType = file.type === 'application/pdf' || file.type.startsWith('image/');
       const isValidSize = file.size <= 50 * 1024 * 1024; // 50MB limit
-      return isValidType && isValidSize;
+      
+      if (!isValidType) {
+        toast.error(`${file.name}: Only PDF and image files are allowed`);
+        return false;
+      }
+      if (!isValidSize) {
+        toast.error(`${file.name}: File size must be under 50MB`);
+        return false;
+      }
+      return true;
     });
 
-    if (validFiles.length + existingDrawings.length + uploadedDrawings.length > 6) {
-      toast.error("Maximum 6 drawings allowed");
+    if (validFiles.length === 0) return;
+
+    // Process PDFs and split multi-page ones
+    const processedFiles: File[] = [];
+    for (const file of validFiles) {
+      if (file.type === 'application/pdf') {
+        const splitFiles = await splitPdfPages(file);
+        processedFiles.push(...splitFiles);
+        if (splitFiles.length > 1) {
+          toast.success(`Split ${file.name} into ${splitFiles.length} pages`);
+        }
+      } else {
+        processedFiles.push(file);
+      }
+    }
+
+    const totalFiles = uploadedDrawings.length + existingDrawings.length + processedFiles.length;
+    if (totalFiles > 6) {
+      toast.error(`Cannot add ${processedFiles.length} files. Maximum 6 files total (currently have ${uploadedDrawings.length + existingDrawings.length})`);
       return;
     }
 
-    setUploadedDrawings([...uploadedDrawings, ...validFiles]);
+    setUploadedDrawings([...uploadedDrawings, ...processedFiles]);
   };
 
   const handleRemoveUploadedDrawing = (index: number) => {
@@ -1975,7 +2036,10 @@ const SiteDetail = () => {
               {/* File Upload Section */}
               {isAdmin && (
                 <div className="space-y-2">
-                  <Label>Drawings (PDF/PNG, max 6 files, 10MB each)</Label>
+                  <Label>Drawings (PDF/PNG, max 6 files, 50MB each)</Label>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Multi-page PDFs will be automatically split into individual pages.
+                  </p>
                   <div className="space-y-2">
                     {/* Existing Drawings */}
                     {existingDrawings.length > 0 && (
