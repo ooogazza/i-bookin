@@ -23,6 +23,7 @@ import { useSavedGangMembers } from "@/hooks/useSavedGangMembers";
 import type { GangMember as GangDivisionMember } from "@/components/invoice/GangDivisionCard";
 import { usePinchZoom } from "@/hooks/usePinchZoom";
 import { PDFDocument } from 'pdf-lib';
+import { ZoomableImageViewer } from "@/components/ZoomableImageViewer";
 
 interface Site {
   id: string;
@@ -682,30 +683,8 @@ const SiteDetail = () => {
     }
   };
 
-  const handleViewDrawing = async (url: string, type: string, name: string) => {
+  const handleViewDrawing = (url: string, type: string, name: string) => {
     console.log('Opening viewer:', { url, type, name });
-    
-    // For PDFs, download directly instead of trying to open in browser
-    if (type === 'application/pdf') {
-      try {
-        const response = await fetch(url);
-        const blob = await response.blob();
-        const downloadUrl = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = downloadUrl;
-        link.download = name;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(downloadUrl);
-        toast.success('PDF downloaded successfully');
-      } catch (error) {
-        console.error('Error downloading PDF:', error);
-        toast.error('Failed to download PDF');
-      }
-      return;
-    }
-    
     setViewerContent({ url, type, name });
     setViewerOpen(true);
   };
@@ -2530,52 +2509,53 @@ const SiteDetail = () => {
 
         {/* Drawing Viewer Dialog */}
         <Dialog open={viewerOpen} onOpenChange={setViewerOpen}>
-          <DialogContent className="max-w-3xl max-h-[90vh] p-0">
-            <DialogHeader className="p-6 pb-4">
-              <DialogTitle>{viewerContent?.name}</DialogTitle>
+          <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 flex flex-col">
+            <DialogHeader className="p-6 pb-4 border-b">
+              <DialogTitle className="flex items-center justify-between">
+                <span className="truncate flex-1">{viewerContent?.name}</span>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => {
+                    if (viewerContent) {
+                      handleExportDrawing(viewerContent.url, viewerContent.name);
+                    }
+                  }}
+                  className="ml-4"
+                >
+                  <Ruler className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
+              </DialogTitle>
               <DialogDescription>
-                View or download the drawing file
+                Use mouse wheel or pinch to zoom. Drag to pan when zoomed in.
               </DialogDescription>
             </DialogHeader>
-            <div className="p-6 pt-0 overflow-auto">
+            <div className="flex-1 overflow-hidden" style={{ height: 'calc(95vh - 120px)' }}>
               {viewerContent && (
                 <>
-                  {viewerContent.type.startsWith('image/') ? (
-                    <img 
-                      src={viewerContent.url} 
+                  {viewerContent.type.startsWith('image/') || viewerContent.type === 'application/pdf' ? (
+                    <ZoomableImageViewer 
+                      src={viewerContent.type === 'application/pdf' && pdfPreviewUrls[viewerContent.name] 
+                        ? pdfPreviewUrls[viewerContent.name] 
+                        : viewerContent.url} 
                       alt={viewerContent.name}
-                      className="w-full h-auto max-h-[60vh] object-contain bg-muted rounded"
                     />
-                  ) : viewerContent.type === 'application/pdf' ? (
-                    <div className="flex flex-col items-center justify-center py-12 space-y-6">
-                      <FileText className="h-32 w-32 text-primary" />
-                      <div className="text-center space-y-2">
-                        <p className="text-lg font-semibold">PDF Document</p>
-                        <p className="text-sm text-muted-foreground">Click below to open in a new tab</p>
-                      </div>
-                      <a 
-                        href={viewerContent.url} 
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-                      >
-                        <FileText className="h-5 w-5" />
-                        Open PDF
-                      </a>
-                    </div>
                   ) : (
-                    <div className="flex flex-col items-center justify-center py-12">
+                    <div className="flex flex-col items-center justify-center h-full">
                       <FileText className="h-24 w-24 text-muted-foreground mb-4" />
                       <p className="text-muted-foreground mb-6">Preview not available for this file type</p>
-                      <a 
-                        href={viewerContent.url} 
-                        download={viewerContent.name}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                      <Button
+                        variant="default"
+                        onClick={() => {
+                          if (viewerContent) {
+                            handleExportDrawing(viewerContent.url, viewerContent.name);
+                          }
+                        }}
                       >
+                        <Ruler className="h-4 w-4 mr-2" />
                         Download File
-                      </a>
+                      </Button>
                     </div>
                   )}
                 </>
