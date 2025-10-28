@@ -455,12 +455,12 @@ const SiteDetail = () => {
         .update({ assigned_to: selectedUserId })
         .eq("id", selectedPlot.id);
 
-      toast.success("User assigned to plot");
+      toast.success("Bricklayer assigned to plot");
       setUserAssignDialogOpen(false);
       setPlotDialogOpen(false);
       fetchSiteData();
     } catch (error: any) {
-      toast.error("Failed to assign user");
+      toast.error("Failed to assign bricklayer");
       console.error("Error:", error);
     }
   };
@@ -1420,10 +1420,10 @@ const SiteDetail = () => {
 
       if (error) throw error;
 
-      toast.success("User removed from site");
+      toast.success("Bricklayer removed from site");
       fetchSiteData();
     } catch (error: any) {
-      toast.error("Failed to remove user");
+      toast.error("Failed to remove bricklayer");
       console.error("Error:", error);
     }
   };
@@ -1496,11 +1496,11 @@ const SiteDetail = () => {
             {isAdmin && users.length > 0 && (
               <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-1" title="View Invited Users">
+                  <Button variant="outline" size="sm" className="gap-1" title="View Invited Bricklayers">
                     <Users className="h-4 w-4" />
-                    <span className="hidden md:inline">Bricklayers</span>
-                    <span className="hidden sm:inline md:hidden">({users.length})</span>
-                    <ChevronDown className="h-4 w-4 hidden md:inline" />
+                    <span className="hidden lg:inline">Bricklayers</span>
+                    <span className="hidden sm:inline lg:hidden">({users.length})</span>
+                    <ChevronDown className="h-4 w-4 hidden lg:inline" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent 
@@ -1539,12 +1539,12 @@ const SiteDetail = () => {
               <>
                 <Button onClick={() => openHouseTypeDialog()} size="sm" title="Add House Type">
                   <Plus className="h-4 w-4" />
-                  <span className="hidden md:inline ml-2">Add House Type</span>
+                  <span className="hidden lg:inline ml-2">Add House Type</span>
                 </Button>
-                <Button onClick={() => setInviteUserDialogOpen(true)} variant="outline" size="sm" title="Invite Users" className="gap-1">
+                <Button onClick={() => setInviteUserDialogOpen(true)} variant="outline" size="sm" title="Invite Bricklayers" className="gap-1">
                   <Plus className="h-3 w-3" />
                   <Users className="h-4 w-4" />
-                  <span className="hidden md:inline ml-1">Invite Bricklayers</span>
+                  <span className="hidden lg:inline ml-1">Invite Bricklayers</span>
                 </Button>
               </>
             )}
@@ -1556,7 +1556,7 @@ const SiteDetail = () => {
                 title="View Invoice"
               >
                 <FileText className="h-4 w-4" />
-                <span className="hidden md:inline ml-2">View Invoice</span>
+                <span className="hidden lg:inline ml-2">View Invoice</span>
               </Button>
             )}
           </>
@@ -1828,18 +1828,18 @@ const SiteDetail = () => {
           </DialogContent>
         </Dialog>
 
-        {/* User Assignment Dialog */}
+        {/* Bricklayer Assignment Dialog */}
         <Dialog open={userAssignDialogOpen} onOpenChange={setUserAssignDialogOpen}>
           <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
-              <DialogTitle>Assign User to Plot {selectedPlot?.plot_number}</DialogTitle>
+              <DialogTitle>Assign Bricklayer to Plot {selectedPlot?.plot_number}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>User</Label>
+                <Label>Bricklayer</Label>
                 <Select value={selectedUserId} onValueChange={setSelectedUserId}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select user" />
+                    <SelectValue placeholder="Select bricklayer" />
                   </SelectTrigger>
                   <SelectContent>
                     {users.map(u => (
@@ -1863,7 +1863,7 @@ const SiteDetail = () => {
                 </Select>
               </div>
               <Button onClick={handleAssignUserToPlot} className="w-full">
-                Assign User
+                Assign Bricklayer
               </Button>
             </div>
           </DialogContent>

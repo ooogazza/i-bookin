@@ -64,7 +64,7 @@ export const Header = ({
               <h1 className="text-2xl font-bold leading-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
                 I-Bookin
               </h1>
-              <p className="text-xs text-muted-foreground leading-tight">Brickwork Manager</p>
+              <p className="text-xs text-muted-foreground leading-tight">Brickwork Invoice Manager</p>
             </div>
           )}
           {leftContent}
