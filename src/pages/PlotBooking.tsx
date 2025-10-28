@@ -15,6 +15,8 @@ import { FileText, Plus } from "lucide-react";
 import { GangDivisionCard } from "@/components/invoice/GangDivisionCard";
 import { useGangDivision } from "@/hooks/useGangDivision";
 import { useSavedGangMembers } from "@/hooks/useSavedGangMembers";
+import { LiftTypeLabel } from "@/components/LiftTypeLabel";
+import { getLiftFullLabel } from "@/lib/liftTypeLabels";
 
 const PlotBooking = () => {
   const { id } = useParams();
@@ -245,7 +247,7 @@ const PlotBooking = () => {
               <SelectContent>
                 {getAvailableLifts().map((lv) => (
                   <SelectItem key={lv.id} value={lv.id}>
-                    {lv.lift_type} – £{lv.value.toFixed(2)} ({getRemainingPercentage(lv.id)}% available)
+                    {getLiftFullLabel(lv.lift_type)} – £{lv.value.toFixed(2)} ({getRemainingPercentage(lv.id)}% available)
                   </SelectItem>
                 ))}
               </SelectContent>

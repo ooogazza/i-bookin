@@ -13,6 +13,8 @@ import { maskEmail } from "@/lib/emailUtils";
 import jsPDF from "jspdf";
 import logo from "@/assets/logo.png";
 import { handleExportPDF as exportInvoicePDF, handleSendToAdmin as sendInvoiceToAdmin } from "@/lib/invoiceUtils";
+import { LiftTypeLabel } from "@/components/LiftTypeLabel";
+import { getLiftFullLabel } from "@/lib/liftTypeLabels";
 
 interface BookingData {
   id: string;
@@ -75,8 +77,12 @@ const LIFT_LABELS = {
   lift_4: "Lift 4",
   lift_5: "Lift 5",
   lift_6: "Lift 6",
-  cut_ups: "Cut Ups",
-  snag: "Snag",
+  cut_ups: "Cut Ups/Gable",
+  snag_patch: "Snag/Patch Int",
+  snag_patch_int: "Snag/Patch Int",
+  snag_patch_ext: "Snag/Patch Ext",
+  dod: "D.O.D",
+  no_ri: "No RI",
 };
 
 const BookingIn = () => {
@@ -526,7 +532,7 @@ const BookingIn = () => {
                 {item.is_non_plot
                   ? `Non-Plot Work: £${item.booked_value.toFixed(2)}`
                   : item.plots && item.lift_values
-                    ? `Plot ${item.plots.plot_number} - ${LIFT_LABELS[item.lift_values.lift_type as keyof typeof LIFT_LABELS]}: ${item.percentage}% = £${item.booked_value.toFixed(2)}`
+                    ? `Plot ${item.plots.plot_number} - ${getLiftFullLabel(item.lift_values.lift_type)}: ${item.percentage}% = £${item.booked_value.toFixed(2)}`
                     : ""}
               </p>
             ))}
@@ -1031,9 +1037,9 @@ const BookingIn = () => {
                               </div>
                               <p className="font-bold text-primary text-sm md:text-base whitespace-nowrap">£{item.booked_value.toFixed(2)}</p>
                             </div>
-                            <div className="text-xs md:text-sm">
+                            <div className="text-xs md:text-sm flex items-center gap-1">
                               <span className="font-medium">
-                                {item.lift_values && LIFT_LABELS[item.lift_values.lift_type as keyof typeof LIFT_LABELS]}
+                                {item.lift_values && <LiftTypeLabel liftType={item.lift_values.lift_type} />}
                               </span>
                               {" - "}
                               <span className="text-muted-foreground">{item.percentage}%</span>

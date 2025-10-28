@@ -690,6 +690,9 @@ export type Database = {
         | "snag"
         | "snag_patch"
         | "dod"
+        | "snag_patch_int"
+        | "snag_patch_ext"
+        | "no_ri"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -829,6 +832,9 @@ export const Constants = {
         "snag",
         "snag_patch",
         "dod",
+        "snag_patch_int",
+        "snag_patch_ext",
+        "no_ri",
       ],
     },
   },

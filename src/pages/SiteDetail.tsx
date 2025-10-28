@@ -24,6 +24,7 @@ import type { GangMember as GangDivisionMember } from "@/components/invoice/Gang
 import { usePinchZoom } from "@/hooks/usePinchZoom";
 import { PDFDocument } from 'pdf-lib';
 import { ZoomableImageViewer } from "@/components/ZoomableImageViewer";
+import { LiftTypeLabel } from "@/components/LiftTypeLabel";
 
 interface Site {
   id: string;
@@ -102,16 +103,19 @@ interface GangMember {
   amount: number;
 }
 
-const LIFT_LABELS = {
+const LIFT_LABELS: Record<string, string> = {
   lift_1: "Lift 1",
   lift_2: "Lift 2",
   lift_3: "Lift 3",
   lift_4: "Lift 4",
   lift_5: "Lift 5",
   lift_6: "Lift 6",
-  cut_ups: "Cut Ups",
-  snag_patch: "Snag/Patch",
+  cut_ups: "Cut Ups/Gable",
+  snag_patch: "Snag/Patch Int",
+  snag_patch_int: "Snag/Patch Int",
+  snag_patch_ext: "Snag/Patch Ext",
   dod: "D.O.D",
+  no_ri: "No RI",
 };
 
 const SiteDetail = () => {
@@ -1915,8 +1919,10 @@ const SiteDetail = () => {
                 <tr className="border-b">
                   <th className="p-2 text-left font-medium text-sm w-20">Plot</th>
                   <th className="p-2 text-left font-medium text-sm w-32">House Type</th>
-                  {Object.values(LIFT_LABELS).map(label => (
-                    <th key={label} className="p-2 text-center font-medium whitespace-nowrap text-sm min-w-[80px]">{label}</th>
+                  {Object.keys(LIFT_LABELS).map(liftType => (
+                    <th key={liftType} className="p-2 text-center font-medium whitespace-nowrap text-sm min-w-[80px]">
+                      <LiftTypeLabel liftType={liftType} />
+                    </th>
                   ))}
                   {isAdmin && <th className="p-2 text-center font-medium text-sm w-24">Actions</th>}
                 </tr>
@@ -2156,8 +2162,10 @@ const SiteDetail = () => {
                 <tr className="border-b bg-muted/50">
                   <th className="p-2 text-left font-medium w-20 sticky left-0 bg-muted/50 z-20 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Plot</th>
                   <th className="p-2 text-left font-medium w-32">House Type</th>
-                  {Object.values(LIFT_LABELS).map(label => (
-                    <th key={label} className="p-2 text-center font-medium whitespace-nowrap text-sm min-w-[80px]">{label}</th>
+                  {Object.keys(LIFT_LABELS).map(liftType => (
+                    <th key={liftType} className="p-2 text-center font-medium whitespace-nowrap text-sm min-w-[80px]">
+                      <LiftTypeLabel liftType={liftType} />
+                    </th>
                   ))}
                   {isAdmin && <th className="p-2 text-center font-medium w-24">Actions</th>}
                 </tr>
@@ -2245,7 +2253,7 @@ const SiteDetail = () => {
               <div className="grid grid-cols-2 gap-4">
                 {Object.entries(LIFT_LABELS).map(([key, label]) => (
                   <div key={key} className="space-y-2">
-                    <Label>{label}</Label>
+                    <LiftTypeLabel liftType={key} className="text-sm font-medium" />
                     <Input
                       type="number"
                       step="0.01"
@@ -3032,9 +3040,7 @@ const SiteDetail = () => {
                         <div className="space-y-2">
                           {selectedPlotForSummary.house_types.lift_values.map((lift) => (
                             <div key={lift.id} className="flex justify-between items-center p-2 bg-muted rounded">
-                              <span className="text-sm">
-                                {LIFT_LABELS[lift.lift_type as keyof typeof LIFT_LABELS]}
-                              </span>
+                              <LiftTypeLabel liftType={lift.lift_type} className="text-sm" />
                               <span className="font-medium">£{lift.value.toFixed(2)}</span>
                             </div>
                           ))}
