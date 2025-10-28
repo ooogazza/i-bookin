@@ -146,6 +146,7 @@ export type Database = {
           file_url: string
           house_type_id: string
           id: string
+          preview_url: string | null
           uploaded_by: string
         }
         Insert: {
@@ -156,6 +157,7 @@ export type Database = {
           file_url: string
           house_type_id: string
           id?: string
+          preview_url?: string | null
           uploaded_by: string
         }
         Update: {
@@ -166,6 +168,7 @@ export type Database = {
           file_url?: string
           house_type_id?: string
           id?: string
+          preview_url?: string | null
           uploaded_by?: string
         }
         Relationships: [
