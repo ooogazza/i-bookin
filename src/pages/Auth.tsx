@@ -167,7 +167,7 @@ const Auth = () => {
               <div>
                 <button
                   type="button"
-                  onClick={() => toast.info("Password reset feature coming soon")}
+                  onClick={() => navigate("/reset-password")}
                   className="text-[#1976D2] hover:underline text-sm"
                 >
                   Forgot password?
