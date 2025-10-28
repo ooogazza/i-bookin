@@ -441,125 +441,141 @@ const SiteDetail = () => {
         toast.success("House type created");
       }
 
-      // Upload new drawings
-      if (uploadedDrawings.length > 0) {
-        console.log(`Starting upload of ${uploadedDrawings.length} drawings`);
-        let successCount = 0;
-        let failCount = 0;
+      // Close dialog immediately
+      const drawingsToUpload = [...uploadedDrawings];
+      const previewsToUpload = { ...pdfPreviewUrls };
+      const existingDrawingsCount = existingDrawings.length;
+      
+      setUploadedDrawings([]);
+      setPdfPreviewUrls({});
+      setHouseTypeDialogOpen(false);
+
+      // Upload drawings in background if there are any
+      if (drawingsToUpload.length > 0) {
+        toast.info(`Uploading ${drawingsToUpload.length} drawing(s) in background...`);
         
-        for (let i = 0; i < uploadedDrawings.length; i++) {
-          const file = uploadedDrawings[i];
-          const progressKey = `${file.name}-${i}`;
+        // Background upload
+        (async () => {
+          let successCount = 0;
+          let failCount = 0;
           
-          try {
-            // Set initial progress
-            setUploadProgress(prev => ({ ...prev, [progressKey]: 0 }));
+          for (let i = 0; i < drawingsToUpload.length; i++) {
+            const file = drawingsToUpload[i];
+            const progressKey = `${file.name}-${i}`;
             
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${houseTypeId}/${Date.now()}_${i}.${fileExt}`;
+            try {
+              // Set initial progress
+              setUploadProgress(prev => ({ ...prev, [progressKey]: 0 }));
+              
+              const fileExt = file.name.split('.').pop();
+              const fileName = `${houseTypeId}/${Date.now()}_${i}.${fileExt}`;
 
-            const { error: uploadError } = await supabase.storage
-              .from('house-type-drawings')
-              .upload(fileName, file);
+              const { error: uploadError } = await supabase.storage
+                .from('house-type-drawings')
+                .upload(fileName, file);
 
-            if (uploadError) {
-              console.error(`Upload error for ${file.name}:`, uploadError);
+              if (uploadError) {
+                console.error(`Upload error for ${file.name}:`, uploadError);
+                failCount++;
+                setUploadProgress(prev => {
+                  const newProgress = { ...prev };
+                  delete newProgress[progressKey];
+                  return newProgress;
+                });
+                continue;
+              }
+
+              // Set progress to 50% after upload
+              setUploadProgress(prev => ({ ...prev, [progressKey]: 50 }));
+
+              const { data: { publicUrl } } = supabase.storage
+                .from('house-type-drawings')
+                .getPublicUrl(fileName);
+
+              // Upload preview image if it exists for PDFs
+              let previewUrl = null;
+              const previewImage = previewsToUpload[file.name];
+              if (previewImage && file.type === 'application/pdf') {
+                try {
+                  // Convert base64 to blob
+                  const response = await fetch(previewImage);
+                  const blob = await response.blob();
+                  const previewFileName = `${houseTypeId}/preview_${Date.now()}_${i}.png`;
+                  
+                  const { error: previewUploadError } = await supabase.storage
+                    .from('house-type-drawings')
+                    .upload(previewFileName, blob);
+                  
+                  if (!previewUploadError) {
+                    const { data: { publicUrl: previewPublicUrl } } = supabase.storage
+                      .from('house-type-drawings')
+                      .getPublicUrl(previewFileName);
+                    previewUrl = previewPublicUrl;
+                  }
+                } catch (error) {
+                  console.error('Error uploading preview:', error);
+                }
+              }
+
+              const { error: insertError } = await supabase
+                .from('house_type_drawings')
+                .insert({
+                  house_type_id: houseTypeId,
+                  file_url: publicUrl,
+                  file_name: file.name,
+                  file_type: file.type,
+                  preview_url: previewUrl,
+                  display_order: existingDrawingsCount + i,
+                  uploaded_by: user.id
+                });
+              
+              if (insertError) {
+                console.error(`Insert error for ${file.name}:`, insertError);
+                failCount++;
+              } else {
+                successCount++;
+              }
+              
+              // Complete - remove from progress
+              setUploadProgress(prev => {
+                const newProgress = { ...prev };
+                delete newProgress[progressKey];
+                return newProgress;
+              });
+              
+              // Show progress every 10 files
+              if ((i + 1) % 10 === 0) {
+                toast.info(`Uploaded ${i + 1} of ${drawingsToUpload.length} drawings...`);
+              }
+            } catch (error) {
+              console.error(`Error uploading ${file.name}:`, error);
               failCount++;
               setUploadProgress(prev => {
                 const newProgress = { ...prev };
                 delete newProgress[progressKey];
                 return newProgress;
               });
-              continue;
             }
-
-            // Set progress to 50% after upload
-            setUploadProgress(prev => ({ ...prev, [progressKey]: 50 }));
-
-            const { data: { publicUrl } } = supabase.storage
-              .from('house-type-drawings')
-              .getPublicUrl(fileName);
-
-            // Upload preview image if it exists for PDFs
-            let previewUrl = null;
-            const previewImage = pdfPreviewUrls[file.name];
-            if (previewImage && file.type === 'application/pdf') {
-              try {
-                // Convert base64 to blob
-                const response = await fetch(previewImage);
-                const blob = await response.blob();
-                const previewFileName = `${houseTypeId}/preview_${Date.now()}_${i}.png`;
-                
-                const { error: previewUploadError } = await supabase.storage
-                  .from('house-type-drawings')
-                  .upload(previewFileName, blob);
-                
-                if (!previewUploadError) {
-                  const { data: { publicUrl: previewPublicUrl } } = supabase.storage
-                    .from('house-type-drawings')
-                    .getPublicUrl(previewFileName);
-                  previewUrl = previewPublicUrl;
-                }
-              } catch (error) {
-                console.error('Error uploading preview:', error);
-              }
-            }
-
-            const { error: insertError } = await supabase
-              .from('house_type_drawings')
-              .insert({
-                house_type_id: houseTypeId,
-                file_url: publicUrl,
-                file_name: file.name,
-                file_type: file.type,
-                preview_url: previewUrl,
-                display_order: existingDrawings.length + i,
-                uploaded_by: user.id
-              });
-            
-            if (insertError) {
-              console.error(`Insert error for ${file.name}:`, insertError);
-              failCount++;
-            } else {
-              successCount++;
-            }
-            
-            // Complete - remove from progress
-            setUploadProgress(prev => {
-              const newProgress = { ...prev };
-              delete newProgress[progressKey];
-              return newProgress;
-            });
-            
-            // Show progress every 10 files
-            if ((i + 1) % 10 === 0) {
-              toast.info(`Uploaded ${i + 1} of ${uploadedDrawings.length} drawings...`);
-            }
-          } catch (error) {
-            console.error(`Error uploading ${file.name}:`, error);
-            failCount++;
-            setUploadProgress(prev => {
-              const newProgress = { ...prev };
-              delete newProgress[progressKey];
-              return newProgress;
-            });
           }
-        }
-        
-        if (successCount > 0) {
-          toast.success(`Successfully uploaded ${successCount} drawing(s)`);
-        }
-        if (failCount > 0) {
-          toast.error(`Failed to upload ${failCount} drawing(s)`);
-        }
-        
-        console.log(`Upload complete: ${successCount} success, ${failCount} failed`);
+          
+          if (successCount > 0) {
+            toast.success(`Successfully uploaded ${successCount} drawing(s)`);
+          }
+          if (failCount > 0) {
+            toast.error(`Failed to upload ${failCount} drawing(s)`);
+          }
+          
+          console.log(`Upload complete: ${successCount} success, ${failCount} failed`);
+          
+          // Refresh data after all uploads complete
+          fetchSiteData();
+        })();
       }
 
-      setUploadedDrawings([]);
-      setUploadProgress({});
-      setHouseTypeDialogOpen(false);
-      fetchSiteData();
+      // Only refresh immediately if no drawings to upload
+      if (drawingsToUpload.length === 0) {
+        fetchSiteData();
+      }
     } catch (error: any) {
       toast.error("Failed to save house type");
       console.error("Error:", error);
