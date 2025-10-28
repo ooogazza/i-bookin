@@ -174,6 +174,9 @@ const SiteDetail = () => {
   const [showScrollUpIndicator, setShowScrollUpIndicator] = useState(false);
   const [showScrollDownIndicator, setShowScrollDownIndicator] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [userPlotsDialogOpen, setUserPlotsDialogOpen] = useState(false);
+  const [selectedUserForDialog, setSelectedUserForDialog] = useState<User | null>(null);
+  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   
   const stickyScrollRef = useRef<HTMLDivElement>(null);
   const mainScrollRef = useRef<HTMLDivElement>(null);
@@ -761,16 +764,13 @@ const SiteDetail = () => {
     // Clear previous highlights
     clearHighlights();
     
-    // Close the dropdown
-    setDropdownOpen(false);
-    
     setSelectedUserForHighlight(userId);
     
     // Find all plots assigned to this user
     const userPlots = plots.filter(p => p.assigned_to === userId);
     
     if (userPlots.length === 0) {
-      toast.info("No plots assigned to this user");
+      toast.info("No plots assigned to this bricklayer");
       return;
     }
 
@@ -794,6 +794,52 @@ const SiteDetail = () => {
     });
 
     toast.success(`Highlighting ${userPlots.length} plot(s). Long press to clear.`);
+  };
+
+  const handleUserClick = (user: User) => {
+    setSelectedUserForDialog(user);
+    setUserPlotsDialogOpen(true);
+  };
+
+  const handleUserLongPressStart = (userId: string, e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    const timer = setTimeout(() => {
+      // Long press detected - toggle highlight
+      if (selectedUserForHighlight === userId && highlightedPlots.length > 0) {
+        // Clear if already highlighted
+        clearHighlights();
+        setDropdownOpen(false);
+        toast.info("Highlights cleared");
+      } else {
+        // Highlight plots
+        handleUserSelect(userId);
+        setDropdownOpen(false);
+      }
+    }, 500); // 500ms for long press
+    setLongPressTimer(timer);
+  };
+
+  const handleUserLongPressEnd = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+  };
+
+  const scrollToPlot = (plotNumber: number) => {
+    const plotElement = document.querySelector(`[data-plot-number="${plotNumber}"]`);
+    if (plotElement) {
+      const yOffset = -180;
+      const y = plotElement.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+      
+      // Highlight the row briefly
+      plotElement.classList.add('bg-primary/20');
+      setTimeout(() => {
+        plotElement.classList.remove('bg-primary/20');
+      }, 2000);
+    }
+    setUserPlotsDialogOpen(false);
   };
 
   // Long press handler
@@ -1511,7 +1557,12 @@ const SiteDetail = () => {
                     <DropdownMenuItem 
                       key={u.user_id} 
                       className="flex items-center justify-between p-3 cursor-pointer hover:bg-muted"
-                      onClick={() => handleUserSelect(u.user_id)}
+                      onClick={() => handleUserClick(u)}
+                      onMouseDown={(e) => handleUserLongPressStart(u.user_id, e)}
+                      onMouseUp={handleUserLongPressEnd}
+                      onMouseLeave={handleUserLongPressEnd}
+                      onTouchStart={(e) => handleUserLongPressStart(u.user_id, e)}
+                      onTouchEnd={handleUserLongPressEnd}
                       onSelect={(e) => e.preventDefault()}
                     >
                       <div className="flex-1 flex items-center gap-2">
@@ -1913,6 +1964,39 @@ const SiteDetail = () => {
               <Button onClick={handleInviteUser} className="w-full" disabled={!inviteEmail.trim()}>
                 Send Invitation
               </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* User Plots Dialog */}
+        <Dialog open={userPlotsDialogOpen} onOpenChange={setUserPlotsDialogOpen}>
+          <DialogContent className="max-w-md max-h-[80vh]" onOpenAutoFocus={(e) => e.preventDefault()}>
+            <DialogHeader>
+              <DialogTitle>
+                {selectedUserForDialog?.profiles.full_name}'s Assigned Plots
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-2 overflow-y-auto max-h-[60vh]">
+              {selectedUserForDialog && plots.filter(p => p.assigned_to === selectedUserForDialog.user_id).length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">No plots assigned</p>
+              ) : (
+                plots
+                  .filter(p => p.assigned_to === selectedUserForDialog?.user_id)
+                  .sort((a, b) => a.plot_number - b.plot_number)
+                  .map(plot => (
+                    <Button
+                      key={plot.id}
+                      variant="outline"
+                      className="w-full justify-between"
+                      onClick={() => scrollToPlot(plot.plot_number)}
+                    >
+                      <span className="font-medium">Plot {plot.plot_number}</span>
+                      <span className="text-sm text-muted-foreground">
+                        {plot.house_types?.name || "No house type"}
+                      </span>
+                    </Button>
+                  ))
+              )}
             </div>
           </DialogContent>
         </Dialog>
