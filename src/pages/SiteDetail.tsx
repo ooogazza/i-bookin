@@ -11,7 +11,7 @@ import { Slider } from "@/components/ui/slider";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Settings, Plus, Users, Trash2, ShoppingCart, FileText, X, ArrowUp, ChevronDown, Send } from "lucide-react";
+import { Settings, Plus, Users, Trash2, Ruler, FileText, X, ArrowUp, ChevronDown, Send } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import jsPDF from "jspdf";
@@ -134,6 +134,7 @@ const SiteDetail = () => {
   const [uploadedDrawings, setUploadedDrawings] = useState<File[]>([]);
   const [existingDrawings, setExistingDrawings] = useState<any[]>([]);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
+  const [pdfPreviewUrls, setPdfPreviewUrls] = useState<Record<string, string>>({});
   const [drawingsDialogOpen, setDrawingsDialogOpen] = useState(false);
   const [selectedHouseTypeForDrawings, setSelectedHouseTypeForDrawings] = useState<HouseType | null>(null);
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -502,6 +503,42 @@ const SiteDetail = () => {
     }
   };
 
+  const generatePdfPreview = async (file: File): Promise<string> => {
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdfDoc = await PDFDocument.load(arrayBuffer);
+      const pages = pdfDoc.getPages();
+      if (pages.length === 0) return '';
+      
+      const firstPage = pages[0];
+      const { width, height } = firstPage.getSize();
+      
+      // Create a canvas to render the preview
+      const canvas = document.createElement('canvas');
+      const scale = 2;
+      canvas.width = width * scale;
+      canvas.height = height * scale;
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) return '';
+      
+      // For now, just create a placeholder image since full PDF rendering would require pdf.js
+      // This creates a simple preview with the PDF icon
+      ctx.fillStyle = '#f3f4f6';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#6b7280';
+      ctx.font = `${Math.min(width, height) / 4}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('PDF', canvas.width / 2, canvas.height / 2);
+      
+      return canvas.toDataURL('image/png');
+    } catch (error) {
+      console.error('Error generating PDF preview:', error);
+      return '';
+    }
+  };
+
   const splitPdfPages = async (file: File): Promise<File[]> => {
     try {
       const arrayBuffer = await file.arrayBuffer();
@@ -557,10 +594,21 @@ const SiteDetail = () => {
 
     // Process PDFs and split multi-page ones
     const processedFiles: File[] = [];
+    const newPreviews: Record<string, string> = {};
+    
     for (const file of validFiles) {
       if (file.type === 'application/pdf') {
         const splitFiles = await splitPdfPages(file);
         processedFiles.push(...splitFiles);
+        
+        // Generate previews for each split PDF
+        for (const splitFile of splitFiles) {
+          const preview = await generatePdfPreview(splitFile);
+          if (preview) {
+            newPreviews[splitFile.name] = preview;
+          }
+        }
+        
         if (splitFiles.length > 1) {
           toast.success(`Split ${file.name} into ${splitFiles.length} pages`);
         }
@@ -569,6 +617,7 @@ const SiteDetail = () => {
       }
     }
 
+    setPdfPreviewUrls(prev => ({ ...prev, ...newPreviews }));
     setUploadedDrawings([...uploadedDrawings, ...processedFiles]);
   };
 
@@ -2373,6 +2422,7 @@ const SiteDetail = () => {
                     if (uploadProgress[progressKey]) return null; // Don't show if uploading
                     
                     const fileUrl = URL.createObjectURL(file);
+                    const previewUrl = file.type === 'application/pdf' ? pdfPreviewUrls[file.name] : null;
                     
                     return (
                       <Card 
@@ -2384,6 +2434,12 @@ const SiteDetail = () => {
                           {file.type.startsWith('image/') ? (
                             <img 
                               src={fileUrl} 
+                              alt={file.name}
+                              className="w-full h-48 object-contain bg-muted rounded"
+                            />
+                          ) : previewUrl ? (
+                            <img 
+                              src={previewUrl} 
                               alt={file.name}
                               className="w-full h-48 object-contain bg-muted rounded"
                             />
@@ -2460,7 +2516,7 @@ const SiteDetail = () => {
                             handleExportDrawing(drawing.file_url, drawing.file_name);
                           }}
                         >
-                          <ShoppingCart className="h-4 w-4 mr-2" />
+                          <Ruler className="h-4 w-4 mr-2" />
                           Export
                         </Button>
                       </CardContent>
