@@ -17,8 +17,7 @@ export default defineConfig(({ mode }) => ({
         registerType: "prompt",
         includeAssets: ["favicon.png", "favicon.svg", "apple-touch-icon.png", "pwa-192x192.png", "pwa-512x512.png"],
         devOptions: {
-          enabled: true,
-          type: "module"
+          enabled: false
         },
         manifest: {
           name: "I-Bookin - Brickwork Manager",
