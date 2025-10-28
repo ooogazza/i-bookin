@@ -480,6 +480,31 @@ const SiteDetail = () => {
               .from('house-type-drawings')
               .getPublicUrl(fileName);
 
+            // Upload preview image if it exists for PDFs
+            let previewUrl = null;
+            const previewImage = pdfPreviewUrls[file.name];
+            if (previewImage && file.type === 'application/pdf') {
+              try {
+                // Convert base64 to blob
+                const response = await fetch(previewImage);
+                const blob = await response.blob();
+                const previewFileName = `${houseTypeId}/preview_${Date.now()}_${i}.png`;
+                
+                const { error: previewUploadError } = await supabase.storage
+                  .from('house-type-drawings')
+                  .upload(previewFileName, blob);
+                
+                if (!previewUploadError) {
+                  const { data: { publicUrl: previewPublicUrl } } = supabase.storage
+                    .from('house-type-drawings')
+                    .getPublicUrl(previewFileName);
+                  previewUrl = previewPublicUrl;
+                }
+              } catch (error) {
+                console.error('Error uploading preview:', error);
+              }
+            }
+
             const { error: insertError } = await supabase
               .from('house_type_drawings')
               .insert({
@@ -487,6 +512,7 @@ const SiteDetail = () => {
                 file_url: publicUrl,
                 file_name: file.name,
                 file_type: file.type,
+                preview_url: previewUrl,
                 display_order: existingDrawings.length + i,
                 uploaded_by: user.id
               });
@@ -758,14 +784,28 @@ const SiteDetail = () => {
     setDrawingsDialogOpen(true);
   };
 
-  const handleExportDrawing = (fileUrl: string, fileName: string) => {
-    const link = document.createElement('a');
-    link.href = fileUrl;
-    link.download = fileName;
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleExportDrawing = async (fileUrl: string, fileName: string) => {
+    try {
+      // Fetch the file as a blob
+      const response = await fetch(fileUrl);
+      const blob = await response.blob();
+      
+      // Create a download URL
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up
+      window.URL.revokeObjectURL(downloadUrl);
+      toast.success('Download started');
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error('Failed to download file');
+    }
   };
 
   const handlePlotClick = (plot: Plot) => {
@@ -2517,10 +2557,12 @@ const SiteDetail = () => {
                             alt={drawing.file_name}
                             className="w-full h-48 object-contain bg-muted rounded"
                           />
-                        ) : drawing.file_type === 'application/pdf' ? (
-                          <div className="w-full h-48 flex items-center justify-center bg-muted rounded">
-                            <FileText className="h-16 w-16 text-muted-foreground" />
-                          </div>
+                        ) : drawing.file_type === 'application/pdf' && drawing.preview_url ? (
+                          <img 
+                            src={drawing.preview_url} 
+                            alt={drawing.file_name}
+                            className="w-full h-48 object-contain bg-muted rounded"
+                          />
                         ) : (
                           <div className="w-full h-48 flex items-center justify-center bg-muted rounded">
                             <FileText className="h-16 w-16 text-muted-foreground" />
@@ -2590,11 +2632,9 @@ const SiteDetail = () => {
             <div className="flex-1 overflow-hidden" style={{ height: 'calc(95vh - 120px)' }}>
               {viewerContent && (
                 <>
-                  {viewerContent.type.startsWith('image/') || viewerContent.type === 'application/pdf' ? (
+                  {(viewerContent.type.startsWith('image/') || viewerContent.type === 'application/pdf') ? (
                     <ZoomableImageViewer 
-                      src={viewerContent.type === 'application/pdf' && pdfPreviewUrls[viewerContent.name] 
-                        ? pdfPreviewUrls[viewerContent.name] 
-                        : viewerContent.url} 
+                      src={viewerContent.url} 
                       alt={viewerContent.name}
                     />
                   ) : (
