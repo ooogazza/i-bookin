@@ -58,17 +58,15 @@ export const usePinchZoom = ({
         const currentDistance = getTouchDistance(e.touches);
         const currentCenter = getTouchCenter(e.touches);
         
-        // Calculate new scale
+        // Calculate new scale with more responsive scaling
         const scaleChange = currentDistance / lastTouchDistance.current;
-        let newScale = startPinchScale.current * scaleChange;
+        let newScale = scale * scaleChange;
         newScale = Math.max(minScale, Math.min(maxScale, newScale));
         
-        // Calculate pan offset
-        const containerRect = container.getBoundingClientRect();
-        const centerX = currentCenter.x - containerRect.left;
-        const centerY = currentCenter.y - containerRect.top;
-        
         setScale(newScale);
+        
+        // Update last distance for continuous scaling
+        lastTouchDistance.current = currentDistance;
         
         // Update position to zoom towards pinch center
         const deltaX = (currentCenter.x - lastTouchCenter.current.x);
@@ -78,8 +76,10 @@ export const usePinchZoom = ({
           x: prev.x + deltaX,
           y: prev.y + deltaY,
         }));
-      } else if (e.touches.length === 1 && scale > 1) {
-        // Allow panning when zoomed in
+        
+        lastTouchCenter.current = currentCenter;
+      } else if (e.touches.length === 1 && scale !== 1) {
+        // Allow panning when zoomed
         e.preventDefault();
         const touch = e.touches[0];
         const deltaX = touch.clientX - lastTouchCenter.current.x;
