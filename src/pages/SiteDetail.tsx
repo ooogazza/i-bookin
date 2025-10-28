@@ -2270,9 +2270,11 @@ const SiteDetail = () => {
                       <div className="flex items-center gap-2 p-3 border-2 border-dashed rounded-lg hover:border-primary transition-colors bg-muted/50">
                         <Plus className="h-5 w-5" />
                         <div className="flex-1">
-                          {uploadedDrawings.length > 0 ? (
+                          {uploadedDrawings.length > 0 || existingDrawings.length > 0 ? (
                             <p className="text-sm font-medium text-success">
-                              ✓ {uploadedDrawings.length} file{uploadedDrawings.length > 1 ? 's' : ''} selected
+                              ✓ {uploadedDrawings.length > 0 
+                                ? `${uploadedDrawings.length} file${uploadedDrawings.length > 1 ? 's' : ''} selected`
+                                : `${existingDrawings.length} file${existingDrawings.length > 1 ? 's' : ''} uploaded`}
                             </p>
                           ) : (
                             <p className="text-sm font-medium">Choose files or drag here</p>
@@ -2632,7 +2634,6 @@ const SiteDetail = () => {
                             handleExportDrawing(drawing.file_url, drawing.file_name);
                           }}
                         >
-                          <Ruler className="h-4 w-4 mr-2" />
                           Export
                         </Button>
                       </CardContent>
