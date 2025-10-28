@@ -1532,6 +1532,30 @@ const SiteDetail = () => {
                       </Button>
                     </DropdownMenuItem>
                   ))}
+                  
+                  {pendingInvitations.length > 0 && (
+                    <>
+                      {users.length > 0 && (
+                        <div className="px-3 py-2 text-xs text-muted-foreground font-semibold border-t">
+                          Pending Invitations
+                        </div>
+                      )}
+                      {pendingInvitations.map((inv) => (
+                        <DropdownMenuItem 
+                          key={inv.id} 
+                          className="flex items-center justify-between p-3"
+                          onSelect={(e) => e.preventDefault()}
+                        >
+                          <div className="flex-1 flex items-center gap-2">
+                            <p className="text-muted-foreground">{maskEmail(inv.email)}</p>
+                            <Badge variant="outline" className="text-xs">
+                              Pending
+                            </Badge>
+                          </div>
+                        </DropdownMenuItem>
+                      ))}
+                    </>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
