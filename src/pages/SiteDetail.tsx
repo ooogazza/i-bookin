@@ -1493,13 +1493,13 @@ const SiteDetail = () => {
         }
         actions={
           <>
-            {isAdmin && users.length > 0 && (
+            {isAdmin && (users.length > 0 || pendingInvitations.length > 0) && (
               <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="gap-1" title="View Invited Bricklayers">
                     <Users className="h-4 w-4" />
-                    <span className="hidden lg:inline">Bricklayers</span>
-                    <span className="hidden sm:inline lg:hidden">({users.length})</span>
+                    <span className="hidden lg:inline">Bricklayers ({users.length + pendingInvitations.length})</span>
+                    <span className="hidden sm:inline lg:hidden">({users.length + pendingInvitations.length})</span>
                     <ChevronDown className="h-4 w-4 hidden lg:inline" />
                   </Button>
                 </DropdownMenuTrigger>
