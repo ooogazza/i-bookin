@@ -600,6 +600,37 @@ const SiteDetail = () => {
     }
   };
 
+  const handleDeleteAllDrawings = async () => {
+    if (!selectedHouseTypeForDrawings) return;
+    if (!confirm(`Delete all ${existingDrawings.length + uploadedDrawings.length} drawings?`)) return;
+
+    try {
+      // Delete existing drawings from storage and database
+      for (const drawing of existingDrawings) {
+        const urlParts = drawing.file_url.split('/house-type-drawings/');
+        if (urlParts.length > 1) {
+          const filePath = urlParts[1];
+          await supabase.storage
+            .from('house-type-drawings')
+            .remove([filePath]);
+        }
+
+        await supabase
+          .from('house_type_drawings')
+          .delete()
+          .eq('id', drawing.id);
+      }
+
+      // Clear uploaded drawings that haven't been saved yet
+      setUploadedDrawings([]);
+      setExistingDrawings([]);
+      toast.success("All drawings deleted");
+    } catch (error: any) {
+      toast.error("Failed to delete drawings");
+      console.error("Error:", error);
+    }
+  };
+
   const openDrawingsDialog = async (houseType: HouseType) => {
     setSelectedHouseTypeForDrawings(houseType);
     
@@ -2060,22 +2091,31 @@ const SiteDetail = () => {
                     Multi-page PDFs will be automatically split into individual pages.
                   </p>
                   <div className="space-y-2">
+                    <Label htmlFor="drawing-upload-hidden" className="cursor-pointer">
+                      <div className="flex items-center gap-2 p-3 border-2 border-dashed rounded-lg hover:border-primary transition-colors bg-muted/50">
+                        <Plus className="h-5 w-5" />
+                        <div className="flex-1">
+                          {uploadedDrawings.length > 0 ? (
+                            <p className="text-sm font-medium text-success">
+                              ✓ {uploadedDrawings.length} file{uploadedDrawings.length > 1 ? 's' : ''} selected
+                            </p>
+                          ) : (
+                            <p className="text-sm font-medium">Choose files or drag here</p>
+                          )}
+                          <p className="text-xs text-muted-foreground">
+                            PDF, PNG, JPG - up to 50MB each
+                          </p>
+                        </div>
+                      </div>
+                    </Label>
                     <Input
-                      id="drawing-upload"
+                      id="drawing-upload-hidden"
                       type="file"
                       accept=".pdf,.png,.jpg,.jpeg"
                       multiple
                       onChange={handleFileSelect}
+                      className="hidden"
                     />
-                    {uploadedDrawings.length > 0 ? (
-                      <p className="text-xs text-success font-medium">
-                        ✓ {uploadedDrawings.length} file{uploadedDrawings.length > 1 ? 's' : ''} selected - Click "View Drawings" to preview
-                      </p>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">
-                        No files chosen - Upload drawings to view them in the View Drawings dialog
-                      </p>
-                    )}
                   </div>
                 </div>
               )}
@@ -2252,9 +2292,21 @@ const SiteDetail = () => {
         <Dialog open={drawingsDialogOpen} onOpenChange={setDrawingsDialogOpen}>
           <DialogContent className="max-w-3xl max-h-[85vh]" onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
-              <DialogTitle>
-                {selectedHouseTypeForDrawings?.name} - Drawings
-              </DialogTitle>
+              <div className="flex items-center justify-between">
+                <DialogTitle>
+                  {selectedHouseTypeForDrawings?.name} - Drawings
+                </DialogTitle>
+                {isAdmin && (existingDrawings.length > 0 || uploadedDrawings.length > 0) && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleDeleteAllDrawings}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete All
+                  </Button>
+                )}
+              </div>
             </DialogHeader>
             <div className="space-y-4 overflow-y-auto max-h-[70vh]">
               {existingDrawings.length === 0 && uploadedDrawings.length === 0 && Object.keys(uploadProgress).length === 0 ? (
