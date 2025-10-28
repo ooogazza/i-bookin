@@ -3,8 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { signIn, signUp } from "@/lib/supabase";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,14 +16,11 @@ const Auth = () => {
   const [searchParams] = useSearchParams();
   const { user, loading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const defaultTab = searchParams.get('tab') === 'signup' ? 'signup' : 'login';
+  const [isSignUp, setIsSignUp] = useState(searchParams.get('tab') === 'signup');
   
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
-  
-  const [signupEmail, setSignupEmail] = useState("");
-  const [signupPassword, setSignupPassword] = useState("");
-  const [signupFullName, setSignupFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
 
   useEffect(() => {
     if (!loading && user) {
@@ -32,55 +28,42 @@ const Auth = () => {
     }
   }, [user, loading, navigate]);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      // Validate input
-      authSchema.parse({
-        email: loginEmail,
-        password: loginPassword,
-      });
+      if (isSignUp) {
+        // Validate signup input
+        authSchema.parse({
+          email: email,
+          password: password,
+          fullName: fullName,
+        });
 
-      const { error } = await signIn(loginEmail.trim(), loginPassword);
-      
-      if (error) {
-        toast.error(error.message);
+        const { error } = await signUp(email.trim(), password, fullName.trim());
+        
+        if (error) {
+          toast.error(error.message);
+        } else {
+          toast.success("Account created successfully");
+          navigate("/dashboard");
+        }
       } else {
-        toast.success("Logged in successfully");
-        navigate("/dashboard");
-      }
-    } catch (error: any) {
-      if (error.errors?.[0]?.message) {
-        toast.error(error.errors[0].message);
-      } else {
-        toast.error("Invalid input");
-      }
-    }
-    
-    setIsLoading(false);
-  };
+        // Validate login input
+        authSchema.parse({
+          email: email,
+          password: password,
+        });
 
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    try {
-      // Validate input
-      authSchema.parse({
-        email: signupEmail,
-        password: signupPassword,
-        fullName: signupFullName,
-      });
-
-      const { error } = await signUp(signupEmail.trim(), signupPassword, signupFullName.trim());
-      
-      if (error) {
-        toast.error(error.message);
-      } else {
-        toast.success("Account created successfully");
-        navigate("/dashboard");
+        const { error } = await signIn(email.trim(), password);
+        
+        if (error) {
+          toast.error(error.message);
+        } else {
+          toast.success("Logged in successfully");
+          navigate("/dashboard");
+        }
       }
     } catch (error: any) {
       if (error.errors?.[0]?.message) {
@@ -104,97 +87,94 @@ const Auth = () => {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-secondary/30">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center space-y-4">
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <Card className="w-full max-w-md border shadow-sm">
+        <CardHeader className="text-center space-y-4 pb-6">
           <img 
             src={logo} 
             alt="I-Bookin Logo" 
-            className="h-24 w-24 mx-auto rounded-2xl"
+            className="h-20 w-20 mx-auto rounded-2xl"
           />
           <div>
-            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">I-Bookin</CardTitle>
-            <p className="text-base font-bold text-foreground mt-2">Brickwork Manager</p>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">I-Bookin</h1>
+            <p className="text-sm font-semibold text-foreground mt-1">Brickwork Manager</p>
           </div>
-          <CardDescription>Manage construction site payments efficiently</CardDescription>
         </CardHeader>
-        <CardContent>
-          <Tabs defaultValue={defaultTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="login">
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="login-email">Email</Label>
-                  <Input
-                    id="login-email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="login-password">Password</Label>
-                  <Input
-                    id="login-password"
-                    type="password"
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Logging in..." : "Login"}
-                </Button>
-              </form>
-            </TabsContent>
-            
-            <TabsContent value="signup">
-              <form onSubmit={handleSignup} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-name">Full Name</Label>
-                  <Input
-                    id="signup-name"
-                    type="text"
-                    placeholder="John Smith"
-                    value={signupFullName}
-                    onChange={(e) => setSignupFullName(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <Input
-                    id="signup-email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={signupEmail}
-                    onChange={(e) => setSignupEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
-                  <Input
-                    id="signup-password"
-                    type="password"
-                    value={signupPassword}
-                    onChange={(e) => setSignupPassword(e.target.value)}
-                    required
-                    minLength={6}
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Creating account..." : "Sign Up"}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
+        <CardContent className="px-8 pb-8">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {isSignUp && (
+              <div className="space-y-2">
+                <Label htmlFor="fullname" className="text-base font-normal">Full Name</Label>
+                <Input
+                  id="fullname"
+                  type="text"
+                  placeholder="John Smith"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  required
+                  className="h-12"
+                />
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-base font-normal">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="h-12"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-base font-normal">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                className="h-12"
+              />
+            </div>
+            <Button 
+              type="submit" 
+              className="w-full h-12 text-base font-medium bg-[#1976D2] hover:bg-[#1565C0] text-white" 
+              disabled={isLoading}
+            >
+              {isLoading ? (isSignUp ? "Creating account..." : "Signing in...") : (isSignUp ? "Sign Up" : "Sign In")}
+            </Button>
+          </form>
+          
+          <div className="mt-6 text-center space-y-2">
+            <button
+              type="button"
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                setEmail("");
+                setPassword("");
+                setFullName("");
+              }}
+              className="text-[#1976D2] hover:underline text-sm"
+            >
+              {isSignUp ? "Already have an account? Sign in" : "Don't have an account? Sign up"}
+            </button>
+            {!isSignUp && (
+              <div>
+                <button
+                  type="button"
+                  onClick={() => toast.info("Password reset feature coming soon")}
+                  className="text-[#1976D2] hover:underline text-sm"
+                >
+                  Forgot password?
+                </button>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>
