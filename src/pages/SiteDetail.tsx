@@ -441,18 +441,29 @@ const SiteDetail = () => {
         toast.success("House type created");
       }
 
-      // Upload new drawings
-      if (uploadedDrawings.length > 0) {
-        console.log(`Starting upload of ${uploadedDrawings.length} drawings`);
+      // Close dialog immediately and upload in background
+      const drawingsToUpload = [...uploadedDrawings];
+      const previewsToUpload = {...pdfPreviewUrls};
+      const existingDrawingsCount = existingDrawings.length;
+      
+      setUploadedDrawings([]);
+      setPdfPreviewUrls({});
+      setHouseTypeDialogOpen(false);
+      
+      // Upload drawings in background
+      if (drawingsToUpload.length > 0) {
+        console.log(`Starting background upload of ${drawingsToUpload.length} drawings`);
+        toast.info(`Uploading ${drawingsToUpload.length} drawing(s) in background...`);
+        
         let successCount = 0;
         let failCount = 0;
         
-        for (let i = 0; i < uploadedDrawings.length; i++) {
-          const file = uploadedDrawings[i];
+        for (let i = 0; i < drawingsToUpload.length; i++) {
+          const file = drawingsToUpload[i];
           const progressKey = `${file.name}-${i}`;
           
           try {
-            // Set initial progress
+            // Set initial progress (0%)
             setUploadProgress(prev => ({ ...prev, [progressKey]: 0 }));
             
             const fileExt = file.name.split('.').pop();
@@ -473,7 +484,7 @@ const SiteDetail = () => {
               continue;
             }
 
-            // Set progress to 50% after upload
+            // Set progress to 50% after file upload
             setUploadProgress(prev => ({ ...prev, [progressKey]: 50 }));
 
             const { data: { publicUrl } } = supabase.storage
@@ -482,10 +493,10 @@ const SiteDetail = () => {
 
             // Upload preview image if it exists for PDFs
             let previewUrl = null;
-            const previewImage = pdfPreviewUrls[file.name];
+            const previewImage = previewsToUpload[file.name];
             if (previewImage && file.type === 'application/pdf') {
               try {
-                // Convert base64 to blob
+                setUploadProgress(prev => ({ ...prev, [progressKey]: 75 }));
                 const response = await fetch(previewImage);
                 const blob = await response.blob();
                 const previewFileName = `${houseTypeId}/preview_${Date.now()}_${i}.png`;
@@ -505,6 +516,9 @@ const SiteDetail = () => {
               }
             }
 
+            // Set progress to 90% before DB insert
+            setUploadProgress(prev => ({ ...prev, [progressKey]: 90 }));
+
             const { error: insertError } = await supabase
               .from('house_type_drawings')
               .insert({
@@ -513,27 +527,34 @@ const SiteDetail = () => {
                 file_name: file.name,
                 file_type: file.type,
                 preview_url: previewUrl,
-                display_order: existingDrawings.length + i,
+                display_order: existingDrawingsCount + i,
                 uploaded_by: user.id
               });
             
             if (insertError) {
               console.error(`Insert error for ${file.name}:`, insertError);
               failCount++;
+              setUploadProgress(prev => {
+                const newProgress = { ...prev };
+                delete newProgress[progressKey];
+                return newProgress;
+              });
             } else {
+              // Complete - set to 100% briefly before removing
+              setUploadProgress(prev => ({ ...prev, [progressKey]: 100 }));
+              setTimeout(() => {
+                setUploadProgress(prev => {
+                  const newProgress = { ...prev };
+                  delete newProgress[progressKey];
+                  return newProgress;
+                });
+              }, 500);
               successCount++;
             }
             
-            // Complete - remove from progress
-            setUploadProgress(prev => {
-              const newProgress = { ...prev };
-              delete newProgress[progressKey];
-              return newProgress;
-            });
-            
             // Show progress every 10 files
             if ((i + 1) % 10 === 0) {
-              toast.info(`Uploaded ${i + 1} of ${uploadedDrawings.length} drawings...`);
+              toast.info(`Uploaded ${i + 1} of ${drawingsToUpload.length} drawings...`);
             }
           } catch (error) {
             console.error(`Error uploading ${file.name}:`, error);
@@ -554,12 +575,10 @@ const SiteDetail = () => {
         }
         
         console.log(`Upload complete: ${successCount} success, ${failCount} failed`);
+        fetchSiteData();
+      } else {
+        fetchSiteData();
       }
-
-      setUploadedDrawings([]);
-      setUploadProgress({});
-      setHouseTypeDialogOpen(false);
-      fetchSiteData();
     } catch (error: any) {
       toast.error("Failed to save house type");
       console.error("Error:", error);
@@ -656,8 +675,8 @@ const SiteDetail = () => {
 
     if (validFiles.length === 0) return;
 
-    // Show processing message
-    toast.info('Processing PDF files...', { duration: 5000 });
+    // Instant confirmation
+    toast.success(`✓ ${validFiles.length} file(s) added! Processing...`);
 
     // Process PDFs and split multi-page ones
     const processedFiles: File[] = [];
@@ -701,7 +720,7 @@ const SiteDetail = () => {
     console.log(`Total processed files: ${processedFiles.length}`);
     setPdfPreviewUrls(prev => ({ ...prev, ...newPreviews }));
     setUploadedDrawings([...uploadedDrawings, ...processedFiles]);
-    toast.success(`Ready to upload ${processedFiles.length} file(s)`);
+    toast.success(`${processedFiles.length} file(s) ready to save!`);
   };
 
   const handleRemoveUploadedDrawing = (index: number) => {
@@ -2496,50 +2515,63 @@ const SiteDetail = () => {
                   {/* Newly Uploaded Drawings (Not Yet Saved) */}
                   {uploadedDrawings.map((file, index) => {
                     const progressKey = `${file.name}-${index}`;
-                    if (uploadProgress[progressKey]) return null; // Don't show if uploading
-                    
+                    const progress = uploadProgress[progressKey];
                     const fileUrl = URL.createObjectURL(file);
                     const previewUrl = file.type === 'application/pdf' ? pdfPreviewUrls[file.name] : null;
                     
                     return (
                       <Card 
                         key={`new-${index}`} 
-                        className="overflow-hidden border-2 border-primary/50 cursor-pointer hover:border-primary transition-colors"
-                        onClick={() => handleViewDrawing(fileUrl, file.type, file.name, previewUrl || undefined)}
+                        className="overflow-hidden border-2 border-primary/50 cursor-pointer hover:border-primary transition-colors relative"
+                        onClick={() => !progress && handleViewDrawing(fileUrl, file.type, file.name, previewUrl || undefined)}
                       >
                         <CardContent className="p-4 space-y-2">
-                          {file.type.startsWith('image/') ? (
-                            <img 
-                              src={fileUrl} 
-                              alt={file.name}
-                              className="w-full h-48 object-contain bg-muted rounded"
-                            />
-                          ) : previewUrl ? (
-                            <img 
-                              src={previewUrl} 
-                              alt={file.name}
-                              className="w-full h-48 object-contain bg-muted rounded"
-                            />
-                          ) : (
-                            <div className="w-full h-48 flex items-center justify-center bg-muted rounded">
-                              <FileText className="h-16 w-16 text-muted-foreground" />
-                            </div>
-                          )}
+                          <div className="relative">
+                            {file.type.startsWith('image/') ? (
+                              <img 
+                                src={fileUrl} 
+                                alt={file.name}
+                                className="w-full h-48 object-contain bg-muted rounded"
+                              />
+                            ) : previewUrl ? (
+                              <img 
+                                src={previewUrl} 
+                                alt={file.name}
+                                className="w-full h-48 object-contain bg-muted rounded"
+                              />
+                            ) : (
+                              <div className="w-full h-48 flex items-center justify-center bg-muted rounded">
+                                <FileText className="h-16 w-16 text-muted-foreground" />
+                              </div>
+                            )}
+                            {progress !== undefined && (
+                              <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+                                <div className="text-center">
+                                  <div className="text-2xl font-bold text-primary">{progress}%</div>
+                                  <div className="text-sm text-muted-foreground mt-1">Uploading...</div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                           <div className="flex items-center justify-between">
                             <p className="text-sm font-medium truncate flex-1">{file.name}</p>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRemoveUploadedDrawing(index);
-                              }}
-                              title="Remove"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
+                            {!progress && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRemoveUploadedDrawing(index);
+                                }}
+                                title="Remove"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
-                          <p className="text-xs text-primary font-medium">New - Not yet saved • Click to view</p>
+                          <p className="text-xs text-primary font-medium">
+                            {progress !== undefined ? `Uploading ${progress}%` : 'New - Not yet saved • Click to view'}
+                          </p>
                         </CardContent>
                       </Card>
                     );
@@ -2616,35 +2648,17 @@ const SiteDetail = () => {
         <Dialog open={viewerOpen} onOpenChange={setViewerOpen}>
           <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 flex flex-col">
             <DialogHeader className="p-6 pb-4 border-b">
-              <DialogTitle className="flex items-center justify-between">
-                <span className="truncate flex-1">{viewerContent?.name}</span>
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={() => {
-                    if (viewerContent) {
-                      handleExportDrawing(viewerContent.url, viewerContent.name);
-                    }
-                  }}
-                  className="ml-4"
-                >
-                  <Ruler className="h-4 w-4 mr-2" />
-                  Export
-                </Button>
-              </DialogTitle>
+              <DialogTitle className="truncate">{viewerContent?.name}</DialogTitle>
               <DialogDescription>
                 Use mouse wheel or pinch to zoom. Drag to pan when zoomed in.
               </DialogDescription>
             </DialogHeader>
             <div className="flex-1 overflow-hidden" style={{ height: 'calc(95vh - 120px)' }}>
               {viewerContent && (
-                <>
-                  {/* Show zoomable viewer for images and PDF previews */}
-                  <ZoomableImageViewer 
-                    src={viewerContent.url} 
-                    alt={viewerContent.name}
-                  />
-                </>
+                <ZoomableImageViewer 
+                  src={viewerContent.url} 
+                  alt={viewerContent.name}
+                />
               )}
             </div>
           </DialogContent>
