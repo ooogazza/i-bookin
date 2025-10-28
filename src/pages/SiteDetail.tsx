@@ -443,55 +443,91 @@ const SiteDetail = () => {
 
       // Upload new drawings
       if (uploadedDrawings.length > 0) {
+        console.log(`Starting upload of ${uploadedDrawings.length} drawings`);
+        let successCount = 0;
+        let failCount = 0;
+        
         for (let i = 0; i < uploadedDrawings.length; i++) {
           const file = uploadedDrawings[i];
           const progressKey = `${file.name}-${i}`;
           
-          // Set initial progress
-          setUploadProgress(prev => ({ ...prev, [progressKey]: 0 }));
-          
-          const fileExt = file.name.split('.').pop();
-          const fileName = `${houseTypeId}/${Date.now()}_${i}.${fileExt}`;
+          try {
+            // Set initial progress
+            setUploadProgress(prev => ({ ...prev, [progressKey]: 0 }));
+            
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${houseTypeId}/${Date.now()}_${i}.${fileExt}`;
 
-          const { error: uploadError } = await supabase.storage
-            .from('house-type-drawings')
-            .upload(fileName, file);
+            const { error: uploadError } = await supabase.storage
+              .from('house-type-drawings')
+              .upload(fileName, file);
 
-          if (uploadError) {
+            if (uploadError) {
+              console.error(`Upload error for ${file.name}:`, uploadError);
+              failCount++;
+              setUploadProgress(prev => {
+                const newProgress = { ...prev };
+                delete newProgress[progressKey];
+                return newProgress;
+              });
+              continue;
+            }
+
+            // Set progress to 50% after upload
+            setUploadProgress(prev => ({ ...prev, [progressKey]: 50 }));
+
+            const { data: { publicUrl } } = supabase.storage
+              .from('house-type-drawings')
+              .getPublicUrl(fileName);
+
+            const { error: insertError } = await supabase
+              .from('house_type_drawings')
+              .insert({
+                house_type_id: houseTypeId,
+                file_url: publicUrl,
+                file_name: file.name,
+                file_type: file.type,
+                display_order: existingDrawings.length + i,
+                uploaded_by: user.id
+              });
+            
+            if (insertError) {
+              console.error(`Insert error for ${file.name}:`, insertError);
+              failCount++;
+            } else {
+              successCount++;
+            }
+            
+            // Complete - remove from progress
             setUploadProgress(prev => {
               const newProgress = { ...prev };
               delete newProgress[progressKey];
               return newProgress;
             });
-            throw uploadError;
-          }
-
-          // Set progress to 50% after upload
-          setUploadProgress(prev => ({ ...prev, [progressKey]: 50 }));
-
-          const { data: { publicUrl } } = supabase.storage
-            .from('house-type-drawings')
-            .getPublicUrl(fileName);
-
-          await supabase
-            .from('house_type_drawings')
-            .insert({
-              house_type_id: houseTypeId,
-              file_url: publicUrl,
-              file_name: file.name,
-              file_type: file.type,
-              display_order: existingDrawings.length + i,
-              uploaded_by: user.id
+            
+            // Show progress every 10 files
+            if ((i + 1) % 10 === 0) {
+              toast.info(`Uploaded ${i + 1} of ${uploadedDrawings.length} drawings...`);
+            }
+          } catch (error) {
+            console.error(`Error uploading ${file.name}:`, error);
+            failCount++;
+            setUploadProgress(prev => {
+              const newProgress = { ...prev };
+              delete newProgress[progressKey];
+              return newProgress;
             });
-          
-          // Complete - remove from progress
-          setUploadProgress(prev => {
-            const newProgress = { ...prev };
-            delete newProgress[progressKey];
-            return newProgress;
-          });
+          }
         }
-        toast.success("Drawings uploaded");
+        
+        if (successCount > 0) {
+          toast.success(`Successfully uploaded ${successCount} drawing(s)`);
+        }
+        if (failCount > 0) {
+          toast.error(`Failed to upload ${failCount} drawing(s)`);
+        }
+        
+        console.log(`Upload complete: ${successCount} success, ${failCount} failed`);
       }
 
       setUploadedDrawings([]);
@@ -506,32 +542,33 @@ const SiteDetail = () => {
 
   const generatePdfPreview = async (file: File): Promise<string> => {
     try {
+      // Import pdf.js dynamically
+      const pdfjsLib = await import('pdfjs-dist');
+      
+      // Set worker source
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+      
       const arrayBuffer = await file.arrayBuffer();
-      const pdfDoc = await PDFDocument.load(arrayBuffer);
-      const pages = pdfDoc.getPages();
-      if (pages.length === 0) return '';
+      const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+      const pdf = await loadingTask.promise;
       
-      const firstPage = pages[0];
-      const { width, height } = firstPage.getSize();
+      // Get the first page
+      const page = await pdf.getPage(1);
+      const viewport = page.getViewport({ scale: 2 });
       
-      // Create a canvas to render the preview
+      // Create canvas
       const canvas = document.createElement('canvas');
-      const scale = 2;
-      canvas.width = width * scale;
-      canvas.height = height * scale;
-      const ctx = canvas.getContext('2d');
+      const context = canvas.getContext('2d');
+      if (!context) return '';
       
-      if (!ctx) return '';
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
       
-      // For now, just create a placeholder image since full PDF rendering would require pdf.js
-      // This creates a simple preview with the PDF icon
-      ctx.fillStyle = '#f3f4f6';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#6b7280';
-      ctx.font = `${Math.min(width, height) / 4}px Arial`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('PDF', canvas.width / 2, canvas.height / 2);
+      // Render PDF page to canvas
+      await page.render({
+        canvasContext: context,
+        viewport: viewport,
+      } as any).promise;
       
       return canvas.toDataURL('image/png');
     } catch (error) {
@@ -593,33 +630,52 @@ const SiteDetail = () => {
 
     if (validFiles.length === 0) return;
 
+    // Show processing message
+    toast.info('Processing PDF files...', { duration: 5000 });
+
     // Process PDFs and split multi-page ones
     const processedFiles: File[] = [];
     const newPreviews: Record<string, string> = {};
     
     for (const file of validFiles) {
       if (file.type === 'application/pdf') {
-        const splitFiles = await splitPdfPages(file);
-        processedFiles.push(...splitFiles);
-        
-        // Generate previews for each split PDF
-        for (const splitFile of splitFiles) {
-          const preview = await generatePdfPreview(splitFile);
-          if (preview) {
-            newPreviews[splitFile.name] = preview;
+        try {
+          const splitFiles = await splitPdfPages(file);
+          console.log(`Split ${file.name} into ${splitFiles.length} pages`);
+          
+          // Generate previews for each split PDF
+          for (let i = 0; i < splitFiles.length; i++) {
+            const splitFile = splitFiles[i];
+            processedFiles.push(splitFile);
+            
+            // Generate preview
+            const preview = await generatePdfPreview(splitFile);
+            if (preview) {
+              newPreviews[splitFile.name] = preview;
+            }
+            
+            // Show progress
+            if ((i + 1) % 10 === 0 || i === splitFiles.length - 1) {
+              toast.info(`Processed ${i + 1} of ${splitFiles.length} pages...`, { duration: 2000 });
+            }
           }
-        }
-        
-        if (splitFiles.length > 1) {
-          toast.success(`Split ${file.name} into ${splitFiles.length} pages`);
+          
+          if (splitFiles.length > 1) {
+            toast.success(`Split ${file.name} into ${splitFiles.length} pages`);
+          }
+        } catch (error) {
+          console.error('Error processing PDF:', error);
+          toast.error(`Failed to process ${file.name}`);
         }
       } else {
         processedFiles.push(file);
       }
     }
 
+    console.log(`Total processed files: ${processedFiles.length}`);
     setPdfPreviewUrls(prev => ({ ...prev, ...newPreviews }));
     setUploadedDrawings([...uploadedDrawings, ...processedFiles]);
+    toast.success(`Ready to upload ${processedFiles.length} file(s)`);
   };
 
   const handleRemoveUploadedDrawing = (index: number) => {
