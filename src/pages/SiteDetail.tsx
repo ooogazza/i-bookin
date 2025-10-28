@@ -571,8 +571,8 @@ const SiteDetail = () => {
       // Import pdf.js dynamically
       const pdfjsLib = await import('pdfjs-dist');
       
-      // Set worker source
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+      // Use a worker from unpkg which is more reliable
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
       
       const arrayBuffer = await file.arrayBuffer();
       const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
@@ -580,7 +580,7 @@ const SiteDetail = () => {
       
       // Get the first page
       const page = await pdf.getPage(1);
-      const viewport = page.getViewport({ scale: 2 });
+      const viewport = page.getViewport({ scale: 1.5 });
       
       // Create canvas
       const canvas = document.createElement('canvas');
@@ -765,9 +765,11 @@ const SiteDetail = () => {
     }
   };
 
-  const handleViewDrawing = (url: string, type: string, name: string) => {
-    console.log('Opening viewer:', { url, type, name });
-    setViewerContent({ url, type, name });
+  const handleViewDrawing = (url: string, type: string, name: string, previewUrl?: string) => {
+    console.log('Opening viewer:', { url, type, name, previewUrl });
+    // For PDFs, use preview URL if available, otherwise use the PDF URL
+    const displayUrl = (type === 'application/pdf' && previewUrl) ? previewUrl : url;
+    setViewerContent({ url: displayUrl, type, name });
     setViewerOpen(true);
   };
 
@@ -2503,7 +2505,7 @@ const SiteDetail = () => {
                       <Card 
                         key={`new-${index}`} 
                         className="overflow-hidden border-2 border-primary/50 cursor-pointer hover:border-primary transition-colors"
-                        onClick={() => handleViewDrawing(fileUrl, file.type, file.name)}
+                        onClick={() => handleViewDrawing(fileUrl, file.type, file.name, previewUrl || undefined)}
                       >
                         <CardContent className="p-4 space-y-2">
                           {file.type.startsWith('image/') ? (
@@ -2548,7 +2550,12 @@ const SiteDetail = () => {
                     <Card 
                       key={drawing.id} 
                       className="overflow-hidden cursor-pointer hover:border-primary transition-colors"
-                      onClick={() => handleViewDrawing(drawing.file_url, drawing.file_type, drawing.file_name)}
+                      onClick={() => handleViewDrawing(
+                        drawing.file_url, 
+                        drawing.file_type, 
+                        drawing.file_name, 
+                        drawing.preview_url
+                      )}
                     >
                       <CardContent className="p-4 space-y-2">
                         {drawing.file_type.startsWith('image/') ? (
@@ -2632,28 +2639,11 @@ const SiteDetail = () => {
             <div className="flex-1 overflow-hidden" style={{ height: 'calc(95vh - 120px)' }}>
               {viewerContent && (
                 <>
-                  {(viewerContent.type.startsWith('image/') || viewerContent.type === 'application/pdf') ? (
-                    <ZoomableImageViewer 
-                      src={viewerContent.url} 
-                      alt={viewerContent.name}
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-full">
-                      <FileText className="h-24 w-24 text-muted-foreground mb-4" />
-                      <p className="text-muted-foreground mb-6">Preview not available for this file type</p>
-                      <Button
-                        variant="default"
-                        onClick={() => {
-                          if (viewerContent) {
-                            handleExportDrawing(viewerContent.url, viewerContent.name);
-                          }
-                        }}
-                      >
-                        <Ruler className="h-4 w-4 mr-2" />
-                        Download File
-                      </Button>
-                    </div>
-                  )}
+                  {/* Show zoomable viewer for images and PDF previews */}
+                  <ZoomableImageViewer 
+                    src={viewerContent.url} 
+                    alt={viewerContent.name}
+                  />
                 </>
               )}
             </div>
