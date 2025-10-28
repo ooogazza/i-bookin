@@ -137,6 +137,47 @@ export type Database = {
           },
         ]
       }
+      house_type_drawings: {
+        Row: {
+          created_at: string
+          display_order: number
+          file_name: string
+          file_type: string
+          file_url: string
+          house_type_id: string
+          id: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          file_name: string
+          file_type: string
+          file_url: string
+          house_type_id: string
+          id?: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          file_name?: string
+          file_type?: string
+          file_url?: string
+          house_type_id?: string
+          id?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "house_type_drawings_house_type_id_fkey"
+            columns: ["house_type_id"]
+            isOneToOne: false
+            referencedRelation: "house_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       house_types: {
         Row: {
           created_at: string

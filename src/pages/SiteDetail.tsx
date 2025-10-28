@@ -130,6 +130,11 @@ const SiteDetail = () => {
   const [editingHouseType, setEditingHouseType] = useState<HouseType | null>(null);
   const [houseTypeName, setHouseTypeName] = useState("");
   const [liftValues, setLiftValues] = useState<Record<string, number>>({});
+  const [uploadedDrawings, setUploadedDrawings] = useState<File[]>([]);
+  const [existingDrawings, setExistingDrawings] = useState<any[]>([]);
+  const [drawingsDialogOpen, setDrawingsDialogOpen] = useState(false);
+  const [selectedHouseTypeForDrawings, setSelectedHouseTypeForDrawings] = useState<HouseType | null>(null);
+  
   
   const [plotDialogOpen, setPlotDialogOpen] = useState(false);
   const [selectedPlot, setSelectedPlot] = useState<Plot | null>(null);
@@ -348,7 +353,7 @@ const SiteDetail = () => {
     }
   };
 
-  const openHouseTypeDialog = (houseType?: HouseType) => {
+  const openHouseTypeDialog = async (houseType?: HouseType) => {
     if (houseType) {
       setEditingHouseType(houseType);
       setHouseTypeName(houseType.name);
@@ -357,20 +362,32 @@ const SiteDetail = () => {
         values[lv.lift_type] = lv.value;
       });
       setLiftValues(values);
+      
+      // Fetch existing drawings
+      const { data: drawings } = await supabase
+        .from("house_type_drawings")
+        .select("*")
+        .eq("house_type_id", houseType.id)
+        .order("display_order");
+      setExistingDrawings(drawings || []);
     } else {
       setEditingHouseType(null);
       setHouseTypeName("");
       setLiftValues({});
+      setExistingDrawings([]);
     }
+    setUploadedDrawings([]);
     setHouseTypeDialogOpen(true);
   };
 
   const handleSaveHouseType = async () => {
-    if (!site) return;
+    if (!site || !user) return;
 
     try {
       // Calculate total value from all lift values
       const totalValue = Object.values(liftValues).reduce((sum, value) => sum + (value || 0), 0);
+
+      let houseTypeId: string;
 
       if (editingHouseType) {
         await supabase
@@ -392,6 +409,7 @@ const SiteDetail = () => {
           }
         }
 
+        houseTypeId = editingHouseType.id;
         toast.success("House type updated");
       } else {
         const { data: newHouseType, error } = await supabase
@@ -412,7 +430,39 @@ const SiteDetail = () => {
           await supabase.from("lift_values").insert(liftValuesArray);
         }
 
+        houseTypeId = newHouseType.id;
         toast.success("House type created");
+      }
+
+      // Upload new drawings
+      if (uploadedDrawings.length > 0) {
+        for (let i = 0; i < uploadedDrawings.length; i++) {
+          const file = uploadedDrawings[i];
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${houseTypeId}/${Date.now()}_${i}.${fileExt}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('house-type-drawings')
+            .upload(fileName, file);
+
+          if (uploadError) throw uploadError;
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('house-type-drawings')
+            .getPublicUrl(fileName);
+
+          await supabase
+            .from('house_type_drawings')
+            .insert({
+              house_type_id: houseTypeId,
+              file_url: publicUrl,
+              file_name: file.name,
+              file_type: file.type,
+              display_order: existingDrawings.length + i,
+              uploaded_by: user.id
+            });
+        }
+        toast.success("Drawings uploaded");
       }
 
       setHouseTypeDialogOpen(false);
@@ -421,6 +471,75 @@ const SiteDetail = () => {
       toast.error("Failed to save house type");
       console.error("Error:", error);
     }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const validFiles = files.filter(file => {
+      const isValidType = file.type === 'application/pdf' || file.type.startsWith('image/');
+      const isValidSize = file.size <= 10 * 1024 * 1024; // 10MB limit
+      return isValidType && isValidSize;
+    });
+
+    if (validFiles.length + existingDrawings.length + uploadedDrawings.length > 6) {
+      toast.error("Maximum 6 drawings allowed");
+      return;
+    }
+
+    setUploadedDrawings([...uploadedDrawings, ...validFiles]);
+  };
+
+  const handleRemoveUploadedDrawing = (index: number) => {
+    setUploadedDrawings(uploadedDrawings.filter((_, i) => i !== index));
+  };
+
+  const handleDeleteExistingDrawing = async (drawingId: string, fileUrl: string) => {
+    if (!confirm("Delete this drawing?")) return;
+
+    try {
+      // Extract file path from URL
+      const urlParts = fileUrl.split('/house-type-drawings/');
+      if (urlParts.length > 1) {
+        const filePath = urlParts[1];
+        await supabase.storage
+          .from('house-type-drawings')
+          .remove([filePath]);
+      }
+
+      await supabase
+        .from('house_type_drawings')
+        .delete()
+        .eq('id', drawingId);
+
+      setExistingDrawings(existingDrawings.filter(d => d.id !== drawingId));
+      toast.success("Drawing deleted");
+    } catch (error: any) {
+      toast.error("Failed to delete drawing");
+      console.error("Error:", error);
+    }
+  };
+
+  const openDrawingsDialog = async (houseType: HouseType) => {
+    setSelectedHouseTypeForDrawings(houseType);
+    
+    const { data: drawings } = await supabase
+      .from("house_type_drawings")
+      .select("*")
+      .eq("house_type_id", houseType.id)
+      .order("display_order");
+    
+    setExistingDrawings(drawings || []);
+    setDrawingsDialogOpen(true);
+  };
+
+  const handleExportDrawing = (fileUrl: string, fileName: string) => {
+    const link = document.createElement('a');
+    link.href = fileUrl;
+    link.download = fileName;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handlePlotClick = (plot: Plot) => {
@@ -1766,8 +1885,15 @@ const SiteDetail = () => {
                       {plot.plot_number}
                     </td>
                     <td 
-                      className={`p-2 ${isAdmin ? 'cursor-pointer hover:bg-primary/10' : ''}`}
-                      onClick={() => isAdmin && handlePlotClick(plot)}
+                      className={`p-2 ${plot.house_types ? 'cursor-pointer hover:bg-primary/10' : ''}`}
+                      onClick={() => {
+                        if (!plot.house_types) return;
+                        if (isAdmin) {
+                          handlePlotClick(plot);
+                        } else {
+                          openDrawingsDialog(plot.house_types);
+                        }
+                      }}
                     >
                       {plot.house_types?.name || "-"}
                     </td>
@@ -1845,31 +1971,99 @@ const SiteDetail = () => {
                   </div>
                 ))}
               </div>
+              
+              {/* File Upload Section */}
+              {isAdmin && (
+                <div className="space-y-2">
+                  <Label>Drawings (PDF/PNG, max 6 files, 10MB each)</Label>
+                  <div className="space-y-2">
+                    {/* Existing Drawings */}
+                    {existingDrawings.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">Existing Drawings:</p>
+                        {existingDrawings.map((drawing) => (
+                          <div key={drawing.id} className="flex items-center justify-between p-2 bg-muted rounded">
+                            <span className="text-sm truncate flex-1">{drawing.file_name}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteExistingDrawing(drawing.id, drawing.file_url)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* New Uploads */}
+                    {uploadedDrawings.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">New Drawings:</p>
+                        {uploadedDrawings.map((file, index) => (
+                          <div key={index} className="flex items-center justify-between p-2 bg-muted rounded">
+                            <span className="text-sm truncate flex-1">{file.name}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveUploadedDrawing(index)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {(existingDrawings.length + uploadedDrawings.length) < 6 && (
+                      <Input
+                        type="file"
+                        accept=".pdf,.png,.jpg,.jpeg"
+                        multiple
+                        onChange={handleFileSelect}
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+              
               <div className="flex gap-2">
                 <Button onClick={handleSaveHouseType} className="flex-1">
                   Save House Type
                 </Button>
                 {editingHouseType && (
-                  <Button 
-                    variant="destructive" 
-                    onClick={async () => {
-                      if (!confirm("Delete this house type?")) return;
-                      try {
-                        await supabase
-                          .from("house_types")
-                          .delete()
-                          .eq("id", editingHouseType.id);
-                        toast.success("House type deleted");
+                  <>
+                    <Button 
+                      variant="outline"
+                      onClick={() => {
                         setHouseTypeDialogOpen(false);
-                        fetchSiteData();
-                      } catch (error: any) {
-                        toast.error("Failed to delete house type");
-                        console.error("Error:", error);
-                      }
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                        openDrawingsDialog(editingHouseType);
+                      }}
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      View Drawings
+                    </Button>
+                    <Button 
+                      variant="destructive" 
+                      onClick={async () => {
+                        if (!confirm("Delete this house type?")) return;
+                        try {
+                          await supabase
+                            .from("house_types")
+                            .delete()
+                            .eq("id", editingHouseType.id);
+                          toast.success("House type deleted");
+                          setHouseTypeDialogOpen(false);
+                          fetchSiteData();
+                        } catch (error: any) {
+                          toast.error("Failed to delete house type");
+                          console.error("Error:", error);
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </>
                 )}
               </div>
             </div>
@@ -1996,6 +2190,64 @@ const SiteDetail = () => {
                       </span>
                     </Button>
                   ))
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Drawings Dialog */}
+        <Dialog open={drawingsDialogOpen} onOpenChange={setDrawingsDialogOpen}>
+          <DialogContent className="max-w-3xl max-h-[85vh]" onOpenAutoFocus={(e) => e.preventDefault()}>
+            <DialogHeader>
+              <DialogTitle>
+                {selectedHouseTypeForDrawings?.name} - Drawings
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 overflow-y-auto max-h-[70vh]">
+              {existingDrawings.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">No drawings available</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {existingDrawings.map((drawing) => (
+                    <Card key={drawing.id} className="overflow-hidden">
+                      <CardContent className="p-4 space-y-2">
+                        {drawing.file_type.startsWith('image/') ? (
+                          <img 
+                            src={drawing.file_url} 
+                            alt={drawing.file_name}
+                            className="w-full h-48 object-contain bg-muted rounded cursor-pointer"
+                            onClick={() => window.open(drawing.file_url, '_blank')}
+                          />
+                        ) : (
+                          <div className="w-full h-48 flex items-center justify-center bg-muted rounded">
+                            <FileText className="h-16 w-16 text-muted-foreground" />
+                          </div>
+                        )}
+                        <p className="text-sm font-medium truncate">{drawing.file_name}</p>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => window.open(drawing.file_url, '_blank')}
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            View
+                          </Button>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => handleExportDrawing(drawing.file_url, drawing.file_name)}
+                          >
+                            <ShoppingCart className="h-4 w-4 mr-2" />
+                            Export
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               )}
             </div>
           </DialogContent>
