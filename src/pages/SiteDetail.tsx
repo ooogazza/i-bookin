@@ -634,6 +634,7 @@ const SiteDetail = () => {
   };
 
   const handleViewDrawing = (url: string, type: string, name: string) => {
+    console.log('Opening viewer:', { url, type, name });
     setViewerContent({ url, type, name });
     setViewerOpen(true);
   };
@@ -2452,10 +2453,23 @@ const SiteDetail = () => {
         {/* Drawing Viewer Dialog */}
         <Dialog open={viewerOpen} onOpenChange={setViewerOpen}>
           <DialogContent className="max-w-5xl max-h-[95vh] p-0">
-            <DialogHeader className="p-6 pb-0">
-              <DialogTitle>{viewerContent?.name}</DialogTitle>
+            <DialogHeader className="p-6 pb-2">
+              <DialogTitle className="flex items-center justify-between">
+                <span>{viewerContent?.name}</span>
+                <a 
+                  href={viewerContent?.url} 
+                  download={viewerContent?.name}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-primary hover:underline flex items-center gap-2"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <ShoppingCart className="h-4 w-4" />
+                  Download
+                </a>
+              </DialogTitle>
             </DialogHeader>
-            <div className="p-6 overflow-auto max-h-[calc(95vh-120px)]">
+            <div className="p-6 pt-2 overflow-auto max-h-[calc(95vh-120px)]">
               {viewerContent && (
                 <>
                   {viewerContent.type.startsWith('image/') ? (
@@ -2465,20 +2479,28 @@ const SiteDetail = () => {
                       className="w-full h-auto max-h-[calc(95vh-200px)] object-contain bg-muted rounded"
                     />
                   ) : viewerContent.type === 'application/pdf' ? (
-                    <iframe
-                      src={viewerContent.url}
-                      className="w-full h-[calc(95vh-200px)] border-0 rounded"
-                      title={viewerContent.name}
-                    />
+                    <div className="space-y-4">
+                      <iframe
+                        src={`${viewerContent.url}#view=FitH`}
+                        className="w-full h-[calc(95vh-200px)] border-0 rounded bg-muted"
+                        title={viewerContent.name}
+                      />
+                      <p className="text-xs text-center text-muted-foreground">
+                        If the PDF doesn't display, click Download above
+                      </p>
+                    </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center h-96">
                       <FileText className="h-24 w-24 text-muted-foreground mb-4" />
-                      <p className="text-muted-foreground">Preview not available for this file type</p>
+                      <p className="text-muted-foreground mb-4">Preview not available for this file type</p>
                       <a 
                         href={viewerContent.url} 
                         download={viewerContent.name}
-                        className="mt-4 text-primary hover:underline"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline flex items-center gap-2"
                       >
+                        <ShoppingCart className="h-4 w-4" />
                         Download to view
                       </a>
                     </div>
