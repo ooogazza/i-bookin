@@ -31,7 +31,7 @@ const Landing = () => {
         <div className="flex gap-4">
           <Button 
             size="lg" 
-            onClick={() => navigate("/auth")}
+            onClick={() => navigate("/auth?tab=signup")}
             className="text-lg px-8"
           >
             Get Started
