@@ -1928,8 +1928,8 @@ const SiteDetail = () => {
             <table className="w-full border-collapse min-w-[800px]">
               <thead>
                 <tr className="border-b">
-                  <th className="p-2 text-left font-medium text-sm w-20">Plot</th>
-                  <th className="p-2 text-left font-medium text-sm w-32">House Type</th>
+                  <th className="p-2 text-left font-medium text-sm w-20 bg-background">Plot</th>
+                  <th className="p-2 text-left font-medium text-sm w-32 bg-background">House Type</th>
                   {Object.keys(LIFT_LABELS).map(liftType => (
                     <th key={liftType} className="p-2 text-center font-medium whitespace-nowrap text-sm min-w-[80px]">
                       <LiftTypeLabel liftType={liftType} />
