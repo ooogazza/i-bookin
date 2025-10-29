@@ -2171,7 +2171,7 @@ const SiteDetail = () => {
                 <table className="w-full border-collapse min-w-[800px]">
               <thead>
                 <tr className="border-b bg-muted/50">
-                  <th className="p-2 text-left font-medium w-20 sticky left-0 bg-muted/50 z-20 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Plot</th>
+                  <th className="p-2 text-left font-medium w-20 sticky left-0 bg-muted z-20 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Plot</th>
                   <th className="p-2 text-left font-medium w-32">House Type</th>
                   {Object.keys(LIFT_LABELS).map(liftType => (
                     <th key={liftType} className="p-2 text-center font-medium whitespace-nowrap text-sm min-w-[80px]">
@@ -2185,7 +2185,7 @@ const SiteDetail = () => {
                 {plots.map(plot => (
                   <tr key={plot.id} className="border-b transition-colors" data-plot-number={plot.plot_number}>
                     <td 
-                      className="p-2 font-medium cursor-pointer hover:bg-primary/10 sticky left-0 bg-background dark:bg-background z-20 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
+                      className="p-2 font-medium cursor-pointer hover:bg-primary/10 sticky left-0 bg-card z-20 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
                       onClick={() => handlePlotNumberClick(plot)}
                     >
                       {plot.plot_number}
