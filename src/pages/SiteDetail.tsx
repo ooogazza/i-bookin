@@ -159,6 +159,7 @@ const SiteDetail = () => {
   const [selectedBookingPlot, setSelectedBookingPlot] = useState<Plot | null>(null);
   const [selectedBookingLiftType, setSelectedBookingLiftType] = useState("");
   const [bookingPercentage, setBookingPercentage] = useState(100);
+  const [showLeavesValue, setShowLeavesValue] = useState(false);
   
   const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>([]);
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
@@ -2692,12 +2693,22 @@ const SiteDetail = () => {
             </DialogHeader>
             {selectedBookingPlot && (
               <div className="space-y-4">
-                <div className="p-4 bg-muted rounded-lg">
-                  <p className="text-sm text-muted-foreground">Plot {selectedBookingPlot.plot_number}</p>
-                  <p className="font-semibold">{LIFT_LABELS[selectedBookingLiftType as keyof typeof LIFT_LABELS]}</p>
-                  <p className="text-lg font-bold text-primary mt-2">
-                    £{getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType).toFixed(2)}
-                  </p>
+                <div className="p-4 bg-muted rounded-lg flex justify-between items-start">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Plot {selectedBookingPlot.plot_number}</p>
+                    <p className="font-semibold">{LIFT_LABELS[selectedBookingLiftType as keyof typeof LIFT_LABELS]}</p>
+                    <p className="text-lg font-bold text-primary mt-2">
+                      £{getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType).toFixed(2)}
+                    </p>
+                  </div>
+                  {showLeavesValue && (
+                    <div className="text-right">
+                      <p className="text-sm text-muted-foreground">Leaves:</p>
+                      <p className="text-lg font-bold text-green-600 mt-2">
+                        £{(getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) - (getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * bookingPercentage) / 100).toFixed(2)}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="p-4 bg-muted rounded-lg">
@@ -2758,6 +2769,8 @@ const SiteDetail = () => {
                   <Slider
                     value={[bookingPercentage]}
                     onValueChange={(value) => setBookingPercentage(value[0])}
+                    onDragStart={() => setShowLeavesValue(true)}
+                    onDragEnd={() => setShowLeavesValue(true)}
                     min={1}
                     max={100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType)}
                     step={1}

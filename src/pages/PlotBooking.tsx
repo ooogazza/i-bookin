@@ -274,18 +274,14 @@ const PlotBooking = () => {
                   step={1}
                 />
 
-                <div className="p-4 bg-muted rounded-lg space-y-2">
-                  <div className="flex justify-between">
+                <div className="p-4 bg-muted rounded-lg">
+                  <div className="flex justify-between mb-2">
                     <span className="text-muted-foreground">Total Value:</span>
                     <span className="font-semibold">£{selectedLiftValue.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Booking Value ({percentage}%):</span>
                     <span className="font-semibold text-primary">£{bookingValue.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between pt-2 border-t">
-                    <span className="text-muted-foreground">Leaves:</span>
-                    <span className="font-semibold text-green-600">£{(selectedLiftValue - bookingValue).toFixed(2)}</span>
                   </div>
                 </div>
               </>
