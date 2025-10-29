@@ -18,6 +18,7 @@ interface SavedGangMember {
   id: string;
   name: string;
   type: string;
+  email?: string;
 }
 
 interface GangMember {
@@ -25,6 +26,7 @@ interface GangMember {
   name: string;
   type: string;
   amount: number;
+  email?: string;
   editing?: boolean;
 }
 
@@ -48,8 +50,9 @@ export const NonPlotInvoiceDialog = ({
   const [savedMembers, setSavedMembers] = useState<SavedGangMember[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const [memberName, setMemberName] = useState("");
-  const [memberType, setMemberType] = useState("bricklayer");
+const [memberName, setMemberName] = useState("");
+const [memberType, setMemberType] = useState("bricklayer");
+const [memberEmail, setMemberEmail] = useState("");
 
   useEffect(() => {
     if (open) {
@@ -102,53 +105,74 @@ export const NonPlotInvoiceDialog = ({
     setGangMembers(updated);
   };
 
-  const handleAddNewMember = async () => {
-    if (!memberName.trim() || !user) {
-      toast.error("Name required");
+const handleAddNewMember = async () => {
+  if (!memberName.trim() || !user) {
+    toast.error("Name required");
+    return;
+  }
+
+  // Basic email validation (optional field)
+  const emailTrimmed = memberEmail.trim();
+  if (emailTrimmed.length > 0) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
+    if (emailTrimmed.length > 255 || !emailRegex.test(emailTrimmed)) {
+      toast.error("Please enter a valid email");
       return;
     }
-    try {
-      const { data, error } = await supabase
-        .from("saved_gang_members")
-        .insert({
-          user_id: user.id,
-          name: memberName.trim(),
-          type: memberType,
-        })
-        .select()
-        .single();
-      if (error) throw error;
-      setSavedMembers([...savedMembers, data]);
-      setGangMembers([...gangMembers, {
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("saved_gang_members")
+      .insert({
+        user_id: user.id,
+        name: memberName.trim(),
+        type: memberType,
+        email: emailTrimmed || null,
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    setSavedMembers([...savedMembers, data]);
+    setGangMembers([
+      ...gangMembers,
+      {
         id: data.id,
         name: data.name,
         type: data.type,
         amount: 0,
-        editing: false
-      }]);
-      setMemberName("");
-      setDialogOpen(false);
-      toast.success("Gang member saved");
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to save gang member");
-    }
-  };
+        email: data.email || undefined,
+        editing: false,
+      },
+    ]);
+    setMemberName("");
+    setMemberEmail("");
+    setDialogOpen(false);
+    toast.success("Gang member saved");
+  } catch (err) {
+    console.error(err);
+    toast.error("Failed to save gang member");
+  }
+};
 
-  const handleAddExistingMember = (member: SavedGangMember) => {
-    if (gangMembers.some(m => m.id === member.id)) {
-      toast.error("Member already added to this invoice");
-      return;
-    }
-    setGangMembers([...gangMembers, {
+const handleAddExistingMember = (member: SavedGangMember) => {
+  if (gangMembers.some(m => m.id === member.id)) {
+    toast.error("Member already added to this invoice");
+    return;
+  }
+  setGangMembers([
+    ...gangMembers,
+    {
       id: member.id,
       name: member.name,
       type: member.type,
       amount: 0,
-      editing: false
-    }]);
-    toast.success(`${member.name} added to invoice`);
-  };
+      email: member.email,
+      editing: false,
+    },
+  ]);
+  toast.success(`${member.name} added to invoice`);
+};
 
   const handleRemoveMemberFromInvoice = (idx: number) => {
     setGangMembers(gangMembers.filter((_, i) => i !== idx));
@@ -211,12 +235,13 @@ export const NonPlotInvoiceDialog = ({
         .single();
       if (invoiceError) throw invoiceError;
 
-      const divisions = gangMembers.map(m => ({
-        invoice_id: invoice.id,
-        member_name: m.name,
-        member_type: m.type,
-        amount: m.amount,
-      }));
+const divisions = gangMembers.map(m => ({
+  invoice_id: invoice.id,
+  member_name: m.name,
+  member_type: m.type,
+  email: m.email || null,
+  amount: m.amount,
+}));
 
       const { error: divisionsError } = await supabase
         .from("non_plot_gang_divisions")
@@ -380,28 +405,35 @@ export const NonPlotInvoiceDialog = ({
             <DialogTitle>Add New Gang Member</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <Input
-              placeholder="Name"
-              value={memberName}
-              onChange={(e) => setMemberName(e.target.value)}
-            />
+<div className="space-y-4">
+  <Input
+    placeholder="Name"
+    value={memberName}
+    onChange={(e) => setMemberName(e.target.value)}
+  />
 
-            <Select value={memberType} onValueChange={setMemberType}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="bricklayer">Bricklayer</SelectItem>
-                <SelectItem value="laborer">Laborer</SelectItem>
-                <SelectItem value="apprentice">Apprentice</SelectItem>
-              </SelectContent>
-            </Select>
+  <Input
+    type="email"
+    placeholder="Email (optional)"
+    value={memberEmail}
+    onChange={(e) => setMemberEmail(e.target.value)}
+  />
 
-            <Button className="w-full" onClick={handleAddNewMember}>
-              Add Member
-            </Button>
-          </div>
+  <Select value={memberType} onValueChange={setMemberType}>
+    <SelectTrigger>
+      <SelectValue />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="bricklayer">Bricklayer</SelectItem>
+      <SelectItem value="laborer">Laborer</SelectItem>
+      <SelectItem value="apprentice">Apprentice</SelectItem>
+    </SelectContent>
+  </Select>
+
+  <Button className="w-full" onClick={handleAddNewMember}>
+    Add Member
+  </Button>
+</div>
         </DialogContent>
       </Dialog>
     </>

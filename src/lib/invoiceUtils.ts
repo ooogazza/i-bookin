@@ -332,19 +332,30 @@ export const handleSendToAdmin = async (invoice: any, userName: string) => {
       generateOriginalPDFContent(doc, invoice, userName, roundedLogo);
     }
 
-    const pdfBase64 = doc.output("dataurlstring").split(",")[1];
+const pdfBase64 = doc.output("dataurlstring").split(",")[1];
 
-    const { error } = await supabase.functions.invoke("send-invoice-to-admin", {
-      body: {
-        invoiceNumber: invoice.invoiceNumber,
-        pdfBase64,
-        invoiceDetails: {
-          bookedBy: userName,
-          totalValue: invoice.total,
-          createdAt: new Date().toISOString(),
-        },
-      },
-    });
+// Get current user's email for CC
+const { data: userData } = await supabase.auth.getUser();
+const bookedByEmail = userData?.user?.email || "";
+
+const { error } = await supabase.functions.invoke("send-invoice-to-admin", {
+  body: {
+    invoiceNumber: invoice.invoiceNumber,
+    pdfBase64,
+    invoiceDetails: {
+      bookedBy: userName,
+      bookedByEmail,
+      totalValue: invoice.total,
+      createdAt: new Date().toISOString(),
+    },
+    gangMembers: (invoice.gangMembers || []).map((m: any) => ({
+      name: m.name,
+      type: m.type,
+      amount: m.amount,
+      email: m.email || null,
+    })),
+  },
+});
 
     if (error) throw error;
 
