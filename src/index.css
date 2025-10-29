@@ -144,16 +144,12 @@ All colors MUST be HSL.
 
   /* Touch-friendly scroll hints */
   @media (max-width: 768px) {
+    .overflow-x-auto {
+      position: relative;
+    }
+    
     .overflow-x-auto::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      width: 40px;
-      background: linear-gradient(to left, hsl(var(--background)), transparent);
-      pointer-events: none;
-      opacity: 0.8;
+      display: none;
     }
   }
 }

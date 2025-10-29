@@ -6,6 +6,7 @@ export interface SavedGangMember {
   id: string;
   name: string;
   type: string;
+  email?: string;
 }
 
 export function useSavedGangMembers() {

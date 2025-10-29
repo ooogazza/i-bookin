@@ -78,7 +78,6 @@ const LIFT_LABELS = {
   lift_5: "Lift 5",
   lift_6: "Lift 6",
   cut_ups: "Cut Ups/Gable",
-  snag_patch: "Snag/Patch Int",
   snag_patch_int: "Snag/Patch Int",
   snag_patch_ext: "Snag/Patch Ext",
   dod: "D.O.D",
@@ -1110,22 +1109,6 @@ const BookingIn = () => {
                     <FileText className="mr-2 h-4 w-4" />
                     <span className="text-sm md:text-base">Export PDF</span>
                   </Button>
-                  {!isAdmin && (
-                    <Button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleSendToAdmin(selectedInvoice);
-                      }}
-                      className="flex-1"
-                      variant="default"
-                      type="button"
-                      size="lg"
-                      disabled={sendingToAdmin}
-                    >
-                      <Send className="mr-2 h-4 w-4" />
-                      <span className="text-sm md:text-base">{sendingToAdmin ? "Sending..." : "Send to Admin"}</span>
-                    </Button>
-                  )}
                   {isAdmin && !selectedInvoice.is_confirmed && (
                     <Button
                       onClick={() => handleConfirmInvoice(selectedInvoice)}

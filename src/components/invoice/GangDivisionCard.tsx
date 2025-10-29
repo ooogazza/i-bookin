@@ -18,6 +18,7 @@ export interface GangMember {
   name: string;
   type: string;
   amount: number;
+  email?: string;
   editing?: boolean;
 }
 
@@ -124,6 +125,7 @@ export const GangDivisionCard = ({
                     <div>
                       <p className="font-semibold text-base">{m.name}</p>
                       <p className="text-sm text-muted-foreground capitalize">{m.type}</p>
+                      {m.email && <p className="text-xs text-muted-foreground">{m.email}</p>}
                     </div>
                     <div className="flex gap-1">
                       <Button

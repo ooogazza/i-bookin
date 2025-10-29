@@ -5,6 +5,7 @@ export interface GangMember {
   name: string;
   type: string;
   amount: number;
+  email?: string;
   editing?: boolean;
 }
 

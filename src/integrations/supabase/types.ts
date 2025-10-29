@@ -107,6 +107,7 @@ export type Database = {
           amount: number
           booking_id: string
           created_at: string
+          email: string | null
           id: string
           member_name: string
           member_type: string
@@ -115,6 +116,7 @@ export type Database = {
           amount: number
           booking_id: string
           created_at?: string
+          email?: string | null
           id?: string
           member_name: string
           member_type: string
@@ -123,6 +125,7 @@ export type Database = {
           amount?: number
           booking_id?: string
           created_at?: string
+          email?: string | null
           id?: string
           member_name?: string
           member_type?: string
@@ -344,6 +347,7 @@ export type Database = {
         Row: {
           amount: number
           created_at: string
+          email: string | null
           id: string
           invoice_id: string
           member_name: string
@@ -352,6 +356,7 @@ export type Database = {
         Insert: {
           amount: number
           created_at?: string
+          email?: string | null
           id?: string
           invoice_id: string
           member_name: string
@@ -360,6 +365,7 @@ export type Database = {
         Update: {
           amount?: number
           created_at?: string
+          email?: string | null
           id?: string
           invoice_id?: string
           member_name?: string
@@ -521,6 +527,7 @@ export type Database = {
       saved_gang_members: {
         Row: {
           created_at: string
+          email: string | null
           id: string
           name: string
           type: string
@@ -529,6 +536,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          email?: string | null
           id?: string
           name: string
           type: string
@@ -537,6 +545,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          email?: string | null
           id?: string
           name?: string
           type?: string

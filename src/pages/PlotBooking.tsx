@@ -32,6 +32,7 @@ const PlotBooking = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [memberName, setMemberName] = useState("");
   const [memberType, setMemberType] = useState("bricklayer");
+  const [memberEmail, setMemberEmail] = useState("");
 
   const { savedMembers, setSavedMembers, fetchSavedMembers } = useSavedGangMembers();
 
@@ -109,6 +110,7 @@ const PlotBooking = () => {
           user_id: user.id,
           name: memberName.trim(),
           type: memberType,
+          email: memberEmail.trim() || null,
         })
         .select()
         .single();
@@ -123,11 +125,13 @@ const PlotBooking = () => {
         id: data.id,
         name: data.name,
         type: data.type,
+        email: data.email,
         amount: 0,
         editing: false,
       });
 
       setMemberName("");
+      setMemberEmail("");
       setMemberType("bricklayer");
       setDialogOpen(false);
       toast.success("Gang member saved");
@@ -184,6 +188,7 @@ const PlotBooking = () => {
       booking_id: booking.id,
       member_name: m.name,
       member_type: m.type,
+      email: m.email || null,
       amount: m.amount,
     }));
 
@@ -322,11 +327,20 @@ const PlotBooking = () => {
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>Name</Label>
+                <Label>Name *</Label>
                 <Input value={memberName} onChange={(e) => setMemberName(e.target.value)} placeholder="Enter name" />
               </div>
               <div className="space-y-2">
-                <Label>Type</Label>
+                <Label>Email (Optional)</Label>
+                <Input 
+                  type="email"
+                  value={memberEmail} 
+                  onChange={(e) => setMemberEmail(e.target.value)} 
+                  placeholder="Enter email address" 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Type *</Label>
                 <Select value={memberType} onValueChange={setMemberType}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select type" />

@@ -111,7 +111,6 @@ const LIFT_LABELS: Record<string, string> = {
   lift_5: "Lift 5",
   lift_6: "Lift 6",
   cut_ups: "Cut Ups/Gable",
-  snag_patch: "Snag/Patch Int",
   snag_patch_int: "Snag/Patch Int",
   snag_patch_ext: "Snag/Patch Ext",
   dod: "D.O.D",
@@ -167,6 +166,7 @@ const SiteDetail = () => {
   const [gangDialogOpen, setGangDialogOpen] = useState(false);
   const [memberName, setMemberName] = useState("");
   const [memberType, setMemberType] = useState("bricklayer");
+  const [memberEmail, setMemberEmail] = useState("");
   const [invoiceNotes, setInvoiceNotes] = useState("");
   const [notesAmount, setNotesAmount] = useState(0);
   const [editingNotesAmount, setEditingNotesAmount] = useState(false);
@@ -989,6 +989,7 @@ const SiteDetail = () => {
           user_id: user.id,
           name: memberName.trim(),
           type: memberType,
+          email: memberEmail.trim() || null,
         })
         .select()
         .single();
@@ -1001,11 +1002,13 @@ const SiteDetail = () => {
         id: data.id,
         name: data.name,
         type: data.type,
+        email: data.email,
         amount: 0,
         editing: false,
       }]);
 
       setMemberName("");
+      setMemberEmail("");
       setMemberType("bricklayer");
       setGangDialogOpen(false);
       toast.success("Gang member saved");
@@ -1593,6 +1596,7 @@ const SiteDetail = () => {
           booking_id: booking.id,
           member_name: m.name,
           member_type: m.type,
+          email: m.email || null,
           amount: m.amount
         }));
 
@@ -1603,16 +1607,23 @@ const SiteDetail = () => {
         if (gangError) throw gangError;
       }
 
-      // Send email to admins
+      // Send email to admins and gang members
       const { error: emailError } = await supabase.functions.invoke("send-invoice-to-admin", {
         body: {
           invoiceNumber,
           pdfBase64,
           invoiceDetails: {
             bookedBy: profile?.full_name || user.email || "User",
+            bookedByEmail: user.email || "",
             totalValue: totalInvoiceValue,
             createdAt: new Date().toISOString(),
           },
+          gangMembers: gangMembers.map(m => ({
+            name: m.name,
+            type: m.type,
+            amount: m.amount,
+            email: m.email || null,
+          })),
         },
       });
 
@@ -2951,7 +2962,7 @@ const SiteDetail = () => {
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>Name</Label>
+                <Label>Name *</Label>
                 <Input
                   value={memberName}
                   onChange={(e) => setMemberName(e.target.value)}
@@ -2960,7 +2971,17 @@ const SiteDetail = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Type</Label>
+                <Label>Email (Optional)</Label>
+                <Input
+                  type="email"
+                  value={memberEmail}
+                  onChange={(e) => setMemberEmail(e.target.value)}
+                  placeholder="Enter email address"
+                  autoFocus={false}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Type *</Label>
                 <Select value={memberType} onValueChange={setMemberType}>
                   <SelectTrigger>
                     <SelectValue />
@@ -3017,9 +3038,35 @@ const SiteDetail = () => {
                                     )}
                                   </div>
                                 </div>
-                                {!history.removed_at && (
-                                  <Badge variant="default" className="ml-2">Current</Badge>
-                                )}
+                                 {!history.removed_at && (
+                                   <div className="flex items-center gap-2 ml-2">
+                                     <Badge variant="default">Current</Badge>
+                                     {isAdmin && (
+                                       <Button
+                                         variant="ghost"
+                                         size="sm"
+                                         onClick={async (e) => {
+                                           e.stopPropagation();
+                                           if (!confirm(`Remove ${history.profiles?.full_name} from this plot?`)) return;
+                                           try {
+                                             await supabase
+                                               .from("plots")
+                                               .update({ assigned_to: null })
+                                               .eq("id", selectedPlotForSummary?.id);
+                                             toast.success("Bricklayer removed");
+                                             setPlotSummaryDialogOpen(false);
+                                             fetchSiteData();
+                                           } catch (error) {
+                                             toast.error("Failed to remove bricklayer");
+                                           }
+                                         }}
+                                         className="h-6 w-6 p-0"
+                                       >
+                                         <X className="h-4 w-4" />
+                                       </Button>
+                                     )}
+                                   </div>
+                                 )}
                                 {history.removed_at && (
                                   <Badge variant="secondary" className="ml-2">Past</Badge>
                                 )}
