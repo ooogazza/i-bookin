@@ -183,6 +183,9 @@ const SiteDetail = () => {
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [showStickyHeader, setShowStickyHeader] = useState(false);
   
+  const [isTableDragging, setIsTableDragging] = useState(false);
+  const [tableScrollStart, setTableScrollStart] = useState({ scrollLeft: 0, clientX: 0 });
+  
   const [searchPlotNumber, setSearchPlotNumber] = useState("");
   const [searchPhase, setSearchPhase] = useState("");
   const [selectedUserForHighlight, setSelectedUserForHighlight] = useState<string | null>(null);
@@ -1159,6 +1162,34 @@ const SiteDetail = () => {
         setPlotAssignmentHistory([]);
       }
     }
+  };
+
+  const handleTableMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    // Don't start dragging if clicking on interactive elements
+    if (target.tagName === 'BUTTON' || target.closest('button')) return;
+    
+    setIsTableDragging(true);
+    setTableScrollStart({
+      scrollLeft: mainScrollRef.current?.scrollLeft || 0,
+      clientX: e.clientX,
+    });
+  };
+
+  const handleTableMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isTableDragging || !mainScrollRef.current) return;
+    
+    e.preventDefault();
+    const dx = e.clientX - tableScrollStart.clientX;
+    mainScrollRef.current.scrollLeft = tableScrollStart.scrollLeft - dx;
+  };
+
+  const handleTableMouseUp = () => {
+    setIsTableDragging(false);
+  };
+
+  const handleTableMouseLeave = () => {
+    setIsTableDragging(false);
   };
 
   const clearHighlights = () => {
@@ -2168,7 +2199,15 @@ const SiteDetail = () => {
             </p>
           ) : (
             <div ref={pinchZoomContainerRef} className="overflow-hidden border rounded-lg touch-none">
-              <div ref={mainScrollRef} className="overflow-x-auto" style={zoomStyle}>
+              <div 
+                ref={mainScrollRef} 
+                className="overflow-x-auto cursor-grab active:cursor-grabbing" 
+                style={zoomStyle}
+                onMouseDown={handleTableMouseDown}
+                onMouseMove={handleTableMouseMove}
+                onMouseUp={handleTableMouseUp}
+                onMouseLeave={handleTableMouseLeave}
+              >
                 <table className="w-full border-collapse min-w-[800px]">
               <thead>
                 <tr className="border-b bg-muted/50">

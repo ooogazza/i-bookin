@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize, X } from 'lucide-react';
 import { Button } from './ui/button';
 
 interface ZoomableImageViewerProps {
@@ -12,6 +12,8 @@ export const ZoomableImageViewer = ({ src, alt }: ZoomableImageViewerProps) => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleZoomIn = () => {
@@ -106,42 +108,142 @@ export const ZoomableImageViewer = ({ src, alt }: ZoomableImageViewerProps) => {
   };
 
   useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
     const container = containerRef.current;
-    if (container) {
+    if (container && !isMobile) {
       container.addEventListener('wheel', handleWheel as any, { passive: false });
-      return () => {
-        container.removeEventListener('wheel', handleWheel as any);
-      };
     }
-  }, []);
+    
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+      if (container) {
+        container.removeEventListener('wheel', handleWheel as any);
+      }
+    };
+  }, [isMobile]);
+
+  const handleFullscreen = () => {
+    setIsFullscreen(true);
+    setScale(1);
+    setPosition({ x: 0, y: 0 });
+  };
+
+  const handleCloseFullscreen = () => {
+    setIsFullscreen(false);
+    setScale(1);
+    setPosition({ x: 0, y: 0 });
+  };
+
+  if (isFullscreen) {
+    return (
+      <div className="fixed inset-0 z-[100] bg-black">
+        {/* Close Button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleCloseFullscreen}
+          className="absolute top-4 right-4 z-10 text-white hover:bg-white/20"
+          title="Exit Fullscreen"
+        >
+          <X className="h-6 w-6" />
+        </Button>
+
+        {/* Zoom Controls - Mobile Only */}
+        {isMobile && (
+          <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
+            <Button
+              variant="secondary"
+              size="icon"
+              onClick={handleZoomIn}
+              title="Zoom In"
+            >
+              <ZoomIn className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="secondary"
+              size="icon"
+              onClick={handleZoomOut}
+              title="Zoom Out"
+            >
+              <ZoomOut className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+
+        {/* Image Container */}
+        <div
+          ref={containerRef}
+          className="w-full h-full overflow-hidden flex items-center justify-center cursor-move"
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          <img
+            src={src}
+            alt={alt}
+            className="w-full h-full object-contain select-none"
+            style={{
+              transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+              transformOrigin: 'center center',
+              transition: isDragging ? 'none' : 'transform 0.1s ease-out',
+            }}
+            draggable={false}
+          />
+        </div>
+
+        {/* Scale Indicator */}
+        {isMobile && (
+          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white/20 px-3 py-1 rounded-full text-sm text-white">
+            {Math.round(scale * 100)}%
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="relative w-full h-full bg-muted">
-      {/* Zoom Controls */}
-      <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
+      {/* Zoom Controls - Mobile Only */}
+      {isMobile && (
+        <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
+          <Button
+            variant="secondary"
+            size="icon"
+            onClick={handleZoomIn}
+            title="Zoom In"
+          >
+            <ZoomIn className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="secondary"
+            size="icon"
+            onClick={handleZoomOut}
+            title="Zoom Out"
+          >
+            <ZoomOut className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
+      {/* Fullscreen Button */}
+      <div className="absolute top-4 left-4 z-10">
         <Button
           variant="secondary"
           size="icon"
-          onClick={handleZoomIn}
-          title="Zoom In"
+          onClick={handleFullscreen}
+          title="Fullscreen"
         >
-          <ZoomIn className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="secondary"
-          size="icon"
-          onClick={handleZoomOut}
-          title="Zoom Out"
-        >
-          <ZoomOut className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="secondary"
-          size="icon"
-          onClick={handleReset}
-          title="Reset"
-        >
-          <Maximize2 className="h-4 w-4" />
+          <Maximize className="h-4 w-4" />
         </Button>
       </div>
 
@@ -170,10 +272,12 @@ export const ZoomableImageViewer = ({ src, alt }: ZoomableImageViewerProps) => {
         />
       </div>
 
-      {/* Scale Indicator */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-background/80 px-3 py-1 rounded-full text-sm">
-        {Math.round(scale * 100)}%
-      </div>
+      {/* Scale Indicator - Mobile Only */}
+      {isMobile && (
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-background/80 px-3 py-1 rounded-full text-sm">
+          {Math.round(scale * 100)}%
+        </div>
+      )}
     </div>
   );
 };
