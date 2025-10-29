@@ -2693,22 +2693,22 @@ const SiteDetail = () => {
             </DialogHeader>
             {selectedBookingPlot && (
               <div className="space-y-4">
-                <div className="p-4 bg-muted rounded-lg flex justify-between items-start">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Plot {selectedBookingPlot.plot_number}</p>
-                    <p className="font-semibold">{LIFT_LABELS[selectedBookingLiftType as keyof typeof LIFT_LABELS]}</p>
-                    <p className="text-lg font-bold text-primary mt-2">
+                <div className="p-4 bg-muted rounded-lg">
+                  <p className="text-sm text-muted-foreground">Plot {selectedBookingPlot.plot_number}</p>
+                  <p className="font-semibold">{LIFT_LABELS[selectedBookingLiftType as keyof typeof LIFT_LABELS]}</p>
+                  <div className="flex items-center justify-between mt-2">
+                    <p className="text-lg font-bold text-primary">
                       £{getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType).toFixed(2)}
                     </p>
+                    {showLeavesValue && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">Leaves:</span>
+                        <span className="text-lg font-bold text-primary">
+                          £{(getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * ((100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType) - bookingPercentage) / 100)).toFixed(2)}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                  {showLeavesValue && (
-                    <div className="text-right">
-                      <p className="text-sm text-muted-foreground">Leaves:</p>
-                      <p className="text-lg font-bold text-green-600 mt-2">
-                        £{(getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) - (getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * bookingPercentage) / 100).toFixed(2)}
-                      </p>
-                    </div>
-                  )}
                 </div>
 
                 <div className="p-4 bg-muted rounded-lg">
