@@ -3085,12 +3085,18 @@ const SiteDetail = () => {
                       <div className="border-t pt-4">
                         <p className="font-semibold mb-3">Lift Values</p>
                         <div className="space-y-2">
-                          {selectedPlotForSummary.house_types.lift_values.map((lift) => (
-                            <div key={lift.id} className="flex justify-between items-center p-2 bg-muted rounded">
-                              <LiftTypeLabel liftType={lift.lift_type} className="text-sm" />
-                              <span className="font-medium">£{lift.value.toFixed(2)}</span>
-                            </div>
-                          ))}
+                          {Object.keys(LIFT_LABELS).map((liftType) => {
+                            const liftValue = selectedPlotForSummary.house_types!.lift_values.find(
+                              lv => lv.lift_type === liftType
+                            );
+                            const value = liftValue ? liftValue.value : 0;
+                            return (
+                              <div key={liftType} className="flex justify-between items-center p-2 bg-muted rounded">
+                                <LiftTypeLabel liftType={liftType} className="text-sm" />
+                                <span className="font-medium">£{value.toFixed(2)}</span>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
 
