@@ -208,7 +208,7 @@ export const GangDivisionCard = ({
                         const memberB = gangMembers[index + 1];
                         const totalAvailable =
                           memberA.amount + memberB.amount + remainingToAllocate;
-                        const splitAmount = Math.floor(totalAvailable / 2);
+                        const splitAmount = totalAvailable / 2;
 
                         onUpdateMemberAmount(index, splitAmount);
                         onUpdateMemberAmount(index + 1, splitAmount);
