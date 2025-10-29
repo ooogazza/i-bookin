@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { ZoomIn, ZoomOut, Maximize, X } from 'lucide-react';
 import { Button } from './ui/button';
 
@@ -160,84 +161,85 @@ export const ZoomableImageViewer = ({ src, alt }: ZoomableImageViewerProps) => {
     }
   };
 
-  if (isFullscreen) {
-    return (
-      <div className="fixed inset-0 z-[100] bg-black">
-        {/* Close Button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleCloseFullscreen}
-          className="absolute top-4 right-4 z-10 text-white hover:bg-white/20"
-          title="Exit Fullscreen"
-        >
-          <X className="h-6 w-6" />
-        </Button>
+  const fullscreenContent = isFullscreen ? (
+    <div className="fixed inset-0 z-[9999] bg-black">
+      {/* Close Button */}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={handleCloseFullscreen}
+        className="absolute top-4 right-4 z-10 text-white hover:bg-white/20"
+        title="Exit Fullscreen"
+      >
+        <X className="h-6 w-6" />
+      </Button>
 
-        {/* Zoom Controls - Mobile Only */}
-        {isMobile && (
-          <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
-            <Button
-              variant="secondary"
-              size="icon"
-              onClick={handleZoomIn}
-              title="Zoom In"
-            >
-              <ZoomIn className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="secondary"
-              size="icon"
-              onClick={handleZoomOut}
-              title="Zoom Out"
-            >
-              <ZoomOut className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
-
-        {/* Image Container - Full Screen */}
-        <div
-          ref={containerRef}
-          className="absolute inset-0 w-screen h-screen overflow-hidden cursor-move flex items-center justify-center"
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-        >
-          <img
-            src={src}
-            alt={alt}
-            className="select-none"
-            style={{
-              maxWidth: '100vw',
-              maxHeight: '100vh',
-              width: 'auto',
-              height: 'auto',
-              objectFit: 'contain',
-              transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-              transformOrigin: 'center center',
-              transition: isDragging ? 'none' : 'transform 0.1s ease-out',
-            }}
-            draggable={false}
-          />
+      {/* Zoom Controls - Mobile Only */}
+      {isMobile && (
+        <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
+          <Button
+            variant="secondary"
+            size="icon"
+            onClick={handleZoomIn}
+            title="Zoom In"
+          >
+            <ZoomIn className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="secondary"
+            size="icon"
+            onClick={handleZoomOut}
+            title="Zoom Out"
+          >
+            <ZoomOut className="h-4 w-4" />
+          </Button>
         </div>
+      )}
 
-        {/* Scale Indicator */}
-        {isMobile && (
-          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white/20 px-3 py-1 rounded-full text-sm text-white">
-            {Math.round(scale * 100)}%
-          </div>
-        )}
+      {/* Image Container - Full Screen */}
+      <div
+        ref={containerRef}
+        className="absolute inset-0 w-screen h-screen overflow-hidden cursor-move flex items-center justify-center"
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        <img
+          src={src}
+          alt={alt}
+          className="select-none"
+          style={{
+            maxWidth: '100vw',
+            maxHeight: '100vh',
+            width: 'auto',
+            height: 'auto',
+            objectFit: 'contain',
+            transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+            transformOrigin: 'center center',
+            transition: isDragging ? 'none' : 'transform 0.1s ease-out',
+          }}
+          draggable={false}
+        />
       </div>
-    );
-  }
+
+      {/* Scale Indicator */}
+      {isMobile && (
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white/20 px-3 py-1 rounded-full text-sm text-white">
+          {Math.round(scale * 100)}%
+        </div>
+      )}
+    </div>
+  ) : null;
 
   return (
-    <div className="relative w-full h-full bg-muted">
+    <>
+      {isFullscreen && typeof document !== 'undefined' && createPortal(fullscreenContent, document.body)}
+      
+      <div className="relative w-full h-full bg-muted">
       {/* Zoom Controls - Mobile Only */}
       {isMobile && (
         <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
@@ -304,5 +306,6 @@ export const ZoomableImageViewer = ({ src, alt }: ZoomableImageViewerProps) => {
         </div>
       )}
     </div>
+    </>
   );
 };
