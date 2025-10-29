@@ -31,6 +31,7 @@ export const ZoomableImageViewer = ({ src, alt }: ZoomableImageViewerProps) => {
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
     setIsDragging(true);
     setDragStart({
       x: e.clientX - position.x,
@@ -39,12 +40,11 @@ export const ZoomableImageViewer = ({ src, alt }: ZoomableImageViewerProps) => {
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDragging) {
-      setPosition({
-        x: e.clientX - dragStart.x,
-        y: e.clientY - dragStart.y,
-      });
-    }
+    if (!isDragging) return;
+    setPosition({
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y,
+    });
   };
 
   const handleMouseUp = () => {
@@ -127,6 +127,34 @@ export const ZoomableImageViewer = ({ src, alt }: ZoomableImageViewerProps) => {
     };
   }, [isMobile]);
 
+  // Window-level listeners to end dragging even if mouse leaves container
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      setPosition({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
+    };
+    const onMouseUp = () => setIsDragging(false);
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (!isDragging || e.touches.length !== 1) return;
+      const t = e.touches[0];
+      setPosition({ x: t.clientX - dragStart.x, y: t.clientY - dragStart.y });
+    };
+    const onTouchEnd = () => setIsDragging(false);
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('touchmove', onTouchMove);
+    window.addEventListener('touchend', onTouchEnd);
+
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [isDragging, dragStart]);
+
   const handleFullscreen = () => {
     setIsFullscreen(true);
     setScale(1);
@@ -162,10 +190,11 @@ export const ZoomableImageViewer = ({ src, alt }: ZoomableImageViewerProps) => {
   const fullscreenContent = isFullscreen ? (
     <div className="fixed inset-0 z-[9999] bg-black">
       {/* Close Button */}
-      <div className="absolute top-4 right-4 z-10">
+      <div className="absolute top-4 right-4 z-[10001] pointer-events-auto">
         <Button
           variant="ghost"
           size="icon"
+          onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation();
             handleCloseFullscreen();
