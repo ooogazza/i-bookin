@@ -142,7 +142,7 @@ export const ZoomableImageViewer = ({ src, alt }: ZoomableImageViewerProps) => {
 
   if (isFullscreen) {
     return (
-      <div className="fixed inset-0 z-[100] bg-black">
+      <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center">
         {/* Close Button */}
         <Button
           variant="ghost"
@@ -179,7 +179,7 @@ export const ZoomableImageViewer = ({ src, alt }: ZoomableImageViewerProps) => {
         {/* Image Container */}
         <div
           ref={containerRef}
-          className="w-full h-full overflow-hidden flex items-center justify-center cursor-move"
+          className="w-full h-full absolute inset-0 overflow-hidden cursor-move"
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
@@ -188,17 +188,19 @@ export const ZoomableImageViewer = ({ src, alt }: ZoomableImageViewerProps) => {
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
-          <img
-            src={src}
-            alt={alt}
-            className="w-full h-full object-contain select-none"
-            style={{
-              transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-              transformOrigin: 'center center',
-              transition: isDragging ? 'none' : 'transform 0.1s ease-out',
-            }}
-            draggable={false}
-          />
+          <div className="w-full h-full flex items-center justify-center">
+            <img
+              src={src}
+              alt={alt}
+              className="max-w-full max-h-full object-contain select-none"
+              style={{
+                transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+                transformOrigin: 'center center',
+                transition: isDragging ? 'none' : 'transform 0.1s ease-out',
+              }}
+              draggable={false}
+            />
+          </div>
         </div>
 
         {/* Scale Indicator */}
