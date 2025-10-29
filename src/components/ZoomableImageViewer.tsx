@@ -31,17 +31,15 @@ export const ZoomableImageViewer = ({ src, alt }: ZoomableImageViewerProps) => {
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (scale > 1) {
-      setIsDragging(true);
-      setDragStart({
-        x: e.clientX - position.x,
-        y: e.clientY - position.y,
-      });
-    }
+    setIsDragging(true);
+    setDragStart({
+      x: e.clientX - position.x,
+      y: e.clientY - position.y,
+    });
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDragging && scale > 1) {
+    if (isDragging) {
       setPosition({
         x: e.clientX - dragStart.x,
         y: e.clientY - dragStart.y,
@@ -80,7 +78,7 @@ export const ZoomableImageViewer = ({ src, alt }: ZoomableImageViewerProps) => {
       const dist = getTouchDistance(e.touches);
       const center = getTouchCenter(e.touches);
       setTouchStart({ dist, center });
-    } else if (e.touches.length === 1 && scale > 1) {
+    } else if (e.touches.length === 1) {
       setIsDragging(true);
       setDragStart({
         x: e.touches[0].clientX - position.x,
@@ -95,7 +93,7 @@ export const ZoomableImageViewer = ({ src, alt }: ZoomableImageViewerProps) => {
       const scaleDelta = dist / touchStart.dist;
       setScale(prev => Math.max(0.5, Math.min(5, prev * scaleDelta)));
       setTouchStart({ dist, center: getTouchCenter(e.touches) });
-    } else if (e.touches.length === 1 && isDragging && scale > 1) {
+    } else if (e.touches.length === 1 && isDragging) {
       setPosition({
         x: e.touches[0].clientX - dragStart.x,
         y: e.touches[0].clientY - dragStart.y,
@@ -164,15 +162,20 @@ export const ZoomableImageViewer = ({ src, alt }: ZoomableImageViewerProps) => {
   const fullscreenContent = isFullscreen ? (
     <div className="fixed inset-0 z-[9999] bg-black">
       {/* Close Button */}
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={handleCloseFullscreen}
-        className="absolute top-4 right-4 z-10 text-white hover:bg-white/20"
-        title="Exit Fullscreen"
-      >
-        <X className="h-6 w-6" />
-      </Button>
+      <div className="absolute top-4 right-4 z-10">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleCloseFullscreen();
+          }}
+          className="text-white hover:bg-white/20 border border-white/50"
+          title="Exit Fullscreen"
+        >
+          <X className="h-6 w-6" />
+        </Button>
+      </div>
 
       {/* Zoom Controls - Mobile Only */}
       {isMobile && (
@@ -198,8 +201,7 @@ export const ZoomableImageViewer = ({ src, alt }: ZoomableImageViewerProps) => {
 
       {/* Image Container - Full Screen */}
       <div
-        ref={containerRef}
-        className="absolute inset-0 w-screen h-screen overflow-hidden cursor-move flex items-center justify-center"
+        className="absolute inset-0 w-screen h-screen overflow-hidden flex items-center justify-center"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -207,11 +209,12 @@ export const ZoomableImageViewer = ({ src, alt }: ZoomableImageViewerProps) => {
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
       >
         <img
           src={src}
           alt={alt}
-          className="select-none"
+          className="select-none pointer-events-none"
           style={{
             maxWidth: '100vw',
             maxHeight: '100vh',
@@ -277,7 +280,7 @@ export const ZoomableImageViewer = ({ src, alt }: ZoomableImageViewerProps) => {
       {/* Image Container */}
       <div
         ref={containerRef}
-        className="w-full h-full overflow-hidden flex items-center justify-center cursor-move"
+        className="w-full h-full overflow-hidden flex items-center justify-center"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -285,11 +288,12 @@ export const ZoomableImageViewer = ({ src, alt }: ZoomableImageViewerProps) => {
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
       >
         <img
           src={src}
           alt={alt}
-          className="max-w-full max-h-full object-contain select-none"
+          className="max-w-full max-h-full object-contain select-none pointer-events-none"
           style={{
             transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
             transformOrigin: 'center center',
