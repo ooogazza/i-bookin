@@ -132,17 +132,37 @@ export const ZoomableImageViewer = ({ src, alt }: ZoomableImageViewerProps) => {
     setIsFullscreen(true);
     setScale(1);
     setPosition({ x: 0, y: 0 });
+    
+    // Request landscape orientation on mobile
+    if (isMobile && 'screen' in window && 'orientation' in window.screen) {
+      try {
+        (window.screen.orientation as any).lock('landscape').catch(() => {
+          console.log('Orientation lock not supported');
+        });
+      } catch (e) {
+        console.log('Orientation lock not supported');
+      }
+    }
   };
 
   const handleCloseFullscreen = () => {
     setIsFullscreen(false);
     setScale(1);
     setPosition({ x: 0, y: 0 });
+    
+    // Unlock orientation on mobile
+    if (isMobile && 'screen' in window && 'orientation' in window.screen) {
+      try {
+        (window.screen.orientation as any).unlock();
+      } catch (e) {
+        console.log('Orientation unlock not supported');
+      }
+    }
   };
 
   if (isFullscreen) {
     return (
-      <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center">
+      <div className="fixed inset-0 z-[100] bg-black">
         {/* Close Button */}
         <Button
           variant="ghost"
@@ -176,10 +196,10 @@ export const ZoomableImageViewer = ({ src, alt }: ZoomableImageViewerProps) => {
           </div>
         )}
 
-        {/* Image Container */}
+        {/* Image Container - Full Screen */}
         <div
           ref={containerRef}
-          className="w-full h-full absolute inset-0 overflow-hidden cursor-move"
+          className="absolute inset-0 w-screen h-screen overflow-hidden cursor-move flex items-center justify-center"
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
@@ -188,19 +208,22 @@ export const ZoomableImageViewer = ({ src, alt }: ZoomableImageViewerProps) => {
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
-          <div className="w-full h-full flex items-center justify-center">
-            <img
-              src={src}
-              alt={alt}
-              className="max-w-full max-h-full object-contain select-none"
-              style={{
-                transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-                transformOrigin: 'center center',
-                transition: isDragging ? 'none' : 'transform 0.1s ease-out',
-              }}
-              draggable={false}
-            />
-          </div>
+          <img
+            src={src}
+            alt={alt}
+            className="select-none"
+            style={{
+              maxWidth: '100vw',
+              maxHeight: '100vh',
+              width: 'auto',
+              height: 'auto',
+              objectFit: 'contain',
+              transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+              transformOrigin: 'center center',
+              transition: isDragging ? 'none' : 'transform 0.1s ease-out',
+            }}
+            draggable={false}
+          />
         </div>
 
         {/* Scale Indicator */}
