@@ -242,7 +242,8 @@ export const ZoomableImageViewer = ({ src, alt, startInFullscreen = false, onFul
     setPosition({ x: 0, y: 0 });
     
     // Check if we need to auto-rotate for mobile in portrait mode
-    if (isMobile) {
+    const isMobileDevice = window.innerWidth < 768;
+    if (isMobileDevice) {
       const isPortrait = window.innerHeight > window.innerWidth;
       setAutoRotate(isPortrait);
     }
