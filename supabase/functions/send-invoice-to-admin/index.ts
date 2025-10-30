@@ -194,60 +194,16 @@ const handler = async (req: Request): Promise<Response> => {
     
     const userId = userProfile?.id;
     
-    if (userId) {
-      const { error: upsertError } = await supabase
-        .from("non_plot_invoices")
-        .upsert({
-          user_id: userId, // Use actual user UUID
-          invoice_number: invoiceNumber,
-          total_amount: invoiceDetails.totalValue,
-          notes: `Submitted by ${invoiceDetails.bookedBy}`,
-          status: "sent"
-        }, {
-          onConflict: 'invoice_number'
-        });
+    // Update the existing invoice status to "sent"
+    const { error: updateError } = await supabase
+      .from("non_plot_invoices")
+      .update({ status: "sent" })
+      .eq("invoice_number", invoiceNumber);
 
-      if (upsertError) {
-        console.error("Error upserting to admin bookings:", upsertError);
-      } else {
-        console.log("Invoice successfully added/updated in admin bookings");
-        
-        // Get the invoice ID to link gang divisions
-        const { data: invoice } = await supabase
-          .from("non_plot_invoices")
-          .select("id")
-          .eq("invoice_number", invoiceNumber)
-          .single();
-        
-        if (invoice && gangMembers && gangMembers.length > 0) {
-          // Delete existing gang divisions for this invoice
-          await supabase
-            .from("non_plot_gang_divisions")
-            .delete()
-            .eq("invoice_id", invoice.id);
-          
-          // Insert gang divisions
-          const gangDivisions = gangMembers.map(member => ({
-            invoice_id: invoice.id,
-            member_name: member.name,
-            member_type: member.type,
-            amount: member.amount,
-            email: member.email || null
-          }));
-          
-          const { error: gangError } = await supabase
-            .from("non_plot_gang_divisions")
-            .insert(gangDivisions);
-          
-          if (gangError) {
-            console.error("Error inserting gang divisions:", gangError);
-          } else {
-            console.log("Gang divisions successfully added");
-          }
-        }
-      }
+    if (updateError) {
+      console.error("Error updating invoice status:", updateError);
     } else {
-      console.error("Could not find user UUID for email:", invoiceDetails.bookedByEmail);
+      console.log("Invoice status updated to 'sent' successfully");
     }
 
     return new Response(
