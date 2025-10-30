@@ -596,6 +596,7 @@ const BookingIn = () => {
               userInvoices.map((userGroup) => {
                 const unviewedInvoices = userGroup.invoices.filter((inv) => !inv.is_viewed && !inv.is_confirmed).length;
                 const confirmedInvoices = userGroup.invoices.filter((inv) => inv.is_confirmed).length;
+                const unconfirmedInvoices = userGroup.invoices.filter((inv) => !inv.is_confirmed).length;
 
                 return (
                   <Card key={userGroup.user_id} className="hover:shadow-lg transition-shadow">
@@ -604,11 +605,18 @@ const BookingIn = () => {
                         <div className="flex-1">
                           <CardTitle className="text-xl">{userGroup.full_name}</CardTitle>
                         </div>
-                        {unviewedInvoices > 0 && (
-                          <div className="flex items-center gap-1 bg-primary text-primary-foreground px-2 py-1 rounded-full text-xs font-semibold">
-                            {unviewedInvoices}
-                          </div>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {unviewedInvoices > 0 && (
+                            <div className="flex items-center gap-1 bg-primary text-primary-foreground px-2 py-1 rounded-full text-xs font-semibold">
+                              {unviewedInvoices}
+                            </div>
+                          )}
+                          {unconfirmedInvoices > 0 && (
+                            <div className="flex items-center gap-1 bg-green-600 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                              {unconfirmedInvoices}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent>
