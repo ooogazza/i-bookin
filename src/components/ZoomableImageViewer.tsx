@@ -19,6 +19,7 @@ export const ZoomableImageViewer = ({ src, alt, startInFullscreen = false }: Zoo
   const [autoRotate, setAutoRotate] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
+  const lastTapRef = useRef<number>(0);
 
   const handleZoomIn = () => {
     setScale(prev => Math.min(prev + 0.25, 5));
@@ -82,6 +83,18 @@ export const ZoomableImageViewer = ({ src, alt, startInFullscreen = false }: Zoo
       const center = getTouchCenter(e.touches);
       setTouchStart({ dist, center });
     } else if (e.touches.length === 1) {
+      // Double tap detection for fullscreen only
+      if (isFullscreen) {
+        const now = Date.now();
+        const timeSinceLastTap = now - lastTapRef.current;
+        if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
+          handleReset();
+          lastTapRef.current = 0;
+          return;
+        }
+        lastTapRef.current = now;
+      }
+      
       setIsDragging(true);
       setDragStart({
         x: e.touches[0].clientX - position.x,

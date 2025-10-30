@@ -180,18 +180,36 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Insert booking into admin's booking page (non_plot_invoices)
     // This creates a record visible to all admins
-    const { error: insertError } = await supabase
-      .from("non_plot_invoices")
-      .insert({
-        user_id: invoiceDetails.bookedByEmail, // Store email for reference
-        invoice_number: invoiceNumber,
-        total_amount: invoiceDetails.totalValue,
-        notes: `Submitted by ${invoiceDetails.bookedBy}`,
-        status: "sent"
-      });
+    
+    // Look up the user's UUID from their email
+    const { data: userProfile, error: profileError } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("email", invoiceDetails.bookedByEmail)
+      .single();
+    
+    if (profileError) {
+      console.error("Error fetching user profile:", profileError);
+    }
+    
+    const userId = userProfile?.id;
+    
+    if (userId) {
+      const { error: insertError } = await supabase
+        .from("non_plot_invoices")
+        .insert({
+          user_id: userId, // Use actual user UUID
+          invoice_number: invoiceNumber,
+          total_amount: invoiceDetails.totalValue,
+          notes: `Submitted by ${invoiceDetails.bookedBy}`,
+          status: "sent"
+        });
 
-    if (insertError) {
-      console.error("Error inserting to admin bookings:", insertError);
+      if (insertError) {
+        console.error("Error inserting to admin bookings:", insertError);
+      }
+    } else {
+      console.error("Could not find user UUID for email:", invoiceDetails.bookedByEmail);
     }
 
     return new Response(
