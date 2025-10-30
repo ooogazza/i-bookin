@@ -178,6 +178,22 @@ const handler = async (req: Request): Promise<Response> => {
     const emailData = await resendResponse.json();
     console.log("Email sent successfully:", emailData);
 
+    // Insert booking into admin's booking page (non_plot_invoices)
+    // This creates a record visible to all admins
+    const { error: insertError } = await supabase
+      .from("non_plot_invoices")
+      .insert({
+        user_id: invoiceDetails.bookedByEmail, // Store email for reference
+        invoice_number: invoiceNumber,
+        total_amount: invoiceDetails.totalValue,
+        notes: `Submitted by ${invoiceDetails.bookedBy}`,
+        status: "sent"
+      });
+
+    if (insertError) {
+      console.error("Error inserting to admin bookings:", insertError);
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true, 

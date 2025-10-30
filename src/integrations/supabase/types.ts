@@ -184,11 +184,53 @@ export type Database = {
           },
         ]
       }
+      house_type_price_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          house_type_id: string
+          id: string
+          lift_type: string
+          new_value: number
+          notes: string | null
+          old_value: number | null
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          house_type_id: string
+          id?: string
+          lift_type: string
+          new_value: number
+          notes?: string | null
+          old_value?: number | null
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          house_type_id?: string
+          id?: string
+          lift_type?: string
+          new_value?: number
+          notes?: string | null
+          old_value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "house_type_price_history_house_type_id_fkey"
+            columns: ["house_type_id"]
+            isOneToOne: false
+            referencedRelation: "house_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       house_types: {
         Row: {
           created_at: string
           id: string
           name: string
+          price_last_updated: string | null
           site_id: string
           total_value: number
           updated_at: string
@@ -197,6 +239,7 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
+          price_last_updated?: string | null
           site_id: string
           total_value?: number
           updated_at?: string
@@ -205,6 +248,7 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+          price_last_updated?: string | null
           site_id?: string
           total_value?: number
           updated_at?: string

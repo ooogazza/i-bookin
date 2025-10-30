@@ -40,6 +40,8 @@ interface HouseType {
   name: string;
   total_value: number;
   lift_values: LiftValue[];
+  created_at?: string;
+  price_last_updated?: string;
 }
 
 interface LiftValue {
@@ -403,9 +405,29 @@ const SiteDetail = () => {
       const totalValue = Object.values(liftValues).reduce((sum, value) => sum + (value || 0), 0);
 
       if (editingHouseType) {
+        // Track price changes for history
+        const priceChanges = [];
+        for (const [liftType, value] of Object.entries(liftValues)) {
+          const existing = editingHouseType.lift_values.find(lv => lv.lift_type === liftType);
+          if (existing && existing.value !== value) {
+            priceChanges.push({
+              house_type_id: editingHouseType.id,
+              lift_type: liftType,
+              old_value: existing.value,
+              new_value: value,
+              changed_by: user.id
+            });
+          }
+        }
+
+        // Update house type with price_last_updated timestamp
         await supabase
           .from("house_types")
-          .update({ name: houseTypeName, total_value: totalValue })
+          .update({ 
+            name: houseTypeName, 
+            total_value: totalValue,
+            price_last_updated: priceChanges.length > 0 ? new Date().toISOString() : undefined
+          })
           .eq("id", editingHouseType.id);
 
         for (const [liftType, value] of Object.entries(liftValues)) {
@@ -420,6 +442,13 @@ const SiteDetail = () => {
               .from("lift_values")
               .insert({ house_type_id: editingHouseType.id, lift_type: liftType as any, value });
           }
+        }
+
+        // Insert price history records
+        if (priceChanges.length > 0) {
+          await supabase
+            .from("house_type_price_history")
+            .insert(priceChanges);
         }
 
         toast.success("House type updated");
@@ -797,7 +826,13 @@ const SiteDetail = () => {
     // For PDFs, use preview URL if available, otherwise use the PDF URL
     const displayUrl = (type === 'application/pdf' && previewUrl) ? previewUrl : url;
     setViewerContent({ url: displayUrl, type, name });
+    // Skip dialog, go straight to fullscreen
     setViewerOpen(true);
+    // Trigger fullscreen on next tick
+    setTimeout(() => {
+      const fullscreenBtn = document.querySelector('[title="Fullscreen"]') as HTMLButtonElement;
+      fullscreenBtn?.click();
+    }, 100);
   };
 
   const openDrawingsDialog = async (houseType: HouseType) => {
@@ -1639,7 +1674,7 @@ const SiteDetail = () => {
         if (gangError) throw gangError;
       }
 
-      // Send email to admins and gang members
+      // Send email to admins and gang members AND insert into bookings
       const { error: emailError } = await supabase.functions.invoke("send-invoice-to-admin", {
         body: {
           invoiceNumber,
@@ -2290,6 +2325,14 @@ const SiteDetail = () => {
               <DialogTitle>
                 {editingHouseType ? "Edit House Type" : "Add House Type"}
               </DialogTitle>
+              {editingHouseType && editingHouseType.created_at && (
+                <div className="text-sm text-muted-foreground space-y-1 pt-2">
+                  <p>Created: {new Date(editingHouseType.created_at).toLocaleDateString()}</p>
+                  {editingHouseType.price_last_updated && (
+                    <p>Prices Updated: {new Date(editingHouseType.price_last_updated).toLocaleDateString()}</p>
+                  )}
+                </div>
+              )}
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
@@ -2316,6 +2359,31 @@ const SiteDetail = () => {
                   </div>
                 ))}
               </div>
+
+              {/* Price History Button */}
+              {editingHouseType && isAdmin && (
+                <Button 
+                  variant="outline" 
+                  onClick={async () => {
+                    const { data } = await supabase
+                      .from("house_type_price_history")
+                      .select("*")
+                      .eq("house_type_id", editingHouseType.id)
+                      .order("changed_at", { ascending: false });
+                    
+                    if (data && data.length > 0) {
+                      const historyMsg = data.map(h => 
+                        `${LIFT_LABELS[h.lift_type]}: £${h.old_value} → £${h.new_value} (${new Date(h.changed_at).toLocaleDateString()})`
+                      ).join('\n');
+                      alert(`Price History:\n\n${historyMsg}`);
+                    } else {
+                      toast.info("No price changes recorded");
+                    }
+                  }}
+                >
+                  View Price History
+                </Button>
+              )}
               
               {/* File Upload Section */}
               {isAdmin && (
@@ -2817,9 +2885,23 @@ const SiteDetail = () => {
                 </div>
 
                 <div className="p-4 bg-primary/10 rounded-lg">
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
                     <span className="font-medium">Booking Value:</span>
-                    <span className="text-xl font-bold text-primary">
+                    <span 
+                      className="text-xl font-bold text-primary cursor-pointer hover:underline"
+                      onClick={() => {
+                        const currentValue = (getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * bookingPercentage) / 100;
+                        const newPercentage = prompt(`Enter booking value (£)`, currentValue.toFixed(2));
+                        if (newPercentage) {
+                          const val = parseFloat(newPercentage);
+                          const maxValue = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * (100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType)) / 100;
+                          if (!isNaN(val) && val > 0 && val <= maxValue) {
+                            const newPerc = Math.round((val / getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType)) * 100);
+                            setBookingPercentage(newPerc);
+                          }
+                        }
+                      }}
+                    >
                       £{((getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * bookingPercentage) / 100).toFixed(2)}
                     </span>
                   </div>

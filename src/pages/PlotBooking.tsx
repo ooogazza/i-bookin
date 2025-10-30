@@ -260,12 +260,24 @@ const PlotBooking = () => {
 
             {selectedLiftId && (
               <>
-                <Label
-                  className="cursor-pointer hover:text-primary"
-                  onClick={() => setPercentage(getRemainingPercentage(selectedLiftId))}
-                >
-                  Percentage: {percentage}%
-                </Label>
+                <div className="flex items-center gap-2">
+                  <Label>Percentage:</Label>
+                  <Input
+                    type="number"
+                    value={percentage}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value);
+                      const max = getRemainingPercentage(selectedLiftId);
+                      if (!isNaN(val) && val >= 1 && val <= max) {
+                        setPercentage(val);
+                      }
+                    }}
+                    className="w-24"
+                    min="1"
+                    max={getRemainingPercentage(selectedLiftId)}
+                  />
+                  <span>%</span>
+                </div>
                 <Slider
                   value={[percentage]}
                   onValueChange={(value) => setPercentage(value[0])}

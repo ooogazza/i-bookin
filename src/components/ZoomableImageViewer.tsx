@@ -6,9 +6,10 @@ import { Button } from './ui/button';
 interface ZoomableImageViewerProps {
   src: string;
   alt: string;
+  startInFullscreen?: boolean;
 }
 
-export const ZoomableImageViewer = ({ src, alt }: ZoomableImageViewerProps) => {
+export const ZoomableImageViewer = ({ src, alt, startInFullscreen = false }: ZoomableImageViewerProps) => {
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -105,6 +106,13 @@ export const ZoomableImageViewer = ({ src, alt }: ZoomableImageViewerProps) => {
     setIsDragging(false);
     setTouchStart(null);
   };
+
+  // Auto-start in fullscreen if requested
+  useEffect(() => {
+    if (startInFullscreen) {
+      handleFullscreen();
+    }
+  }, [startInFullscreen]);
 
   useEffect(() => {
     const checkMobile = () => {
