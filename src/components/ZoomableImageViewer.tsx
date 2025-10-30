@@ -17,9 +17,11 @@ export const ZoomableImageViewer = ({ src, alt, startInFullscreen = false }: Zoo
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [autoRotate, setAutoRotate] = useState(false);
+  const [isInteracting, setIsInteracting] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const lastTapRef = useRef<number>(0);
+  const dragStartTimeoutRef = useRef<number | null>(null);
 
   const handleZoomIn = () => {
     setScale(prev => Math.min(prev + 0.25, 5));
@@ -37,6 +39,7 @@ export const ZoomableImageViewer = ({ src, alt, startInFullscreen = false }: Zoo
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
     setIsDragging(true);
+    setIsInteracting(true);
     setDragStart({
       x: e.clientX - position.x,
       y: e.clientY - position.y,
@@ -53,12 +56,16 @@ export const ZoomableImageViewer = ({ src, alt, startInFullscreen = false }: Zoo
 
   const handleMouseUp = () => {
     setIsDragging(false);
+    setIsInteracting(false);
   };
 
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
+    setIsInteracting(true);
     const delta = e.deltaY * -0.001;
     setScale(prev => Math.max(0.5, Math.min(5, prev + delta)));
+    // Reset interacting state after a short delay
+    setTimeout(() => setIsInteracting(false), 100);
   };
 
   // Touch events for mobile
@@ -79,6 +86,12 @@ export const ZoomableImageViewer = ({ src, alt, startInFullscreen = false }: Zoo
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 2) {
+      // Clear any pending drag start
+      if (dragStartTimeoutRef.current) {
+        clearTimeout(dragStartTimeoutRef.current);
+        dragStartTimeoutRef.current = null;
+      }
+      setIsInteracting(true);
       const dist = getTouchDistance(e.touches);
       const center = getTouchCenter(e.touches);
       setTouchStart({ dist, center });
@@ -88,37 +101,71 @@ export const ZoomableImageViewer = ({ src, alt, startInFullscreen = false }: Zoo
         const now = Date.now();
         const timeSinceLastTap = now - lastTapRef.current;
         if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
+          // Double tap detected - reset zoom
+          e.preventDefault();
           handleReset();
           lastTapRef.current = 0;
+          // Clear any pending drag start
+          if (dragStartTimeoutRef.current) {
+            clearTimeout(dragStartTimeoutRef.current);
+            dragStartTimeoutRef.current = null;
+          }
           return;
         }
         lastTapRef.current = now;
       }
       
-      setIsDragging(true);
-      setDragStart({
-        x: e.touches[0].clientX - position.x,
-        y: e.touches[0].clientY - position.y,
-      });
+      // Delay setting isDragging to allow double-tap detection
+      const touchX = e.touches[0].clientX;
+      const touchY = e.touches[0].clientY;
+      dragStartTimeoutRef.current = window.setTimeout(() => {
+        setIsDragging(true);
+        setIsInteracting(true);
+        setDragStart({
+          x: touchX - position.x,
+          y: touchY - position.y,
+        });
+      }, 150);
     }
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (e.touches.length === 2 && touchStart) {
+      // Pinch zoom
+      setIsInteracting(true);
       const dist = getTouchDistance(e.touches);
       const scaleDelta = dist / touchStart.dist;
       setScale(prev => Math.max(0.5, Math.min(5, prev * scaleDelta)));
       setTouchStart({ dist, center: getTouchCenter(e.touches) });
-    } else if (e.touches.length === 1 && isDragging) {
-      setPosition({
-        x: e.touches[0].clientX - dragStart.x,
-        y: e.touches[0].clientY - dragStart.y,
-      });
+    } else if (e.touches.length === 1) {
+      // If user starts moving before timeout, start dragging immediately
+      if (dragStartTimeoutRef.current) {
+        clearTimeout(dragStartTimeoutRef.current);
+        dragStartTimeoutRef.current = null;
+        setIsDragging(true);
+        setIsInteracting(true);
+        setDragStart({
+          x: e.touches[0].clientX - position.x,
+          y: e.touches[0].clientY - position.y,
+        });
+      }
+      
+      if (isDragging) {
+        setPosition({
+          x: e.touches[0].clientX - dragStart.x,
+          y: e.touches[0].clientY - dragStart.y,
+        });
+      }
     }
   };
 
   const handleTouchEnd = () => {
+    if (dragStartTimeoutRef.current) {
+      clearTimeout(dragStartTimeoutRef.current);
+      dragStartTimeoutRef.current = null;
+    }
     setIsDragging(false);
+    setIsInteracting(false);
     setTouchStart(null);
   };
 
@@ -156,14 +203,24 @@ export const ZoomableImageViewer = ({ src, alt, startInFullscreen = false }: Zoo
       if (!isDragging) return;
       setPosition({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
     };
-    const onMouseUp = () => setIsDragging(false);
+    const onMouseUp = () => {
+      setIsDragging(false);
+      setIsInteracting(false);
+    };
 
     const onTouchMove = (e: TouchEvent) => {
       if (!isDragging || e.touches.length !== 1) return;
       const t = e.touches[0];
       setPosition({ x: t.clientX - dragStart.x, y: t.clientY - dragStart.y });
     };
-    const onTouchEnd = () => setIsDragging(false);
+    const onTouchEnd = () => {
+      if (dragStartTimeoutRef.current) {
+        clearTimeout(dragStartTimeoutRef.current);
+        dragStartTimeoutRef.current = null;
+      }
+      setIsDragging(false);
+      setIsInteracting(false);
+    };
 
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
@@ -263,7 +320,7 @@ export const ZoomableImageViewer = ({ src, alt, startInFullscreen = false }: Zoo
             objectFit: 'contain',
             transform: `translate(${position.x}px, ${position.y}px) scale(${scale}) rotate(${autoRotate ? 90 : 0}deg)`,
             transformOrigin: 'center center',
-            transition: isDragging ? 'none' : 'transform 0.1s ease-out',
+            transition: isInteracting ? 'none' : 'none',
           }}
           draggable={false}
         />
@@ -337,7 +394,7 @@ export const ZoomableImageViewer = ({ src, alt, startInFullscreen = false }: Zoo
           style={{
             transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
             transformOrigin: 'center center',
-            transition: isDragging ? 'none' : 'transform 0.1s ease-out',
+            transition: isInteracting ? 'none' : 'none',
           }}
           draggable={false}
         />
