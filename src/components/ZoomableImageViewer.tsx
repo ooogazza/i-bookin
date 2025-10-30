@@ -16,7 +16,9 @@ export const ZoomableImageViewer = ({ src, alt, startInFullscreen = false }: Zoo
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [autoRotate, setAutoRotate] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
 
   const handleZoomIn = () => {
     setScale(prev => Math.min(prev + 0.25, 5));
@@ -168,15 +170,10 @@ export const ZoomableImageViewer = ({ src, alt, startInFullscreen = false }: Zoo
     setScale(1);
     setPosition({ x: 0, y: 0 });
     
-    // Request landscape orientation on mobile
-    if (isMobile && 'screen' in window && 'orientation' in window.screen) {
-      try {
-        (window.screen.orientation as any).lock('landscape').catch(() => {
-          console.log('Orientation lock not supported');
-        });
-      } catch (e) {
-        console.log('Orientation lock not supported');
-      }
+    // Check if we need to auto-rotate for mobile in portrait mode
+    if (isMobile) {
+      const isPortrait = window.innerHeight > window.innerWidth;
+      setAutoRotate(isPortrait);
     }
   };
 
@@ -184,15 +181,7 @@ export const ZoomableImageViewer = ({ src, alt, startInFullscreen = false }: Zoo
     setIsFullscreen(false);
     setScale(1);
     setPosition({ x: 0, y: 0 });
-    
-    // Unlock orientation on mobile
-    if (isMobile && 'screen' in window && 'orientation' in window.screen) {
-      try {
-        (window.screen.orientation as any).unlock();
-      } catch (e) {
-        console.log('Orientation unlock not supported');
-      }
-    }
+    setAutoRotate(false);
   };
 
   const fullscreenContent = isFullscreen ? (
@@ -249,16 +238,17 @@ export const ZoomableImageViewer = ({ src, alt, startInFullscreen = false }: Zoo
         style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
       >
         <img
+          ref={imageRef}
           src={src}
           alt={alt}
           className="select-none pointer-events-none"
           style={{
-            maxWidth: '100vw',
-            maxHeight: '100vh',
+            maxWidth: autoRotate ? '100vh' : '100vw',
+            maxHeight: autoRotate ? '100vw' : '100vh',
             width: 'auto',
             height: 'auto',
             objectFit: 'contain',
-            transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+            transform: `translate(${position.x}px, ${position.y}px) scale(${scale}) rotate(${autoRotate ? 90 : 0}deg)`,
             transformOrigin: 'center center',
             transition: isDragging ? 'none' : 'transform 0.1s ease-out',
           }}
