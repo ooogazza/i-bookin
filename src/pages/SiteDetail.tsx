@@ -826,13 +826,10 @@ const SiteDetail = () => {
     // For PDFs, use preview URL if available, otherwise use the PDF URL
     const displayUrl = (type === 'application/pdf' && previewUrl) ? previewUrl : url;
     setViewerContent({ url: displayUrl, type, name });
-    // Skip dialog, go straight to fullscreen
+    // Close the drawings dialog
+    setDrawingsDialogOpen(false);
+    // Open viewer in fullscreen mode directly
     setViewerOpen(true);
-    // Trigger fullscreen on next tick
-    setTimeout(() => {
-      const fullscreenBtn = document.querySelector('[title="Fullscreen"]') as HTMLButtonElement;
-      fullscreenBtn?.click();
-    }, 100);
   };
 
   const openDrawingsDialog = async (houseType: HouseType) => {
@@ -2772,25 +2769,23 @@ const SiteDetail = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Drawing Viewer Dialog */}
-        <Dialog open={viewerOpen} onOpenChange={setViewerOpen}>
-          <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 flex flex-col">
-            <DialogHeader className="p-6 pb-4 border-b">
-              <DialogTitle className="truncate">{viewerContent?.name}</DialogTitle>
-              <DialogDescription>
-                Use mouse wheel or pinch to zoom. Drag to pan when zoomed in.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="flex-1 overflow-hidden" style={{ height: 'calc(95vh - 120px)' }}>
-              {viewerContent && (
-                <ZoomableImageViewer 
-                  src={viewerContent.url} 
-                  alt={viewerContent.name}
-                />
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
+        {/* Drawing Viewer - Fullscreen Only */}
+        {viewerOpen && viewerContent && (
+          <div className="fixed inset-0 z-[9999]">
+            <ZoomableImageViewer 
+              src={viewerContent.url} 
+              alt={viewerContent.name}
+              startInFullscreen={true}
+              onFullscreenClose={() => {
+                setViewerOpen(false);
+                // Reopen the drawings dialog
+                if (selectedHouseTypeForDrawings) {
+                  setDrawingsDialogOpen(true);
+                }
+              }}
+            />
+          </div>
+        )}
 
         {/* Booking Dialog */}
         <Dialog open={bookingDialogOpen} onOpenChange={setBookingDialogOpen}>

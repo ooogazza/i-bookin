@@ -7,9 +7,10 @@ interface ZoomableImageViewerProps {
   src: string;
   alt: string;
   startInFullscreen?: boolean;
+  onFullscreenClose?: () => void;
 }
 
-export const ZoomableImageViewer = ({ src, alt, startInFullscreen = false }: ZoomableImageViewerProps) => {
+export const ZoomableImageViewer = ({ src, alt, startInFullscreen = false, onFullscreenClose }: ZoomableImageViewerProps) => {
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -252,6 +253,10 @@ export const ZoomableImageViewer = ({ src, alt, startInFullscreen = false }: Zoo
     setScale(1);
     setPosition({ x: 0, y: 0 });
     setAutoRotate(false);
+    // Call the callback if provided
+    if (onFullscreenClose) {
+      onFullscreenClose();
+    }
   };
 
   const fullscreenContent = isFullscreen ? (
@@ -273,27 +278,6 @@ export const ZoomableImageViewer = ({ src, alt, startInFullscreen = false }: Zoo
         </Button>
       </div>
 
-      {/* Zoom Controls - Mobile Only */}
-      {isMobile && (
-        <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
-          <Button
-            variant="secondary"
-            size="icon"
-            onClick={handleZoomIn}
-            title="Zoom In"
-          >
-            <ZoomIn className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="secondary"
-            size="icon"
-            onClick={handleZoomOut}
-            title="Zoom Out"
-          >
-            <ZoomOut className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
 
       {/* Image Container - Full Screen */}
       <div
