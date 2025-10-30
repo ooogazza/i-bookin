@@ -926,7 +926,7 @@ const BookingIn = () => {
                     {selectedUser.invoices.map((invoice) => (
                       <Card
                         key={invoice.invoice_number}
-                        className={`cursor-pointer ${invoice.is_confirmed ? "bg-green-100 dark:bg-green-900/20" : ""}`}
+                        className={`cursor-pointer ${invoice.is_confirmed ? "bg-green-100 dark:bg-green-900/20" : "hover:bg-muted/50"}`}
                         onClick={() => handleViewDetails(invoice)}
                       >
                         <CardContent className="p-3">
@@ -938,17 +938,22 @@ const BookingIn = () => {
                                 )}
                                 <p className="text-xs text-muted-foreground">INV</p>
                                 <p className="font-semibold text-sm">...{invoice.invoice_number.slice(-4)}</p>
+                                <p className="text-sm font-bold text-primary ml-auto">£{invoice.total_value.toFixed(2)}</p>
                               </div>
-                              <p className="text-lg font-bold text-primary">£{invoice.total_value.toFixed(2)}</p>
-                              <p className="text-xs text-muted-foreground mt-1">
+                              <p className="text-xs text-muted-foreground">
                                 {new Date(invoice.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
                               </p>
                               {invoice.items[0]?.gang_divisions && invoice.items[0].gang_divisions.length > 0 && (
                                 <div className="mt-2">
-                                  <p className="text-xs text-muted-foreground mb-1">Gang:</p>
-                                  <p className="text-xs font-medium truncate">
-                                    {invoice.items[0].gang_divisions.map(m => m.member_name).join(', ')}
-                                  </p>
+                                  <p className="text-xs text-muted-foreground mb-1">Gang</p>
+                                  <div className="space-y-1">
+                                    {invoice.items[0].gang_divisions.map((member, idx) => (
+                                      <div key={idx} className="flex items-center justify-between gap-2">
+                                        <p className="text-sm font-bold">{member.member_name}</p>
+                                        <p className="text-sm font-bold text-primary">£{member.amount.toFixed(2)}</p>
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
                               )}
                             </div>
