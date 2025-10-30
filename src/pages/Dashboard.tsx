@@ -37,6 +37,7 @@ const Dashboard = () => {
   const [developers, setDevelopers] = useState<Developer[]>([]);
   const [loading, setLoading] = useState(true);
   const [unviewedInvoicesCount, setUnviewedInvoicesCount] = useState(0);
+  const [unconfirmedInvoicesCount, setUnconfirmedInvoicesCount] = useState(0);
   
   const [createSiteDialogOpen, setCreateSiteDialogOpen] = useState(false);
   const [siteName, setSiteName] = useState("");
@@ -116,16 +117,38 @@ const Dashboard = () => {
     if (!user || !isAdmin) return;
 
     try {
-      // Get all confirmed bookings
+      // Fetch plot-based bookings
       const { data: bookings, error: bookingsError } = await supabase
         .from("bookings")
-        .select("invoice_number")
+        .select("invoice_number, confirmed_by_admin")
         .eq("status", "confirmed");
 
       if (bookingsError) throw bookingsError;
 
-      // Get unique invoice numbers
-      const uniqueInvoices = [...new Set(bookings?.map(b => b.invoice_number) || [])];
+      // Fetch non-plot invoices
+      const { data: nonPlotInvoices, error: nonPlotError } = await supabase
+        .from("non_plot_invoices")
+        .select("invoice_number, status")
+        .in("status", ["sent", "confirmed"]);
+
+      if (nonPlotError) throw nonPlotError;
+
+      // Combine and get unique invoice numbers with their confirmation status
+      const allInvoices = new Map();
+      
+      bookings?.forEach(b => {
+        if (!allInvoices.has(b.invoice_number)) {
+          allInvoices.set(b.invoice_number, b.confirmed_by_admin);
+        }
+      });
+
+      nonPlotInvoices?.forEach(inv => {
+        if (!allInvoices.has(inv.invoice_number)) {
+          allInvoices.set(inv.invoice_number, inv.status === "confirmed");
+        }
+      });
+
+      const uniqueInvoices = Array.from(allInvoices.keys());
 
       // Get viewed invoices for this admin
       const { data: viewedData, error: viewedError } = await supabase
@@ -136,11 +159,27 @@ const Dashboard = () => {
       if (viewedError) throw viewedError;
 
       const viewedInvoices = new Set(viewedData?.map(v => v.invoice_number) || []);
-      const unviewedCount = uniqueInvoices.filter(inv => !viewedInvoices.has(inv)).length;
+      
+      // Count unviewed and unconfirmed
+      let unviewed = 0;
+      let unconfirmed = 0;
 
-      setUnviewedInvoicesCount(unviewedCount);
+      uniqueInvoices.forEach(invNum => {
+        const isConfirmed = allInvoices.get(invNum);
+        const isViewed = viewedInvoices.has(invNum);
+        
+        if (!isViewed && !isConfirmed) {
+          unviewed++;
+        }
+        if (!isConfirmed) {
+          unconfirmed++;
+        }
+      });
+
+      setUnviewedInvoicesCount(unviewed);
+      setUnconfirmedInvoicesCount(unconfirmed);
     } catch (error: any) {
-      console.error("Error fetching unviewed invoices count:", error);
+      console.error("Error fetching invoices count:", error);
     }
   };
 
@@ -224,18 +263,22 @@ const Dashboard = () => {
         {isAdmin && (
           <div className="grid gap-6 md:grid-cols-2 mb-8">
             <Card className="cursor-pointer hover:bg-muted/50 transition-colors relative" onClick={() => navigate("/booking-in")}>
-              {unviewedInvoicesCount > 0 && (
-                <div className="absolute top-4 right-4 h-3 w-3 rounded-full bg-primary animate-pulse" />
-              )}
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-6 w-6 text-primary" />
                   Booking In
-                  {unviewedInvoicesCount > 0 && (
-                    <span className="ml-auto text-sm font-normal text-primary">
-                      {unviewedInvoicesCount} new
-                    </span>
-                  )}
+                  <div className="ml-auto flex items-center gap-2">
+                    {unviewedInvoicesCount > 0 && (
+                      <div className="flex items-center gap-1 bg-primary text-primary-foreground px-2 py-1 rounded-full text-xs font-semibold">
+                        {unviewedInvoicesCount}
+                      </div>
+                    )}
+                    {unconfirmedInvoicesCount > 0 && (
+                      <div className="flex items-center gap-1 bg-green-600 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                        {unconfirmedInvoicesCount}
+                      </div>
+                    )}
+                  </div>
                 </CardTitle>
                 <CardDescription>
                   View all invoices
