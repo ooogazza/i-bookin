@@ -161,7 +161,7 @@ const BookingIn = () => {
           )
         `,
         )
-        .eq("status", "sent")
+        .in("status", ["sent", "confirmed"])
         .order("created_at", { ascending: false });
 
       // Filter by user if not admin
@@ -193,7 +193,7 @@ const BookingIn = () => {
         status: "confirmed",
         created_at: invoice.created_at,
         notes: invoice.notes,
-        confirmed_by_admin: true,
+        confirmed_by_admin: invoice.status === "confirmed", // Check actual status
         is_non_plot: true,
         profiles: profilesMap[invoice.user_id] || { full_name: "Unknown", email: "" },
         gang_divisions: invoice.non_plot_gang_divisions || [],
@@ -318,13 +318,26 @@ const BookingIn = () => {
     if (!isAdmin) return;
 
     try {
-      // Update all bookings in this invoice
-      const { error } = await supabase
-        .from("bookings")
-        .update({ confirmed_by_admin: true })
-        .eq("invoice_number", invoice.invoice_number);
+      // Check if this is a non-plot invoice
+      const isNonPlot = invoice.items[0]?.is_non_plot;
+      
+      if (isNonPlot) {
+        // Update non-plot invoice
+        const { error } = await supabase
+          .from("non_plot_invoices")
+          .update({ status: "confirmed" })
+          .eq("invoice_number", invoice.invoice_number);
 
-      if (error) throw error;
+        if (error) throw error;
+      } else {
+        // Update all plot bookings in this invoice
+        const { error } = await supabase
+          .from("bookings")
+          .update({ confirmed_by_admin: true })
+          .eq("invoice_number", invoice.invoice_number);
+
+        if (error) throw error;
+      }
 
       // Close the details dialog immediately so the background is visible
       setDetailsDialogOpen(false);

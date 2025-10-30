@@ -178,34 +178,6 @@ const handler = async (req: Request): Promise<Response> => {
     const emailData = await resendResponse.json();
     console.log("Email sent successfully:", emailData);
 
-    // Insert booking into admin's booking page (non_plot_invoices)
-    // This creates a record visible to all admins
-    
-    // Look up the user's UUID from their email
-    const { data: userProfile, error: profileError } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("email", invoiceDetails.bookedByEmail)
-      .single();
-    
-    if (profileError) {
-      console.error("Error fetching user profile:", profileError);
-    }
-    
-    const userId = userProfile?.id;
-    
-    // Update the existing invoice status to "sent"
-    const { error: updateError } = await supabase
-      .from("non_plot_invoices")
-      .update({ status: "sent" })
-      .eq("invoice_number", invoiceNumber);
-
-    if (updateError) {
-      console.error("Error updating invoice status:", updateError);
-    } else {
-      console.log("Invoice status updated to 'sent' successfully");
-    }
-
     return new Response(
       JSON.stringify({ 
         success: true, 
