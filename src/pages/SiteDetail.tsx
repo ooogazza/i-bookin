@@ -2221,7 +2221,6 @@ const SiteDetail = () => {
                     setNonPlotInvoiceDialogOpen(true);
                   }
                 }}
-                variant="outline"
                 size="sm"
                 title={invoiceItems.length > 0 ? "View Invoice" : "Create Non-Plot Invoice"}
                 className="gap-1.5"
