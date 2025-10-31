@@ -290,27 +290,6 @@ const Dashboard = () => {
           </div>
         )}
 
-        {!isAdmin && (
-          <div className="grid gap-6 md:grid-cols-2 mb-8">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-6 w-6 text-primary" />
-                  Quick Actions
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Button 
-                  onClick={() => setNonPlotInvoiceDialogOpen(true)}
-                  className="w-full"
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Create Non-Plot Invoice
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        )}
 
         {loading ? (
           <div className="text-center py-12">

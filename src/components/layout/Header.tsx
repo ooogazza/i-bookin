@@ -74,15 +74,36 @@ export const Header = ({
           {actions}
 
           {!isAdmin && user && location.pathname === "/dashboard" && (
-            <Button
-              variant="default"
-              onClick={() => navigate("/booking-in")}
-              size="sm"
-              className="whitespace-nowrap"
-            >
-              <FileText className="md:mr-2 h-4 w-4" />
-              <span className="hidden md:inline">Invoices</span>
-            </Button>
+            <>
+              <Button
+                variant="default"
+                onClick={() => openInvoiceDialog(`NPINV-${Date.now()}`)}
+                size="sm"
+                className="whitespace-nowrap"
+              >
+                {isMobile ? (
+                  <>
+                    <FileText className="h-4 w-4" />
+                    <Plus className="h-4 w-4 -ml-1" />
+                  </>
+                ) : (
+                  <>
+                    <FileText className="mr-2 h-4 w-4" />
+                    <Plus className="h-3 w-3 mr-2" />
+                    <span>Non-Plot Invoice</span>
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="default"
+                onClick={() => navigate("/booking-in")}
+                size="sm"
+                className="whitespace-nowrap"
+              >
+                <FileText className="md:mr-2 h-4 w-4" />
+                <span className="hidden md:inline">Invoices</span>
+              </Button>
+            </>
           )}
 
 
