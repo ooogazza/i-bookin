@@ -29,6 +29,7 @@ import { LiftTypeLabel } from "@/components/LiftTypeLabel";
 import { NonPlotInvoiceDialog } from "@/components/NonPlotInvoiceDialog";
 import { playSuccessSound } from "@/lib/soundUtils";
 import { saveBlobToDevice } from "@/lib/utils";
+import { isOnline } from "@/lib/offlineStorage";
 
 interface Site {
   id: string;
@@ -1600,6 +1601,35 @@ const SiteDetail = () => {
     }
 
     try {
+      // If offline, queue and exit early
+      if (!isOnline()) {
+        const invoiceNumber = `INV-${Date.now()}`;
+        const payload = {
+          invoiceNumber,
+          total: totalInvoiceValue,
+          notes: invoiceNotes,
+          imageUrl: null,
+          gangMembers: gangMembers.map(m => ({
+            name: m.name,
+            type: m.type,
+            amount: m.amount,
+            email: m.email || null,
+          })),
+        };
+        const { sendInvoiceWithOfflineSupport } = await import("@/lib/invoiceUtilsWithOffline");
+        await sendInvoiceWithOfflineSupport(payload, user.email || "User");
+        playSuccessSound();
+        toast.info("Invoice saved and queued for sending when online", { duration: 5000 });
+
+        setInvoiceItems([]);
+        setGangMembers(gangMembers.map(m => ({ ...m, amount: 0 })));
+        setInvoiceNotes("");
+        setNotesAmount(0);
+        handleRemoveInvoiceImage();
+        setInvoiceDialogOpen(false);
+        return;
+      }
+
       // Upload image if present
       let imageUrl: string | null = null;
       if (uploadedInvoiceImage) {

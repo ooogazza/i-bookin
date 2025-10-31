@@ -14,6 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { handleExportPDF, handleSendToAdmin } from "@/lib/invoiceUtils";
 import { GangDivisionCard } from "@/components/invoice/GangDivisionCard";
 import { playSuccessSound } from "@/lib/soundUtils";
+import { isOnline } from "@/lib/offlineStorage";
 
 interface SavedGangMember {
   id: string;
@@ -282,6 +283,35 @@ const handleAddExistingMember = (member: SavedGangMember) => {
     }
     setIsSending(true);
     try {
+      // Resolve user name (avoid network when offline)
+      let userName = user?.email || "Unknown";
+      if (isOnline()) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", user.id)
+          .single();
+        if (profile?.full_name) {
+          userName = profile.full_name;
+        }
+      }
+
+      // If offline, queue invoice and exit early (no uploads or DB writes)
+      if (!isOnline()) {
+        const invoicePayload = buildInvoice();
+        const { sendInvoiceWithOfflineSupport } = await import("@/lib/invoiceUtilsWithOffline");
+        await sendInvoiceWithOfflineSupport(invoicePayload, userName);
+
+        setInvoiceAmount(0);
+        setNotes("");
+        setGangMembers([]);
+        handleRemoveImage();
+        onOpenChange(false);
+        playSuccessSound();
+        toast.info("Invoice saved and queued for sending when online", { duration: 5000 });
+        return;
+      }
+
       // Upload image if present
       let imageUrl: string | null = null;
       if (uploadedImage) {
@@ -290,17 +320,6 @@ const handleAddExistingMember = (member: SavedGangMember) => {
           setIsSending(false);
           return;
         }
-      }
-
-      // Get user's full name
-      let userName = user?.email || "Unknown";
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("full_name")
-        .eq("id", user.id)
-        .single();
-      if (profile?.full_name) {
-        userName = profile.full_name;
       }
 
       // Save invoice to database
