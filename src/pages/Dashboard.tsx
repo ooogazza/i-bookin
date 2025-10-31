@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { developerLogos } from "@/lib/developerLogos";
 import { NonPlotInvoiceDialog } from "@/components/NonPlotInvoiceDialog";
 import { ManageBricklayersDialog } from "@/components/ManageBricklayersDialog";
+import { DashboardSearch } from "@/components/DashboardSearch";
 
 interface Developer {
   id: string;
@@ -246,10 +247,13 @@ const Dashboard = () => {
         showLogout 
         actions={
           isAdmin ? (
-            <Button onClick={() => setCreateSiteDialogOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              New Site
-            </Button>
+            <>
+              <DashboardSearch />
+              <Button onClick={() => setCreateSiteDialogOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                New Site
+              </Button>
+            </>
           ) : undefined
         }
       />
