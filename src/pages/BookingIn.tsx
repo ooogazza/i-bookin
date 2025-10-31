@@ -225,7 +225,8 @@ const BookingIn = () => {
         return acc;
       }, {});
 
-      const invoices = Object.values(grouped) as GroupedInvoice[];
+      const invoices = Object.values(grouped)
+        .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) as GroupedInvoice[];
 
       // Fetch viewed status for admin
       if (isAdmin) {
@@ -262,6 +263,13 @@ const BookingIn = () => {
           acc[userEmail].total_value += invoice.total_value;
           return acc;
         }, {});
+
+        // Sort each user's invoices by date (newest first)
+        Object.values(userGroups).forEach((userGroup: any) => {
+          userGroup.invoices.sort((a: GroupedInvoice, b: GroupedInvoice) => 
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
+        });
 
         setUserInvoices(Object.values(userGroups));
       }
