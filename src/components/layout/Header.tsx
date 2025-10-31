@@ -85,26 +85,6 @@ export const Header = ({
             </Button>
           )}
 
-          {!isAdmin && user && isSiteDetailPage && (
-            <Button
-              variant="default"
-              onClick={() => openInvoiceDialog(`NPINV-${Date.now()}`)} // unique invoice ID
-              size="sm"
-              className="whitespace-nowrap"
-            >
-              {isMobile ? (
-                <>
-                  <FileText className="h-4 w-4" />
-                  <Plus className="h-4 w-4 -ml-1" />
-                </>
-              ) : (
-                <>
-                  <FileText className="mr-2 h-4 w-4" />
-                  <span>Create Invoice</span>
-                </>
-              )}
-            </Button>
-          )}
 
           {showLogout && (
             <Button variant="outline" onClick={handleLogout} size="sm" className="whitespace-nowrap">
