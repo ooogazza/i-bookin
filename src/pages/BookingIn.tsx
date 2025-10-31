@@ -473,8 +473,16 @@ const BookingIn = () => {
           amount: m.amount
         }))
       };
-      await sendInvoiceToAdmin(payload, invoice.booked_by.full_name);
-      toast.success("Invoice sent to admin successfully");
+      
+      // Use offline-aware send function
+      const { sendInvoiceWithOfflineSupport } = await import("@/lib/invoiceUtilsWithOffline");
+      const result = await sendInvoiceWithOfflineSupport(payload, invoice.booked_by.full_name);
+      
+      if (result.queued) {
+        toast.info("Invoice queued for sending when online");
+      } else {
+        toast.success("Invoice sent to admin successfully");
+      }
     } catch (error: any) {
       console.error("Error sending invoice:", error);
       toast.error("Failed to send invoice to admin");

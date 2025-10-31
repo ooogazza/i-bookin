@@ -331,9 +331,10 @@ const divisions = gangMembers.map(m => ({
         .insert(divisions);
       if (divisionsError) throw divisionsError;
 
-      // Send PDF to admin
+      // Send PDF to admin with offline support
       const invoicePayload = buildInvoice();
-      await handleSendToAdmin(invoicePayload, userName);
+      const { sendInvoiceWithOfflineSupport } = await import("@/lib/invoiceUtilsWithOffline");
+      const result = await sendInvoiceWithOfflineSupport(invoicePayload, userName);
 
       setInvoiceAmount(0);
       setNotes("");
@@ -344,7 +345,11 @@ const divisions = gangMembers.map(m => ({
       // Play success sound
       playSuccessSound();
       
-      toast.success("Invoice saved and sent to admin");
+      if (result.queued) {
+        toast.info("Invoice saved and queued for sending when online", { duration: 5000 });
+      } else {
+        toast.success("Invoice saved and sent to admin");
+      }
     } catch (err) {
       console.error(err);
       toast.error("Failed to save invoice");
