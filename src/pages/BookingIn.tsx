@@ -15,6 +15,7 @@ import logo from "@/assets/logo.png";
 import { handleExportPDF as exportInvoicePDF, handleSendToAdmin as sendInvoiceToAdmin } from "@/lib/invoiceUtils";
 import { LiftTypeLabel } from "@/components/LiftTypeLabel";
 import { getLiftFullLabel } from "@/lib/liftTypeLabels";
+import { playSuccessSound } from "@/lib/soundUtils";
 
 interface BookingData {
   id: string;
@@ -397,6 +398,7 @@ const BookingIn = () => {
       );
 
       toast.success("Invoice confirmed successfully");
+      playSuccessSound();
 
       // Refresh in background to sync any other changes
       fetchBookings();
