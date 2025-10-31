@@ -2816,14 +2816,18 @@ const SiteDetail = () => {
                     <p className="text-lg font-bold text-primary">
                       £{getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType).toFixed(2)}
                     </p>
-                    {showLeavesValue && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">Leaves:</span>
-                        <span className="text-lg font-bold text-primary">
-                          £{(getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * ((100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType) - bookingPercentage) / 100)).toFixed(2)}
-                        </span>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Leaves:</span>
+                      <button
+                        onClick={() => {
+                          const remaining = 100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
+                          setBookingPercentage(remaining);
+                        }}
+                        className="text-lg font-bold text-primary hover:text-primary/80 transition-colors cursor-pointer"
+                      >
+                        £{(getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * ((100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType)) / 100)).toFixed(2)}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -2885,8 +2889,6 @@ const SiteDetail = () => {
                   <Slider
                     value={[bookingPercentage]}
                     onValueChange={(value) => setBookingPercentage(value[0])}
-                    onDragStart={() => setShowLeavesValue(true)}
-                    onDragEnd={() => setShowLeavesValue(true)}
                     min={1}
                     max={100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType)}
                     step={1}
@@ -2896,23 +2898,25 @@ const SiteDetail = () => {
                 <div className="p-4 bg-primary/10 rounded-lg">
                   <div className="flex justify-between items-center">
                     <span className="font-medium">Booking Value:</span>
-                    <span 
-                      className="text-xl font-bold text-primary cursor-pointer hover:underline"
+                    <button
+                      className="text-xl font-bold text-primary hover:text-primary/80 transition-colors cursor-pointer"
                       onClick={() => {
                         const currentValue = (getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * bookingPercentage) / 100;
-                        const newPercentage = prompt(`Enter booking value (£)`, currentValue.toFixed(2));
-                        if (newPercentage) {
-                          const val = parseFloat(newPercentage);
+                        const newValue = prompt(`Enter booking value (£)`, currentValue.toFixed(2));
+                        if (newValue) {
+                          const val = parseFloat(newValue);
                           const maxValue = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * (100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType)) / 100;
                           if (!isNaN(val) && val > 0 && val <= maxValue) {
                             const newPerc = Math.round((val / getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType)) * 100);
                             setBookingPercentage(newPerc);
+                          } else {
+                            toast.error(`Value must be between £0 and £${maxValue.toFixed(2)}`);
                           }
                         }
                       }}
                     >
                       £{((getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * bookingPercentage) / 100).toFixed(2)}
-                    </span>
+                    </button>
                   </div>
                 </div>
 
