@@ -485,7 +485,7 @@ const BookingIn = () => {
   };
 
   return (
-    <div className="min-h-screen bg-secondary/30">
+    <div className="min-h-screen bg-gradient-to-b from-background via-secondary/20 to-background">
       <style>
         {`
           @media print {
@@ -620,115 +620,120 @@ const BookingIn = () => {
         </div>
       )}
 
-      <main className="container py-8">
-        <div className="mb-8">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-              <FileText className="h-8 w-8 text-primary" />
-              Booking In
-            </h2>
-            <p className="text-muted-foreground">Invoice summary of all booked work</p>
+      <main className="container py-12 space-y-8">
+        {/* Hero Section */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-primary/80 p-8 md:p-12 shadow-xl">
+          <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,transparent,rgba(255,255,255,0.5))]" />
+          <div className="relative">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-3 rounded-xl bg-white/20 backdrop-blur-sm">
+                <FileText className="h-8 w-8 text-primary-foreground" />
+              </div>
+              <h1 className="text-4xl md:text-5xl font-bold text-primary-foreground">
+                Booking In
+              </h1>
+            </div>
+            <p className="text-primary-foreground/90 text-lg">
+              {isAdmin ? "Review and confirm submitted invoices" : "Track all your submitted invoices"}
+            </p>
+            {isAdmin && unviewedCount > 0 && (
+              <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm text-primary-foreground px-4 py-2 rounded-lg mt-4">
+                <span className="font-semibold">{unviewedCount} new invoices to review</span>
+              </div>
+            )}
           </div>
         </div>
 
         {loading ? (
-          <div className="text-center py-12">
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary/30 border-t-primary mb-4" />
             <p className="text-muted-foreground">Loading bookings...</p>
           </div>
         ) : isAdmin ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {userInvoices.length === 0 ? (
-              <Card className="col-span-full">
-                <CardContent className="text-center py-8">
-                  <p className="text-muted-foreground">No bookings yet</p>
-                </CardContent>
-              </Card>
-            ) : (
-              userInvoices.map((userGroup) => {
-                const unviewedInvoices = userGroup.invoices.filter((inv) => !inv.is_viewed && !inv.is_confirmed).length;
-                const confirmedInvoices = userGroup.invoices.filter((inv) => inv.is_confirmed).length;
-                const unconfirmedInvoices = userGroup.invoices.filter((inv) => !inv.is_confirmed).length;
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold">Submitted Invoices</h2>
+                <p className="text-muted-foreground mt-1">Review invoices by bricklayer</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {userInvoices.length === 0 ? (
+                <Card className="col-span-full border-2 border-dashed">
+                  <CardContent className="flex flex-col items-center justify-center py-16">
+                    <div className="p-4 rounded-full bg-muted mb-4">
+                      <FileText className="h-12 w-12 text-muted-foreground" />
+                    </div>
+                    <p className="text-xl font-semibold mb-2">No invoices yet</p>
+                    <p className="text-muted-foreground">Submitted invoices will appear here</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                userInvoices.map((userGroup) => {
+                  const unviewedInvoices = userGroup.invoices.filter((inv) => !inv.is_viewed && !inv.is_confirmed).length;
+                  const confirmedInvoices = userGroup.invoices.filter((inv) => inv.is_confirmed).length;
+                  const unconfirmedInvoices = userGroup.invoices.filter((inv) => !inv.is_confirmed).length;
 
-                return (
-                  <Card key={userGroup.user_id} className="hover:shadow-lg transition-shadow">
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <CardTitle className="text-xl">{userGroup.full_name}</CardTitle>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {unviewedInvoices > 0 && (
-                            <div className="flex items-center gap-1 bg-primary text-primary-foreground px-2 py-1 rounded-full text-xs font-semibold">
-                              {unviewedInvoices}
+                  return (
+                    <Card key={userGroup.user_id} className="group border-2 hover:border-primary transition-all duration-300 hover:shadow-xl relative overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <CardHeader className="relative pb-4">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <CardTitle className="text-xl mb-1">{userGroup.full_name}</CardTitle>
+                            <p className="text-sm text-muted-foreground">{maskEmail(userGroup.email)}</p>
+                          </div>
+                          {(unviewedInvoices > 0 || unconfirmedInvoices > 0) && (
+                            <div className="flex flex-col gap-2">
+                              {unviewedInvoices > 0 && (
+                                <div className="flex items-center gap-1 bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-semibold shadow-md">
+                                  {unviewedInvoices} new
+                                </div>
+                              )}
+                              {unconfirmedInvoices > 0 && (
+                                <div className="flex items-center gap-1 bg-warning text-warning-foreground px-3 py-1 rounded-full text-xs font-semibold shadow-md">
+                                  {unconfirmedInvoices} pending
+                                </div>
+                              )}
                             </div>
                           )}
-                          {unconfirmedInvoices > 0 && (
-                            <div className="flex items-center gap-1 bg-green-600 text-white px-2 py-1 rounded-full text-xs font-semibold">
-                              {unconfirmedInvoices}
-                            </div>
-                          )}
                         </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center pb-3 border-b">
-                          <span className="text-sm text-muted-foreground md:hidden">Tot. INV</span>
-                          <span className="text-sm text-muted-foreground hidden md:block">Total Invoices</span>
-                          <span className="font-semibold">{userGroup.invoices.length}</span>
+                      </CardHeader>
+                      <CardContent className="relative space-y-4">
+                        <div className="grid grid-cols-3 gap-3 p-4 rounded-xl bg-gradient-to-br from-secondary/50 to-secondary/30">
+                          <div className="text-center">
+                            <p className="text-xs text-muted-foreground mb-1">Total</p>
+                            <p className="text-lg font-bold">{userGroup.invoices.length}</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-xs text-muted-foreground mb-1">Confirmed</p>
+                            <p className="text-lg font-bold text-success">{confirmedInvoices}</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-xs text-muted-foreground mb-1">Pending</p>
+                            <p className="text-lg font-bold text-warning">{unconfirmedInvoices}</p>
+                          </div>
                         </div>
-                        <div className="flex justify-between items-center pb-3 border-b">
-                          <span className="text-sm text-muted-foreground md:hidden">Conf.</span>
-                          <span className="text-sm text-muted-foreground hidden md:block">Confirmed</span>
-                          <span className="font-semibold text-green-600">{confirmedInvoices}</span>
+                        
+                        <div className="p-4 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5">
+                          <p className="text-sm text-muted-foreground mb-1">Total Value</p>
+                          <p className="text-2xl font-bold text-primary">£{userGroup.total_value.toFixed(2)}</p>
                         </div>
-                        <div className="flex justify-between items-center pb-3 border-b">
-                          <span className="text-sm text-muted-foreground md:hidden">Tot. Val</span>
-                          <span className="text-sm text-muted-foreground hidden md:block">Total Value</span>
-                          <span className="text-xl font-bold text-primary">£{userGroup.total_value.toFixed(2)}</span>
-                        </div>
-                        <div className="flex gap-2 pt-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex-1"
-                            onClick={() => handleViewUserInvoices(userGroup)}
-                          >
-                            <span className="md:hidden">View</span>
-                            <span className="hidden md:inline">View Invoices</span>
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              if (!confirm(`Delete all invoices for ${userGroup.full_name}?`)) return;
-                              try {
-                                const invoiceNumbers = userGroup.invoices.map((inv) => inv.invoice_number);
-                                
-                                // Delete from bookings table
-                                await supabase.from("bookings").delete().in("invoice_number", invoiceNumbers);
-                                
-                                // Delete from non_plot_invoices table
-                                await supabase.from("non_plot_invoices").delete().in("invoice_number", invoiceNumbers);
-                                
-                                toast.success("User invoices deleted");
-                                fetchBookings();
-                              } catch (error: any) {
-                                toast.error("Failed to delete invoices");
-                                console.error("Error:", error);
-                              }
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })
-            )}
+
+                        <Button
+                          variant="default"
+                          size="lg"
+                          className="w-full shadow-md"
+                          onClick={() => handleViewUserInvoices(userGroup)}
+                        >
+                          View All Invoices
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  );
+                })
+              )}
+            </div>
           </div>
         ) : (
           <Card>

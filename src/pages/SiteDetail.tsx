@@ -11,7 +11,7 @@ import { Slider } from "@/components/ui/slider";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Settings, Plus, Users, Trash2, Ruler, FileText, X, ArrowUp, ChevronDown, Send, Upload, Image as ImageIcon } from "lucide-react";
+import { Settings, Plus, Users, Trash2, Ruler, FileText, X, ArrowUp, ChevronDown, Send, Upload, Image as ImageIcon, Building2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import jsPDF from "jspdf";
@@ -33,6 +33,7 @@ interface Site {
   id: string;
   name: string;
   description: string | null;
+  location: string | null;
   number_of_plots: number;
   number_of_house_types: number;
   developer_id: string | null;
@@ -2016,7 +2017,7 @@ const SiteDetail = () => {
   const developerLogo = developer ? developerLogos[developer.name] : undefined;
 
   return (
-    <div className="min-h-screen bg-secondary/30">
+    <div className="min-h-screen bg-gradient-to-b from-background via-secondary/20 to-background">
       {/* Sticky Header with Column Titles */}
       {showStickyHeader && site && (
         <div className="fixed top-16 left-0 right-0 z-40 bg-background/95 backdrop-blur border-b shadow-md">
@@ -2161,7 +2162,7 @@ const SiteDetail = () => {
         }
       />
       
-      <main className="container py-8">
+      <main className="container py-12 space-y-8">
         {/* Sticky Scroll Indicators */}
         {showScrollUpIndicator && (
           <div 
@@ -2180,43 +2181,73 @@ const SiteDetail = () => {
           </div>
         )}
         
-        {/* Mobile Layout - Below Header */}
-        <div className="md:hidden mb-6 flex items-center gap-2">
-          {developerLogo && (
-            <img 
-              src={developerLogo} 
-              alt={developer?.name || "Developer"}
-              className="h-10 w-auto object-contain rounded-lg"
-            />
-          )}
-          <span className="text-sm text-black dark:text-white font-medium">
-            {site.name}
-          </span>
+        {/* Hero Section */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-primary/80 p-8 md:p-12 shadow-xl">
+          <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,transparent,rgba(255,255,255,0.5))]" />
+          <div className="relative">
+            <div className="flex flex-col md:flex-row md:items-center gap-6">
+              {developerLogo && (
+                <div className="flex-shrink-0">
+                  <div className="p-4 rounded-2xl bg-white/20 backdrop-blur-sm">
+                    <img 
+                      src={developerLogo} 
+                      alt={developer?.name || "Developer"}
+                      className="h-16 w-auto object-contain"
+                    />
+                  </div>
+                </div>
+              )}
+              <div className="flex-1">
+                <p className="text-primary-foreground/80 text-sm font-medium mb-2">
+                  {developer?.name || "Developer"}
+                </p>
+                <h1 className="text-4xl md:text-5xl font-bold text-primary-foreground mb-3">
+                  {site.name}
+                </h1>
+                {site.location && (
+                  <p className="text-primary-foreground/90 text-lg">
+                    {site.location}
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <div className="px-5 py-3 rounded-xl bg-white/20 backdrop-blur-sm text-center min-w-[120px]">
+                  <p className="text-primary-foreground/80 text-sm mb-1">Total Plots</p>
+                  <p className="text-2xl font-bold text-primary-foreground">{plots.length}</p>
+                </div>
+                <div className="px-5 py-3 rounded-xl bg-white/20 backdrop-blur-sm text-center min-w-[120px]">
+                  <p className="text-primary-foreground/80 text-sm mb-1">House Types</p>
+                  <p className="text-2xl font-bold text-primary-foreground">{houseTypes.length}</p>
+                </div>
+              </div>
+            </div>
+            {site.description && (
+              <p className="text-primary-foreground/90 mt-6 max-w-3xl">
+                {site.description}
+              </p>
+            )}
+          </div>
         </div>
 
-        {site.description && (
-          <div className="mb-8">
-            <p className="text-muted-foreground">{site.description}</p>
-          </div>
-        )}
-
-        <div className="mb-6 flex gap-4 justify-between items-center">
-          <div className="flex gap-4">
-          </div>
-        </div>
-
+        {/* House Types Section */}
         {houseTypes.length > 0 && isAdmin && (
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-3">House Types</h3>
-            <div className="flex gap-2 flex-wrap">
+          <div>
+            <h3 className="text-2xl font-bold mb-4">House Types</h3>
+            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {houseTypes.map(ht => (
                 <Button
                   key={ht.id}
                   variant="outline"
-                  size="sm"
+                  size="lg"
+                  className="h-auto py-4 justify-start hover:bg-primary/10 hover:border-primary transition-all"
                   onClick={() => openHouseTypeDialog(ht)}
                 >
-                  {ht.name}
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <Settings className="h-4 w-4 text-primary" />
+                    </div>
+                    <span className="font-semibold">{ht.name}</span>
+                  </div>
                 </Button>
               ))}
             </div>
@@ -2224,47 +2255,72 @@ const SiteDetail = () => {
         )}
 
 
-        {/* Search Box */}
-        <div className="mb-6">
-          <div className="flex gap-3 items-end flex-wrap">
-            <div className="flex-1 min-w-[200px]">
-              <Label htmlFor="searchPlot">Plot Number</Label>
-              <Input
-                id="searchPlot"
-                type="number"
-                placeholder="Enter plot number"
-                value={searchPlotNumber}
-                onChange={(e) => setSearchPlotNumber(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSearchPlot()}
-              />
+        {/* Search Section */}
+        <Card className="border-2">
+          <CardHeader>
+            <CardTitle className="text-xl">Search Plots</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-3 items-end flex-wrap">
+              <div className="flex-1 min-w-[200px]">
+                <Label htmlFor="searchPlot">Plot Number</Label>
+                <Input
+                  id="searchPlot"
+                  type="number"
+                  placeholder="Enter plot number"
+                  value={searchPlotNumber}
+                  onChange={(e) => setSearchPlotNumber(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSearchPlot()}
+                />
+              </div>
+              <div className="flex-1 min-w-[200px]">
+                <Label htmlFor="searchPhase">Phase (Optional)</Label>
+                <Select value={searchPhase} onValueChange={setSearchPhase}>
+                  <SelectTrigger id="searchPhase">
+                    <SelectValue placeholder="All Phases" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(LIFT_LABELS).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button 
+                onClick={() => {
+                  handleSearchPlot();
+                  setSearchPlotNumber("");
+                  setSearchPhase("");
+                }}
+                className="shadow-md"
+              >
+                Search
+              </Button>
             </div>
-            <div className="flex-1 min-w-[200px]">
-              <Label htmlFor="searchPhase">Phase (Optional)</Label>
-              <Select value={searchPhase} onValueChange={setSearchPhase}>
-                <SelectTrigger id="searchPhase">
-                  <SelectValue placeholder="All Phases" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(LIFT_LABELS).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <Button onClick={() => {
-              handleSearchPlot();
-              setSearchPlotNumber("");
-              setSearchPhase("");
-            }}>Search</Button>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        <div className="relative">
-          <h3 className="text-2xl font-bold tracking-tight mb-4">Plot Grid</h3>
+        <div>
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-2xl font-bold">Plot Grid</h3>
+              <p className="text-muted-foreground mt-1">View and manage plot bookings</p>
+            </div>
+          </div>
           {plots.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
-              {isAdmin ? "No plots created yet" : "No plots assigned to you"}
-            </p>
+            <Card className="border-2 border-dashed">
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <div className="p-4 rounded-full bg-muted mb-4">
+                  <Building2 className="h-12 w-12 text-muted-foreground" />
+                </div>
+                <p className="text-xl font-semibold mb-2">
+                  {isAdmin ? "No plots created yet" : "No plots assigned to you"}
+                </p>
+                <p className="text-muted-foreground">
+                  {isAdmin ? "Create plots to get started" : "Contact an administrator for plot assignments"}
+                </p>
+              </CardContent>
+            </Card>
           ) : (
             <div ref={pinchZoomContainerRef} className="overflow-hidden border rounded-lg touch-none">
               <div 

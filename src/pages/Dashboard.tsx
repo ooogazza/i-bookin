@@ -259,14 +259,14 @@ const Dashboard = () => {
 
 
   return (
-    <div className="min-h-screen bg-secondary/30">
+    <div className="min-h-screen bg-gradient-to-b from-background via-secondary/20 to-background">
       <Header 
         showLogout 
         actions={
           isAdmin ? (
             <>
               <DashboardSearch />
-              <Button onClick={() => setCreateSiteDialogOpen(true)}>
+              <Button onClick={() => setCreateSiteDialogOpen(true)} className="shadow-md">
                 <Plus className="mr-2 h-4 w-4" />
                 New Site
               </Button>
@@ -275,66 +275,97 @@ const Dashboard = () => {
         }
       />
       
-      <main className="container py-8">
-        <div className="mb-8">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-            <p className="text-muted-foreground">
-              {isAdmin ? "Manage all developers and sites" : "View your assigned sites"}
+      <main className="container py-12 space-y-8">
+        {/* Hero Section */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-primary/80 p-8 md:p-12 shadow-xl">
+          <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,transparent,rgba(255,255,255,0.5))]" />
+          <div className="relative">
+            <h1 className="text-4xl md:text-5xl font-bold text-primary-foreground mb-3">
+              Welcome back, {user?.email?.split('@')[0] || 'User'}
+            </h1>
+            <p className="text-primary-foreground/90 text-lg mb-6">
+              {isAdmin ? "Manage your entire construction workflow" : "View your assigned sites and invoices"}
             </p>
+            {isAdmin && unconfirmedInvoicesCount > 0 && (
+              <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm text-primary-foreground px-4 py-2 rounded-lg">
+                <FileText className="h-5 w-5" />
+                <span className="font-semibold">{unconfirmedInvoicesCount} invoices awaiting confirmation</span>
+              </div>
+            )}
           </div>
         </div>
 
+        {/* Quick Actions */}
         {isAdmin && (
-          <div className="grid gap-6 md:grid-cols-2 mb-8">
-            <Card className="cursor-pointer hover:bg-muted/50 transition-colors relative" onClick={() => navigate("/booking-in")}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-6 w-6 text-primary" />
-                  Booking In
-                  <div className="ml-auto flex items-center gap-2">
-                    {unviewedInvoicesCount > 0 && (
-                      <div className="flex items-center gap-1 bg-primary text-primary-foreground px-2 py-1 rounded-full text-xs font-semibold">
-                        {unviewedInvoicesCount}
-                      </div>
-                    )}
-                    {unconfirmedInvoicesCount > 0 && (
-                      <div className="flex items-center gap-1 bg-green-600 text-white px-2 py-1 rounded-full text-xs font-semibold">
-                        {unconfirmedInvoicesCount}
+          <div>
+            <h2 className="text-2xl font-bold mb-4">Quick Actions</h2>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Card 
+                className="group cursor-pointer border-2 hover:border-primary transition-all duration-300 hover:shadow-lg relative overflow-hidden" 
+                onClick={() => navigate("/booking-in")}
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <CardHeader className="relative">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="p-3 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                      <FileText className="h-6 w-6 text-primary" />
+                    </div>
+                    {(unviewedInvoicesCount > 0 || unconfirmedInvoicesCount > 0) && (
+                      <div className="flex items-center gap-2">
+                        {unviewedInvoicesCount > 0 && (
+                          <div className="flex items-center gap-1 bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-semibold shadow-md">
+                            {unviewedInvoicesCount} new
+                          </div>
+                        )}
+                        {unconfirmedInvoicesCount > 0 && (
+                          <div className="flex items-center gap-1 bg-success text-success-foreground px-3 py-1 rounded-full text-sm font-semibold shadow-md">
+                            {unconfirmedInvoicesCount} pending
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
-                </CardTitle>
-                <CardDescription>
-                  View all invoices
-                </CardDescription>
-              </CardHeader>
-            </Card>
-            
-            <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setManageBricklayersDialogOpen(true)}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <UserCog className="h-6 w-6 text-primary" />
-                  Manage Bricklayers
-                </CardTitle>
-                <CardDescription>
-                  Invite and assign bricklayers to sites
-                </CardDescription>
-              </CardHeader>
-            </Card>
+                  <CardTitle className="text-xl mb-2">Booking In</CardTitle>
+                  <CardDescription className="text-base">
+                    Review and confirm submitted invoices
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+              
+              <Card 
+                className="group cursor-pointer border-2 hover:border-primary transition-all duration-300 hover:shadow-lg relative overflow-hidden" 
+                onClick={() => setManageBricklayersDialogOpen(true)}
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <CardHeader className="relative">
+                  <div className="p-3 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors mb-2 w-fit">
+                    <UserCog className="h-6 w-6 text-primary" />
+                  </div>
+                  <CardTitle className="text-xl mb-2">Manage Bricklayers</CardTitle>
+                  <CardDescription className="text-base">
+                    Invite and assign bricklayers to sites
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </div>
           </div>
         )}
 
         {!isAdmin && (
-          <div className="grid gap-6 md:grid-cols-2 mb-8">
-            <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate("/booking-in")}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+          <div>
+            <h2 className="text-2xl font-bold mb-4">Quick Actions</h2>
+            <Card 
+              className="group cursor-pointer border-2 hover:border-primary transition-all duration-300 hover:shadow-lg relative overflow-hidden max-w-md" 
+              onClick={() => navigate("/booking-in")}
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <CardHeader className="relative">
+                <div className="p-3 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors mb-2 w-fit">
                   <FileText className="h-6 w-6 text-primary" />
-                  Invoices
-                </CardTitle>
-                <CardDescription>
-                  View and manage your invoices
+                </div>
+                <CardTitle className="text-xl mb-2">Invoices</CardTitle>
+                <CardDescription className="text-base">
+                  View and manage your submitted invoices
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -342,53 +373,70 @@ const Dashboard = () => {
         )}
 
 
-        {loading ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">Loading developers...</p>
+        {/* Developers Section */}
+        <div>
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold">Developers & Sites</h2>
+              <p className="text-muted-foreground mt-1">Browse active development projects</p>
+            </div>
           </div>
-        ) : developers.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <Building2 className="h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-lg font-medium mb-2">
-                {isAdmin ? "No developers yet" : "No sites assigned"}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {isAdmin 
-                  ? "No developers have been added to the system"
-                  : "You haven't been assigned to any sites yet. Contact an administrator to get access."}
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {developers.map((developer) => {
-              const logo = developerLogos[developer.name];
-              return (
-                <Card
-                  key={developer.id}
-                  className="cursor-pointer hover:shadow-lg transition-shadow"
-                  onClick={() => navigate(`/developer/${developer.id}`)}
-                >
-                  <CardHeader>
-                    <div className="flex items-center justify-center h-[120px] w-full p-4">
-                      {logo && (
-                        <img 
-                          src={logo} 
-                          alt={developer.name}
-                          className="h-full w-full object-contain rounded-lg"
-                        />
-                      )}
-                    </div>
-                    <CardDescription className="mt-3 text-center">
-                      {developer.site_count || 0} site{developer.site_count !== 1 ? 's' : ''}
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-              );
-            })}
-          </div>
-        )}
+
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary/30 border-t-primary mb-4" />
+              <p className="text-muted-foreground">Loading developers...</p>
+            </div>
+          ) : developers.length === 0 ? (
+            <Card className="border-2 border-dashed">
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <div className="p-4 rounded-full bg-muted mb-4">
+                  <Building2 className="h-12 w-12 text-muted-foreground" />
+                </div>
+                <p className="text-xl font-semibold mb-2">
+                  {isAdmin ? "No developers yet" : "No sites assigned"}
+                </p>
+                <p className="text-muted-foreground text-center max-w-md">
+                  {isAdmin 
+                    ? "No developers have been added to the system"
+                    : "You haven't been assigned to any sites yet. Contact an administrator to get access."}
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {developers.map((developer) => {
+                const logo = developerLogos[developer.name];
+                return (
+                  <Card
+                    key={developer.id}
+                    className="group cursor-pointer border-2 hover:border-primary transition-all duration-300 hover:shadow-xl relative overflow-hidden"
+                    onClick={() => navigate(`/developer/${developer.id}`)}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <CardHeader className="relative">
+                      <div className="flex items-center justify-center h-[140px] w-full p-6 mb-4 rounded-xl bg-gradient-to-br from-secondary/50 to-secondary/30 group-hover:from-secondary/70 group-hover:to-secondary/50 transition-colors">
+                        {logo && (
+                          <img 
+                            src={logo} 
+                            alt={developer.name}
+                            className="h-full w-full object-contain"
+                          />
+                        )}
+                      </div>
+                      <div className="text-center">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-semibold">
+                          <Building2 className="h-4 w-4" />
+                          {developer.site_count || 0} {developer.site_count === 1 ? 'Site' : 'Sites'}
+                        </div>
+                      </div>
+                    </CardHeader>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
         {/* Create Site Dialog */}
         <Dialog open={createSiteDialogOpen} onOpenChange={setCreateSiteDialogOpen}>
