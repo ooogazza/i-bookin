@@ -354,7 +354,6 @@ export function ManageBricklayersDialog({ open, onOpenChange }: ManageBricklayer
                         <div className="flex items-center justify-between">
                           <div className="space-y-1">
                             <p className="font-medium">{user.full_name || user.email}</p>
-                            <p className="text-sm text-muted-foreground">{user.email}</p>
                             <div className="flex items-center gap-2 text-sm">
                               <Building2 className="h-3 w-3" />
                               <span className="text-muted-foreground">
@@ -370,7 +369,6 @@ export function ManageBricklayersDialog({ open, onOpenChange }: ManageBricklayer
                               size="sm"
                               onClick={() => handleViewPlots(user)}
                             >
-                              <MapPin className="h-4 w-4 mr-1" />
                               View Plots
                             </Button>
                             <Button 
