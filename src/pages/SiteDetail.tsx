@@ -11,7 +11,7 @@ import { Slider } from "@/components/ui/slider";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Settings, Plus, Users, Trash2, Ruler, FileText, X, ArrowUp, ChevronDown, Send, Upload, Image as ImageIcon } from "lucide-react";
+import { Settings, Plus, Users, Trash2, Ruler, FileText, X, ArrowUp, ChevronDown, Send, Upload, Image as ImageIcon, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import jsPDF from "jspdf";
@@ -2812,17 +2812,30 @@ const SiteDetail = () => {
                           <div className="flex items-center justify-between">
                             <p className="text-sm font-medium truncate flex-1">{file.name}</p>
                             {!progress && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRemoveUploadedDrawing(index);
-                                }}
-                                title="Remove"
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
+                              <div className="flex gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleExportDrawing(fileUrl, file.name);
+                                  }}
+                                  title="Download"
+                                >
+                                  <Download className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRemoveUploadedDrawing(index);
+                                  }}
+                                  title="Remove"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
                             )}
                           </div>
                           <p className="text-xs text-primary font-medium">
@@ -2865,30 +2878,48 @@ const SiteDetail = () => {
                         )}
                         <div className="flex items-center justify-between">
                           <p className="text-sm font-medium truncate flex-1">{drawing.file_name}</p>
-                          {isAdmin && (
+                          <div className="flex gap-1">
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleDeleteExistingDrawing(drawing.id, drawing.file_url);
+                                handleExportDrawing(drawing.file_url, drawing.file_name);
                               }}
-                              title="Delete"
+                              title="Download"
                             >
-                              <Trash2 className="h-4 w-4 text-destructive" />
+                              <Download className="h-4 w-4" />
                             </Button>
-                          )}
+                            {isAdmin && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteExistingDrawing(drawing.id, drawing.file_url);
+                                }}
+                                title="Delete"
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
                         <Button
-                          variant="default"
+                          variant="outline"
                           size="sm"
                           className="w-full"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleExportDrawing(drawing.file_url, drawing.file_name);
+                            handleViewDrawing(
+                              drawing.file_url, 
+                              drawing.file_type, 
+                              drawing.file_name, 
+                              drawing.preview_url
+                            );
                           }}
                         >
-                          Export
+                          View
                         </Button>
                       </CardContent>
                     </Card>
