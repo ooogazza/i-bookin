@@ -87,6 +87,9 @@ export const ZoomableImageViewer = ({ src, alt, startInFullscreen = false, onFul
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    // Prevent default to disable browser zoom
+    e.preventDefault();
+    
     if (e.touches.length === 2) {
       // Clear any pending drag start
       if (dragStartTimeoutRef.current) {
@@ -98,24 +101,21 @@ export const ZoomableImageViewer = ({ src, alt, startInFullscreen = false, onFul
       const center = getTouchCenter(e.touches);
       setTouchStart({ dist, center });
     } else if (e.touches.length === 1) {
-      // Double tap detection for fullscreen only
-      if (isFullscreen) {
-        const now = Date.now();
-        const timeSinceLastTap = now - lastTapRef.current;
-        if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
-          // Double tap detected - reset zoom
-          e.preventDefault();
-          handleReset();
-          lastTapRef.current = 0;
-          // Clear any pending drag start
-          if (dragStartTimeoutRef.current) {
-            clearTimeout(dragStartTimeoutRef.current);
-            dragStartTimeoutRef.current = null;
-          }
-          return;
+      // Double tap detection
+      const now = Date.now();
+      const timeSinceLastTap = now - lastTapRef.current;
+      if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
+        // Double tap detected - reset zoom
+        handleReset();
+        lastTapRef.current = 0;
+        // Clear any pending drag start
+        if (dragStartTimeoutRef.current) {
+          clearTimeout(dragStartTimeoutRef.current);
+          dragStartTimeoutRef.current = null;
         }
-        lastTapRef.current = now;
+        return;
       }
+      lastTapRef.current = now;
       
       // Delay setting isDragging to allow double-tap detection
       const touchX = e.touches[0].clientX;
@@ -132,6 +132,9 @@ export const ZoomableImageViewer = ({ src, alt, startInFullscreen = false, onFul
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
+    // Prevent default to disable browser zoom
+    e.preventDefault();
+    
     if (e.touches.length === 2 && touchStart) {
       // Pinch zoom
       setIsInteracting(true);
@@ -293,7 +296,10 @@ export const ZoomableImageViewer = ({ src, alt, startInFullscreen = false, onFul
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+        style={{ 
+          cursor: isDragging ? 'grabbing' : 'grab',
+          touchAction: 'none'
+        }}
       >
         <img
           ref={imageRef}
@@ -373,7 +379,10 @@ export const ZoomableImageViewer = ({ src, alt, startInFullscreen = false, onFul
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+        style={{ 
+          cursor: isDragging ? 'grabbing' : 'grab',
+          touchAction: 'none'
+        }}
       >
         <img
           src={src}
