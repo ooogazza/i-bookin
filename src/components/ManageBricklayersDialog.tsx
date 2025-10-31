@@ -475,7 +475,10 @@ export function ManageBricklayersDialog({ open, onOpenChange }: ManageBricklayer
                           <span>{plot.site_name}</span>
                         </div>
                         {plot.site_location && (
-                          <p className="text-xs text-muted-foreground">{plot.site_location}</p>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <MapPin className="h-3 w-3" />
+                            <span>{plot.site_location}</span>
+                          </div>
                         )}
                       </div>
                       <Button variant="ghost" size="sm">
