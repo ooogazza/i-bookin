@@ -11,7 +11,7 @@ import { Slider } from "@/components/ui/slider";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Settings, Plus, Users, Trash2, Ruler, FileText, X, ArrowUp, ChevronDown, Send } from "lucide-react";
+import { Settings, Plus, Users, Trash2, Ruler, FileText, X, ArrowUp, ChevronDown, Send, Upload, Image as ImageIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import jsPDF from "jspdf";
@@ -208,6 +208,9 @@ const SiteDetail = () => {
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const [nonPlotInvoiceDialogOpen, setNonPlotInvoiceDialogOpen] = useState(false);
   const [highlightedPlotId, setHighlightedPlotId] = useState<string | null>(null);
+  const [uploadedInvoiceImage, setUploadedInvoiceImage] = useState<File | null>(null);
+  const [invoiceImagePreviewUrl, setInvoiceImagePreviewUrl] = useState<string | null>(null);
+  const [uploadingInvoiceImage, setUploadingInvoiceImage] = useState(false);
   
   const stickyScrollRef = useRef<HTMLDivElement>(null);
   const mainScrollRef = useRef<HTMLDivElement>(null);
@@ -1502,6 +1505,66 @@ const SiteDetail = () => {
     }
   };
 
+  const handleInvoiceImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      toast.error("Please upload a valid image (JPEG, PNG, or WebP)");
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size must be less than 5MB");
+      return;
+    }
+
+    setUploadedInvoiceImage(file);
+    
+    // Create preview URL
+    const previewUrl = URL.createObjectURL(file);
+    setInvoiceImagePreviewUrl(previewUrl);
+  };
+
+  const handleRemoveInvoiceImage = () => {
+    if (invoiceImagePreviewUrl) {
+      URL.revokeObjectURL(invoiceImagePreviewUrl);
+    }
+    setUploadedInvoiceImage(null);
+    setInvoiceImagePreviewUrl(null);
+  };
+
+  const uploadInvoiceImageToStorage = async (): Promise<string | null> => {
+    if (!uploadedInvoiceImage || !user) return null;
+
+    setUploadingInvoiceImage(true);
+    try {
+      const fileExt = uploadedInvoiceImage.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError, data } = await supabase.storage
+        .from('invoice-images')
+        .upload(fileName, uploadedInvoiceImage);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('invoice-images')
+        .getPublicUrl(fileName);
+
+      return publicUrl;
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      toast.error("Failed to upload image");
+      return null;
+    } finally {
+      setUploadingInvoiceImage(false);
+    }
+  };
+
   const handleConfirmInvoice = async () => {
     if (!user) return;
 
@@ -1516,6 +1579,15 @@ const SiteDetail = () => {
     }
 
     try {
+      // Upload image if present
+      let imageUrl: string | null = null;
+      if (uploadedInvoiceImage) {
+        imageUrl = await uploadInvoiceImageToStorage();
+        if (!imageUrl) {
+          return;
+        }
+      }
+
       const invoiceNumber = `INV-${Date.now()}`;
       
       // Generate PDF for email
@@ -1675,7 +1747,8 @@ const SiteDetail = () => {
             booked_value: item.bookedValue,
             invoice_number: invoiceNumber,
             status: "confirmed",
-            notes: invoiceNotes
+            notes: invoiceNotes,
+            image_url: imageUrl
           })
           .select()
           .single();
@@ -1730,6 +1803,7 @@ const SiteDetail = () => {
       setGangMembers(gangMembers.map(m => ({ ...m, amount: 0 })));
       setInvoiceNotes("");
       setNotesAmount(0);
+      handleRemoveInvoiceImage();
       setInvoiceDialogOpen(false);
       fetchSiteData();
     } catch (error: any) {
@@ -3166,6 +3240,45 @@ const SiteDetail = () => {
                         Use this slider to add extra charges like materials, travel, etc.
                       </p>
                     </div>
+
+                    {/* Image Upload Section */}
+                    <div className="space-y-2">
+                      <Label>Attach Image (Optional)</Label>
+                      
+                      {!invoiceImagePreviewUrl ? (
+                        <div className="border-2 border-dashed border-muted rounded-lg p-4 hover:border-primary/50 transition-colors">
+                          <label htmlFor="invoice-image-upload" className="cursor-pointer flex flex-col items-center gap-2">
+                            <Upload className="h-8 w-8 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">Click to upload image</span>
+                            <span className="text-xs text-muted-foreground">JPEG, PNG or WebP (max 5MB)</span>
+                          </label>
+                          <input
+                            id="invoice-image-upload"
+                            type="file"
+                            accept="image/jpeg,image/jpg,image/png,image/webp"
+                            onChange={handleInvoiceImageUpload}
+                            className="hidden"
+                          />
+                        </div>
+                      ) : (
+                        <div className="relative border rounded-lg overflow-hidden">
+                          <img 
+                            src={invoiceImagePreviewUrl} 
+                            alt="Invoice attachment" 
+                            className="w-full h-auto max-h-64 object-contain bg-muted"
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-2 right-2"
+                            onClick={handleRemoveInvoiceImage}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               )}
@@ -3203,9 +3316,9 @@ const SiteDetail = () => {
                   <Button 
                     onClick={handleConfirmInvoice} 
                     className="flex-1"
-                    disabled={gangMembers.length === 0 || Math.abs(remainingToAllocate) > 0.01}
+                    disabled={gangMembers.length === 0 || Math.abs(remainingToAllocate) > 0.01 || uploadingInvoiceImage}
                   >
-                    Send to Admin
+                    {uploadingInvoiceImage ? "Uploading..." : "Send to Admin"}
                   </Button>
                 </div>
               )}

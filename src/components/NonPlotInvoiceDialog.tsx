@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { FileText } from "lucide-react";
+import { FileText, Upload, X, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -47,6 +47,9 @@ export const NonPlotInvoiceDialog = ({
   const [tempAmount, setTempAmount] = useState("0");
   const [notes, setNotes] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [uploadedImage, setUploadedImage] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const [gangMembers, setGangMembers] = useState<GangMember[]>([]);
   const [savedMembers, setSavedMembers] = useState<SavedGangMember[]>([]);
@@ -63,6 +66,12 @@ const [memberEmail, setMemberEmail] = useState("");
       loadSavedMembers();
     } else {
       document.body.style.overflow = "auto";
+      // Clean up image preview URL when dialog closes
+      if (imagePreviewUrl) {
+        URL.revokeObjectURL(imagePreviewUrl);
+        setImagePreviewUrl(null);
+      }
+      setUploadedImage(null);
     }
   }, [open]);
 
@@ -205,6 +214,66 @@ const handleAddExistingMember = (member: SavedGangMember) => {
     gangMembers,
   });
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      toast.error("Please upload a valid image (JPEG, PNG, or WebP)");
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size must be less than 5MB");
+      return;
+    }
+
+    setUploadedImage(file);
+    
+    // Create preview URL
+    const previewUrl = URL.createObjectURL(file);
+    setImagePreviewUrl(previewUrl);
+  };
+
+  const handleRemoveImage = () => {
+    if (imagePreviewUrl) {
+      URL.revokeObjectURL(imagePreviewUrl);
+    }
+    setUploadedImage(null);
+    setImagePreviewUrl(null);
+  };
+
+  const uploadImageToStorage = async (): Promise<string | null> => {
+    if (!uploadedImage || !user) return null;
+
+    setUploadingImage(true);
+    try {
+      const fileExt = uploadedImage.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError, data } = await supabase.storage
+        .from('invoice-images')
+        .upload(fileName, uploadedImage);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('invoice-images')
+        .getPublicUrl(fileName);
+
+      return publicUrl;
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      toast.error("Failed to upload image");
+      return null;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const handleSaveInvoice = async () => {
     if (!user) return;
     if (remainingToAllocate !== 0) {
@@ -213,6 +282,16 @@ const handleAddExistingMember = (member: SavedGangMember) => {
     }
     setIsSending(true);
     try {
+      // Upload image if present
+      let imageUrl: string | null = null;
+      if (uploadedImage) {
+        imageUrl = await uploadImageToStorage();
+        if (!imageUrl) {
+          setIsSending(false);
+          return;
+        }
+      }
+
       // Get user's full name
       let userName = user?.email || "Unknown";
       const { data: profile } = await supabase
@@ -232,6 +311,7 @@ const handleAddExistingMember = (member: SavedGangMember) => {
           user_id: user.id,
           total_amount: invoiceAmount,
           notes,
+          image_url: imageUrl,
           status: "sent",
         })
         .select()
@@ -258,6 +338,7 @@ const divisions = gangMembers.map(m => ({
       setInvoiceAmount(0);
       setNotes("");
       setGangMembers([]);
+      handleRemoveImage();
       onOpenChange(false);
 
       // Play success sound
@@ -356,6 +437,45 @@ const divisions = gangMembers.map(m => ({
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                   />
+
+                  {/* Image Upload Section */}
+                  <div className="space-y-2">
+                    <Label>Attach Image (Optional)</Label>
+                    
+                    {!imagePreviewUrl ? (
+                      <div className="border-2 border-dashed border-muted rounded-lg p-4 hover:border-primary/50 transition-colors">
+                        <label htmlFor="image-upload" className="cursor-pointer flex flex-col items-center gap-2">
+                          <Upload className="h-8 w-8 text-muted-foreground" />
+                          <span className="text-sm text-muted-foreground">Click to upload image</span>
+                          <span className="text-xs text-muted-foreground">JPEG, PNG or WebP (max 5MB)</span>
+                        </label>
+                        <input
+                          id="image-upload"
+                          type="file"
+                          accept="image/jpeg,image/jpg,image/png,image/webp"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                        />
+                      </div>
+                    ) : (
+                      <div className="relative border rounded-lg overflow-hidden">
+                        <img 
+                          src={imagePreviewUrl} 
+                          alt="Invoice attachment" 
+                          className="w-full h-auto max-h-64 object-contain bg-muted"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-2 right-2"
+                          onClick={handleRemoveImage}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -393,13 +513,13 @@ const divisions = gangMembers.map(m => ({
 
               <Button
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                disabled={remainingToAllocate !== 0 || !notes.trim() || gangMembers.length === 0 || isSending}
+                disabled={remainingToAllocate !== 0 || !notes.trim() || gangMembers.length === 0 || isSending || uploadingImage}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleSaveInvoice();
                 }}
               >
-                {isSending ? "Sending..." : "Send to Admin"}
+                {uploadingImage ? "Uploading..." : isSending ? "Sending..." : "Send to Admin"}
               </Button>
             </div>
           </div>

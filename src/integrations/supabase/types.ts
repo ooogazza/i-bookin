@@ -21,6 +21,7 @@ export type Database = {
           confirmed_by_admin: boolean | null
           created_at: string
           id: string
+          image_url: string | null
           invoice_number: string | null
           lift_value_id: string | null
           notes: string | null
@@ -34,6 +35,7 @@ export type Database = {
           confirmed_by_admin?: boolean | null
           created_at?: string
           id?: string
+          image_url?: string | null
           invoice_number?: string | null
           lift_value_id?: string | null
           notes?: string | null
@@ -47,6 +49,7 @@ export type Database = {
           confirmed_by_admin?: boolean | null
           created_at?: string
           id?: string
+          image_url?: string | null
           invoice_number?: string | null
           lift_value_id?: string | null
           notes?: string | null
@@ -429,6 +432,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          image_url: string | null
           invoice_number: string
           notes: string | null
           status: string
@@ -439,6 +443,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          image_url?: string | null
           invoice_number: string
           notes?: string | null
           status?: string
@@ -449,6 +454,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          image_url?: string | null
           invoice_number?: string
           notes?: string | null
           status?: string
