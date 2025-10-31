@@ -2116,26 +2116,23 @@ const SiteDetail = () => {
                 </Button>
               </>
             )}
-            {!isAdmin && invoiceItems.length === 0 && (
+            {!isAdmin && (
               <Button 
-                onClick={() => setNonPlotInvoiceDialogOpen(true)}
+                onClick={() => {
+                  if (invoiceItems.length > 0) {
+                    setInvoiceDialogOpen(true);
+                  } else {
+                    setNonPlotInvoiceDialogOpen(true);
+                  }
+                }}
                 variant="outline"
                 size="sm"
-                title="Create Non-Plot Invoice"
+                title={invoiceItems.length > 0 ? "View Invoice" : "Create Non-Plot Invoice"}
               >
                 <FileText className="h-4 w-4" />
-                <span className="hidden lg:inline ml-2">Non-Plot Invoice</span>
-              </Button>
-            )}
-            {invoiceItems.length > 0 && (
-              <Button 
-                onClick={() => setInvoiceDialogOpen(true)}
-                variant="default"
-                size="sm"
-                title="View Invoice"
-              >
-                <FileText className="h-4 w-4" />
-                <span className="hidden lg:inline ml-2">View Invoice</span>
+                <span className="hidden lg:inline ml-2">
+                  {invoiceItems.length > 0 ? "View Invoice" : "Non-Plot Invoice"}
+                </span>
               </Button>
             )}
           </>
