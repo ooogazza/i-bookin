@@ -100,7 +100,6 @@ export const Header = ({
                 size="sm"
                 className="whitespace-nowrap gap-1.5"
               >
-                <Plus className="h-4 w-4" />
                 <FileText className="h-4 w-4" />
                 <span className="hidden md:inline">Invoices</span>
               </Button>

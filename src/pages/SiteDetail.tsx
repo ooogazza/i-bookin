@@ -2129,9 +2129,11 @@ const SiteDetail = () => {
                 variant="outline"
                 size="sm"
                 title={invoiceItems.length > 0 ? "View Invoice" : "Create Non-Plot Invoice"}
+                className="gap-1.5"
               >
+                <Plus className="h-4 w-4" />
                 <FileText className="h-4 w-4" />
-                <span className="hidden lg:inline ml-2">
+                <span className="hidden lg:inline">
                   {invoiceItems.length > 0 ? "View Invoice" : "Non-Plot Invoice"}
                 </span>
               </Button>
