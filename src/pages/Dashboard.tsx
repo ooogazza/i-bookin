@@ -304,6 +304,22 @@ const Dashboard = () => {
           </div>
         )}
 
+        {!isAdmin && (
+          <div className="grid gap-6 md:grid-cols-2 mb-8">
+            <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate("/booking-in")}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-6 w-6 text-primary" />
+                  Invoices
+                </CardTitle>
+                <CardDescription>
+                  View and manage your invoices
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
+        )}
+
 
         {loading ? (
           <div className="text-center py-12">
