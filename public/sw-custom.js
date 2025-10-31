@@ -36,26 +36,25 @@ async function syncInvoices() {
       }
     }
     
-    // Notify all clients about sync completion
-    const clients = await self.clients.matchAll();
+    // Always show notification (works even when app is closed)
+    await self.registration.showNotification('Invoices Sent', {
+      body: `${pendingInvoices.length} invoice${pendingInvoices.length !== 1 ? 's' : ''} sent successfully!`,
+      icon: '/apple-touch-icon.png',
+      badge: '/favicon.png',
+      tag: 'invoice-sync',
+      requireInteraction: false,
+      silent: false,
+      vibrate: [200, 100, 200]
+    });
     
+    // Also notify clients if app is open
+    const clients = await self.clients.matchAll();
     if (clients.length > 0) {
-      // App is open, notify clients
       clients.forEach(client => {
         client.postMessage({
           type: 'BACKGROUND_SYNC_SUCCESS',
           count: pendingInvoices.length
         });
-      });
-    } else {
-      // App is closed, show notification
-      await self.registration.showNotification('Invoices Sent', {
-        body: `${pendingInvoices.length} invoice${pendingInvoices.length !== 1 ? 's' : ''} sent successfully!`,
-        icon: '/apple-touch-icon.png',
-        badge: '/favicon.png',
-        tag: 'invoice-sync',
-        requireInteraction: false,
-        silent: false
       });
     }
     

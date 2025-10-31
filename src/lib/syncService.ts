@@ -86,9 +86,33 @@ export const setupSyncListeners = (): void => {
   });
 };
 
+// Request notification permission
+export const requestNotificationPermission = async (): Promise<boolean> => {
+  if (!('Notification' in window)) {
+    if (import.meta.env.DEV) {
+      console.log('Notifications not supported');
+    }
+    return false;
+  }
+
+  if (Notification.permission === 'granted') {
+    return true;
+  }
+
+  if (Notification.permission !== 'denied') {
+    const permission = await Notification.requestPermission();
+    return permission === 'granted';
+  }
+
+  return false;
+};
+
 // Initialize sync service
 export const initSyncService = async (): Promise<void> => {
   setupSyncListeners();
+  
+  // Request notification permission for background notifications
+  await requestNotificationPermission();
   
   // Try to sync any pending invoices on startup if online
   if (navigator.onLine) {

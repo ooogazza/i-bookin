@@ -100,9 +100,33 @@ export const registerBackgroundSync = async (tag: string): Promise<void> => {
   if ('serviceWorker' in navigator && 'sync' in ServiceWorkerRegistration.prototype) {
     try {
       const registration = await navigator.serviceWorker.ready;
-      await (registration as any).sync.register(tag);
-      if (import.meta.env.DEV) {
-        console.log('Background sync registered:', tag);
+      
+      // Ensure service worker is active
+      if (registration.active) {
+        await (registration as any).sync.register(tag);
+        if (import.meta.env.DEV) {
+          console.log('Background sync registered:', tag);
+        }
+      } else {
+        if (import.meta.env.DEV) {
+          console.log('Service worker not active yet, waiting...');
+        }
+        // Wait for service worker to become active
+        await new Promise<void>((resolve) => {
+          if (registration.installing) {
+            registration.installing.addEventListener('statechange', function() {
+              if (this.state === 'activated') {
+                resolve();
+              }
+            });
+          } else {
+            resolve();
+          }
+        });
+        await (registration as any).sync.register(tag);
+        if (import.meta.env.DEV) {
+          console.log('Background sync registered after activation:', tag);
+        }
       }
     } catch (error) {
       if (import.meta.env.DEV) {
