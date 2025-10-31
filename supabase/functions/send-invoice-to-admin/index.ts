@@ -107,7 +107,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Sending email to ${uniqueRecipients.length} recipient(s): ${uniqueRecipients.join(', ')}`);
 
-    const appUrl = "https://i-bookin.com";
+    const appUrl = Deno.env.get("SUPABASE_URL")?.includes("lovableproject.com") 
+      ? "https://a7554d0f-8e8c-4ff8-9aa7-a50abf1018b2.lovableproject.com"
+      : "https://i-bookin.com";
+    
+    // Logo URL - use the deployed production URL for reliable image loading in emails
+    const logoUrl = "https://i-bookin.com/apple-touch-icon.png";
 
     // Build invoice image HTML
     let imageHtml = "";
@@ -161,7 +166,7 @@ const handler = async (req: Request): Promise<Response> => {
                       <!-- Header with Logo -->
                       <tr>
                         <td style="padding: 40px 40px 20px; text-align: center; background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%); border-radius: 8px 8px 0 0;">
-                          <img src="${appUrl}/apple-touch-icon.png" alt="I-Bookin Logo" style="width: 80px; height: 80px; margin-bottom: 10px;" />
+                          <img src="${logoUrl}" alt="I-Bookin Logo" style="width: 80px; height: 80px; margin-bottom: 10px; display: block; margin-left: auto; margin-right: auto;" />
                           <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">New Invoice Submitted</h1>
                         </td>
                       </tr>
