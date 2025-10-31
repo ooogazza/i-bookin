@@ -301,10 +301,9 @@ const SiteDetail = () => {
     }
   }, [searchParams, houseTypes]);
 
-  // Clear drawing selections when dialog closes
+  // Clear long press state when dialog closes but keep selections
   useEffect(() => {
     if (!drawingsDialogOpen) {
-      setSelectedDrawingIds([]);
       setLongPressTriggered(false);
       // Clear any pending long press timer
       if (longPressTimer) {
@@ -889,9 +888,16 @@ const SiteDetail = () => {
 
   const selectAllDrawings = () => {
     const allIds = existingDrawings.map((d) => d.id);
-    setSelectedDrawingIds(allIds);
-    setLongPressTriggered(true);
-    toast.success(`Selected all ${allIds.length} drawings`);
+    // Toggle: if all are selected, clear them; otherwise select all
+    if (selectedDrawingIds.length === allIds.length) {
+      setSelectedDrawingIds([]);
+      setLongPressTriggered(true);
+      toast.success('Cleared selection');
+    } else {
+      setSelectedDrawingIds(allIds);
+      setLongPressTriggered(true);
+      toast.success(`Selected all ${allIds.length} drawings`);
+    }
   };
 
   const handleLongPressStart = (e: React.MouseEvent | React.TouchEvent) => {
