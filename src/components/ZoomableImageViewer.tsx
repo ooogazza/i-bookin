@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { ZoomIn, ZoomOut, Maximize, X, Download } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize, X } from 'lucide-react';
 import { Button } from './ui/button';
 
 interface ZoomableImageViewerProps {
@@ -262,40 +262,11 @@ export const ZoomableImageViewer = ({ src, alt, startInFullscreen = false, onFul
     }
   };
 
-  const handleDownload = async () => {
-    try {
-      const response = await fetch(src);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = alt || 'download';
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (error) {
-      console.error('Download failed:', error);
-    }
-  };
 
   const fullscreenContent = isFullscreen ? (
     <div className="fixed inset-0 z-[9999] bg-black">
-      {/* Close and Download Buttons */}
-      <div className="absolute top-4 right-4 z-[10001] pointer-events-auto flex gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          onMouseDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleDownload();
-          }}
-          className="text-white hover:bg-white/20 border border-white/50"
-          title="Download"
-        >
-          <Download className="h-6 w-6" />
-        </Button>
+      {/* Close Button */}
+      <div className="absolute top-4 right-4 z-[10001] pointer-events-auto">
         <Button
           variant="ghost"
           size="icon"
