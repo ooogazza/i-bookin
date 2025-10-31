@@ -15,6 +15,7 @@ import { Plus, Building2, FileText, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { developerLogos } from "@/lib/developerLogos";
 import { NonPlotInvoiceDialog } from "@/components/NonPlotInvoiceDialog";
+import { ManageBricklayersDialog } from "@/components/ManageBricklayersDialog";
 
 interface Developer {
   id: string;
@@ -48,6 +49,7 @@ const Dashboard = () => {
   const [creating, setCreating] = useState(false);
   const [allDevelopers, setAllDevelopers] = useState<Developer[]>([]);
   const [nonPlotInvoiceDialogOpen, setNonPlotInvoiceDialogOpen] = useState(false);
+  const [manageBricklayersDialogOpen, setManageBricklayersDialogOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -287,6 +289,19 @@ const Dashboard = () => {
                 </CardDescription>
               </CardHeader>
             </Card>
+            
+            <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setManageBricklayersDialogOpen(true)}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Plus className="h-5 w-5 text-primary" />
+                  <Building2 className="h-6 w-6 text-primary" />
+                  Manage Bricklayers
+                </CardTitle>
+                <CardDescription>
+                  Invite and assign bricklayers to sites
+                </CardDescription>
+              </CardHeader>
+            </Card>
           </div>
         )}
 
@@ -299,9 +314,13 @@ const Dashboard = () => {
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Building2 className="h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-lg font-medium mb-2">No developers yet</p>
+              <p className="text-lg font-medium mb-2">
+                {isAdmin ? "No developers yet" : "No sites assigned"}
+              </p>
               <p className="text-sm text-muted-foreground">
-                No developers have been added to the system
+                {isAdmin 
+                  ? "No developers have been added to the system"
+                  : "You haven't been assigned to any sites yet. Contact an administrator to get access."}
               </p>
             </CardContent>
           </Card>
@@ -418,6 +437,12 @@ const Dashboard = () => {
         <NonPlotInvoiceDialog
           open={nonPlotInvoiceDialogOpen}
           onOpenChange={setNonPlotInvoiceDialogOpen}
+        />
+
+        {/* Manage Bricklayers Dialog */}
+        <ManageBricklayersDialog
+          open={manageBricklayersDialogOpen}
+          onOpenChange={setManageBricklayersDialogOpen}
         />
 
       </main>
