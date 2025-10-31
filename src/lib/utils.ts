@@ -12,82 +12,36 @@ function isMobileDevice(): boolean {
 }
 
 // Cross-platform helper to save a Blob directly to device storage when possible
-// On mobile: automatically downloads to device's downloads folder
-// On desktop: may show save dialog depending on browser
+// Always triggers a direct download without opening new tabs or share sheets
 export async function saveBlobToDevice(
   blob: Blob,
   suggestedName: string,
   mimeType?: string
 ): Promise<"fs" | "share" | "download"> {
   const type = mimeType || blob.type || "application/octet-stream";
-  const ext = suggestedName.includes(".")
-    ? suggestedName.slice(suggestedName.lastIndexOf(".")).toLowerCase()
-    : "";
 
-  const isMobile = isMobileDevice();
-
-  // On mobile, prefer native share to save directly into Files/Downloads when available
-  if (isMobile) {
-    try {
-      const n: any = navigator as any;
-      if (typeof n.share === 'function') {
-        const file = new File([blob], suggestedName, { type });
-        if (!n.canShare || n.canShare({ files: [file] })) {
-          await n.share({ files: [file], title: suggestedName });
-          return "share";
-        }
-      }
-    } catch (e) {
-      console.debug("Web Share API failed, falling back to direct download", e);
-    }
-
-    // Direct download to device's downloads folder
-    const url = URL.createObjectURL(blob);
+  try {
+    // Force classic download path (works on Android Chrome and most browsers)
+    const fileBlob = blob.type ? blob : new Blob([blob], { type });
+    const url = URL.createObjectURL(fileBlob);
     const a = document.createElement("a");
+    a.style.display = "none";
     a.href = url;
     a.download = suggestedName;
     a.rel = "noopener";
+    a.target = "_self";
     document.body.appendChild(a);
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
     return "download";
-  }
-
-  // Desktop: Try native file save (Chrome/Edge supports this)
-  try {
-    const w = window as any;
-    if (typeof w.showSaveFilePicker === "function") {
-      const handle = await w.showSaveFilePicker({
-        suggestedName,
-        types: [
-          {
-            description: type,
-            accept: {
-              [type]: ext ? [ext] : [""],
-            },
-          },
-        ],
-      });
-      const writable = await handle.createWritable();
-      await writable.write(blob);
-      await writable.close();
-      return "fs";
-    }
   } catch (e) {
-    console.warn("showSaveFilePicker failed, will try download fallback", e);
+    console.error("Direct download failed, attempting fallback", e);
+    // Last resort fallback: navigate to the blob URL (browser handles saving)
+    const fallbackUrl = URL.createObjectURL(blob);
+    window.location.href = fallbackUrl;
+    setTimeout(() => URL.revokeObjectURL(fallbackUrl), 30000);
+    return "download";
   }
-
-  // Fallback to classic download
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = suggestedName;
-  a.rel = "noopener";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-  return "download";
 }
 
