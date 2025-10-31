@@ -102,6 +102,48 @@ const BookingIn = () => {
 
   useEffect(() => {
     fetchBookings();
+
+    // Set up realtime subscriptions for cross-device sync
+    if (!user) return;
+
+    const bookingsChannel = supabase
+      .channel('bookings-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'bookings',
+          filter: isAdmin ? undefined : `booked_by=eq.${user.id}`,
+        },
+        () => {
+          // Refresh bookings when confirmation status changes
+          fetchBookings();
+        }
+      )
+      .subscribe();
+
+    const nonPlotChannel = supabase
+      .channel('non-plot-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'non_plot_invoices',
+          filter: isAdmin ? undefined : `user_id=eq.${user.id}`,
+        },
+        () => {
+          // Refresh when non-plot invoice status changes
+          fetchBookings();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(bookingsChannel);
+      supabase.removeChannel(nonPlotChannel);
+    };
   }, [user, isAdmin]);
 
   // Handle user filtering from URL
@@ -1128,37 +1170,41 @@ const BookingIn = () => {
                   </div>
                 </div>
 
-                <div className="flex flex-col md:flex-row gap-2 print:hidden pt-2">
-                  <Button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      window.print();
-                    }}
-                    className="flex-1"
-                    variant="outline"
-                    type="button"
-                    size="lg"
-                  >
-                    <Printer className="mr-2 h-4 w-4" />
-                    <span className="text-sm md:text-base">Print</span>
-                  </Button>
-                  <Button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleExportInvoice(selectedInvoice);
-                    }}
-                    className="flex-1"
-                    variant="default"
-                    type="button"
-                    size="lg"
-                  >
-                    <FileText className="mr-2 h-4 w-4" />
-                    <span className="text-sm md:text-base">Export PDF</span>
-                  </Button>
+                <div className="print:hidden pt-2 space-y-2">
+                  {/* Print and Export side by side */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        window.print();
+                      }}
+                      variant="outline"
+                      type="button"
+                      size="lg"
+                      className="w-full"
+                    >
+                      <Printer className="mr-2 h-4 w-4" />
+                      <span className="text-sm md:text-base">Print</span>
+                    </Button>
+                    <Button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleExportInvoice(selectedInvoice);
+                      }}
+                      variant="default"
+                      type="button"
+                      size="lg"
+                      className="w-full"
+                    >
+                      <FileText className="mr-2 h-4 w-4" />
+                      <span className="text-sm md:text-base">Export PDF</span>
+                    </Button>
+                  </div>
+                  {/* Confirm button full width below */}
                   {isAdmin && !selectedInvoice.is_confirmed && (
                     <Button
                       onClick={() => handleConfirmInvoice(selectedInvoice)}
-                      className="flex-1 bg-green-600 hover:bg-green-700"
+                      className="w-full bg-green-600 hover:bg-green-700"
                       size="lg"
                     >
                       <span className="text-sm md:text-base">Confirm</span>
