@@ -891,10 +891,10 @@ const SiteDetail = () => {
       
       // Clean up
       window.URL.revokeObjectURL(downloadUrl);
-      toast.success('Download started');
+      toast.success('Drawing exported successfully');
     } catch (error) {
       console.error('Download error:', error);
-      toast.error('Failed to download file');
+      toast.error('Failed to export drawing');
     }
   };
 
@@ -2779,7 +2779,7 @@ const SiteDetail = () => {
                       <Card 
                         key={`new-${index}`} 
                         className="overflow-hidden border-2 border-primary/50 cursor-pointer hover:border-primary transition-colors relative"
-                        onClick={() => !progress && handleViewDrawing(fileUrl, file.type, file.name, previewUrl || undefined)}
+                        onClick={() => !progress && handleExportDrawing(fileUrl, file.name)}
                       >
                         <CardContent className="p-4 space-y-2">
                           <div className="relative">
@@ -2826,7 +2826,7 @@ const SiteDetail = () => {
                             )}
                           </div>
                           <p className="text-xs text-primary font-medium">
-                            {progress !== undefined ? `Uploading ${progress}%` : 'New - Not yet saved • Click to view'}
+                            {progress !== undefined ? `Uploading ${progress}%` : 'New - Not yet saved • Click to export'}
                           </p>
                         </CardContent>
                       </Card>
@@ -2835,16 +2835,11 @@ const SiteDetail = () => {
                   
                   {/* Existing Saved Drawings */}
                   {existingDrawings.map((drawing) => (
-                    <Card 
-                      key={drawing.id} 
-                      className="overflow-hidden cursor-pointer hover:border-primary transition-colors"
-                      onClick={() => handleViewDrawing(
-                        drawing.file_url, 
-                        drawing.file_type, 
-                        drawing.file_name, 
-                        drawing.preview_url
-                      )}
-                    >
+                      <Card 
+                        key={drawing.id} 
+                        className="overflow-hidden cursor-pointer hover:border-primary transition-colors"
+                        onClick={() => handleExportDrawing(drawing.file_url, drawing.file_name)}
+                      >
                       <CardContent className="p-4 space-y-2">
                         {drawing.file_type.startsWith('image/') ? (
                           <img 
@@ -2885,15 +2880,10 @@ const SiteDetail = () => {
                           className="w-full"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleViewDrawing(
-                              drawing.file_url, 
-                              drawing.file_type, 
-                              drawing.file_name, 
-                              drawing.preview_url
-                            );
+                            handleExportDrawing(drawing.file_url, drawing.file_name);
                           }}
                         >
-                          View
+                          Export
                         </Button>
                       </CardContent>
                     </Card>
