@@ -303,7 +303,17 @@ export const handleExportPDF = async (invoice: any, userName?: string) => {
       generateOriginalPDFContent(doc, invoice, userName, roundedLogo);
     }
 
-    doc.save(`${invoice.invoiceNumber}.pdf`);
+    // Force direct download to device storage
+    const pdfBlob = doc.output('blob');
+    const downloadUrl = window.URL.createObjectURL(pdfBlob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = `${invoice.invoiceNumber}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(downloadUrl);
+    
     toast.success("PDF exported successfully");
   } catch (err) {
     console.error("PDF export error:", err);
