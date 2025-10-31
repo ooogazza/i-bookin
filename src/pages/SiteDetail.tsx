@@ -153,6 +153,7 @@ const SiteDetail = () => {
   const [viewerContent, setViewerContent] = useState<{ url: string; type: string; name: string } | null>(null);
   const [selectedDrawingIds, setSelectedDrawingIds] = useState<string[]>([]);
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
+  const [longPressTriggered, setLongPressTriggered] = useState(false);
   
   const [plotDialogOpen, setPlotDialogOpen] = useState(false);
   const [selectedPlot, setSelectedPlot] = useState<Plot | null>(null);
@@ -304,6 +305,7 @@ const SiteDetail = () => {
   useEffect(() => {
     if (!drawingsDialogOpen) {
       setSelectedDrawingIds([]);
+      setLongPressTriggered(false);
       // Clear any pending long press timer
       if (longPressTimer) {
         clearTimeout(longPressTimer);
@@ -888,10 +890,12 @@ const SiteDetail = () => {
   const selectAllDrawings = () => {
     const allIds = existingDrawings.map((d) => d.id);
     setSelectedDrawingIds(allIds);
+    setLongPressTriggered(true);
     toast.success(`Selected all ${allIds.length} drawings`);
   };
 
   const handleLongPressStart = (e: React.MouseEvent | React.TouchEvent) => {
+    setLongPressTriggered(false);
     const timer = setTimeout(() => {
       selectAllDrawings();
     }, 500); // 500ms long press
@@ -899,20 +903,19 @@ const SiteDetail = () => {
   };
 
   const handleLongPressEnd = (e: React.MouseEvent | React.TouchEvent) => {
-    const wasLongPress = longPressTimer !== null;
     if (longPressTimer) {
       clearTimeout(longPressTimer);
       setLongPressTimer(null);
     }
-    // Return whether it was a long press to prevent onClick
-    return wasLongPress;
   };
 
   const handleDrawingCardClick = (drawing: any) => {
-    // Only open viewer if not coming from a long press
-    if (!longPressTimer) {
-      handleViewDrawing(drawing.file_url, drawing.file_type, drawing.file_name, drawing.preview_url);
+    // Prevent opening if long press was just triggered
+    if (longPressTriggered) {
+      setLongPressTriggered(false);
+      return;
     }
+    handleViewDrawing(drawing.file_url, drawing.file_type, drawing.file_name, drawing.preview_url);
   };
 
   const handleDeleteSelectedDrawings = async () => {
