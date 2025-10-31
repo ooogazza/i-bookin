@@ -221,16 +221,13 @@ const BookingIn = () => {
         percentage: 100,
         booked_value: invoice.total_amount,
         invoice_number: invoice.invoice_number,
-        status: "confirmed",
+        status: invoice.status,
         created_at: invoice.created_at,
         notes: invoice.notes,
         confirmed_by_admin: invoice.status === "confirmed",
         // Check actual status
         is_non_plot: true,
-        profiles: profilesMap[invoice.user_id] || {
-          full_name: "Unknown",
-          email: ""
-        },
+        profiles: profilesMap[invoice.user_id] || { full_name: "Unknown", email: "" },
         gang_divisions: invoice.non_plot_gang_divisions || []
       }));
 
