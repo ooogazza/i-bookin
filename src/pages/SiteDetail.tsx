@@ -2875,7 +2875,6 @@ const SiteDetail = () => {
                           )}
                         </div>
                         <Button
-                          variant="outline"
                           size="sm"
                           className="w-full"
                           onClick={(e) => {
