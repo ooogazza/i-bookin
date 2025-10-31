@@ -34,6 +34,10 @@ export const signUp = async (email: string, password: string, fullName: string) 
 
 export const signOut = async () => {
   const { error } = await supabase.auth.signOut();
+  // Ignore "Session not found" errors - the user is already logged out
+  if (error && error.message === "Session not found") {
+    return { error: null };
+  }
   return { error };
 };
 

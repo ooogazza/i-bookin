@@ -35,11 +35,13 @@ export const Header = ({
 
   const handleLogout = async () => {
     const { error } = await signOut();
-    if (error) toast.error("Error logging out");
-    else {
+    if (error) {
+      toast.error("Error logging out");
+    } else {
       toast.success("Logged out successfully");
-      navigate("/auth");
     }
+    // Always navigate to auth page, even if there was an error
+    navigate("/auth");
   };
 
   // Opens the invoice dialog with a unique ID for the invoice
