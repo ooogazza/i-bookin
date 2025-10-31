@@ -892,17 +892,26 @@ const SiteDetail = () => {
   };
 
   const handleLongPressStart = (e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
     const timer = setTimeout(() => {
       selectAllDrawings();
     }, 500); // 500ms long press
     setLongPressTimer(timer);
   };
 
-  const handleLongPressEnd = () => {
+  const handleLongPressEnd = (e: React.MouseEvent | React.TouchEvent) => {
+    const wasLongPress = longPressTimer !== null;
     if (longPressTimer) {
       clearTimeout(longPressTimer);
       setLongPressTimer(null);
+    }
+    // Return whether it was a long press to prevent onClick
+    return wasLongPress;
+  };
+
+  const handleDrawingCardClick = (drawing: any) => {
+    // Only open viewer if not coming from a long press
+    if (!longPressTimer) {
+      handleViewDrawing(drawing.file_url, drawing.file_type, drawing.file_name, drawing.preview_url);
     }
   };
 
@@ -2737,9 +2746,9 @@ const SiteDetail = () => {
                     size="sm"
                     disabled={selectedDrawingIds.length === 0}
                     onClick={handleDeleteSelectedDrawings}
+                    title={`Delete Selected${selectedDrawingIds.length > 0 ? ` (${selectedDrawingIds.length})` : ''}`}
                   >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    {`Delete Selected${selectedDrawingIds.length > 0 ? ` (${selectedDrawingIds.length})` : ''}`}
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 )}
               </div>
@@ -2856,7 +2865,7 @@ const SiteDetail = () => {
                       <Card 
                         key={drawing.id} 
                         className="overflow-hidden cursor-pointer hover:border-primary transition-colors"
-                        onClick={() => handleViewDrawing(drawing.file_url, drawing.file_type, drawing.file_name, drawing.preview_url)}
+                        onClick={() => handleDrawingCardClick(drawing)}
                         onMouseDown={isAdmin ? handleLongPressStart : undefined}
                         onMouseUp={isAdmin ? handleLongPressEnd : undefined}
                         onMouseLeave={isAdmin ? handleLongPressEnd : undefined}
