@@ -39,8 +39,9 @@ async function syncInvoices() {
     // Always show notification (works even when app is closed)
     await self.registration.showNotification('Invoices Sent', {
       body: `${pendingInvoices.length} invoice${pendingInvoices.length !== 1 ? 's' : ''} sent successfully!`,
-      icon: '/apple-touch-icon.png',
-      badge: '/favicon.png',
+      // Use app logo for notification visuals
+      icon: '/favicon-source.png', // main icon shown in the notification
+      badge: '/pwa-192x192.png',   // small monochrome badge on Android
       tag: 'invoice-sync',
       requireInteraction: false,
       silent: false,
