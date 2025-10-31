@@ -17,6 +17,7 @@ import Sites from "./pages/admin/Sites";
 import Settings from "./pages/admin/Settings";
 import Install from "./pages/Install";
 import ResetPassword from "./pages/ResetPassword";
+import Presentation from "./pages/Presentation";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -97,6 +98,7 @@ const App = () => (
               }
             />
             <Route path="/install" element={<Install />} />
+            <Route path="/presentation" element={<Presentation />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
