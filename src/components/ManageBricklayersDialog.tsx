@@ -368,9 +368,9 @@ export function ManageBricklayersDialog({ open, onOpenChange, filteredUserId }: 
                             <p className="font-medium truncate">{user.full_name || user.email}</p>
                             <div className="flex items-center gap-2 text-sm">
                               <Building2 className="h-3 w-3 flex-shrink-0" />
-                              <span className="text-muted-foreground truncate">
+                              <span className="text-muted-foreground">
                                 {user.assignedSites.length > 0 
-                                  ? getSiteNames(user.assignedSites)
+                                  ? `${user.assignedSites.length} site${user.assignedSites.length === 1 ? '' : 's'}`
                                   : "No sites assigned"}
                               </span>
                             </div>
