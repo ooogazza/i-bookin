@@ -2703,25 +2703,15 @@ const SiteDetail = () => {
                   {selectedHouseTypeForDrawings?.name} - Drawings
                 </DialogTitle>
                 {isAdmin && (existingDrawings.length > 0 || uploadedDrawings.length > 0) && (
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      disabled={selectedDrawingIds.length === 0}
-                      onClick={handleDeleteSelectedDrawings}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      {`Delete Selected${selectedDrawingIds.length > 0 ? ` (${selectedDrawingIds.length})` : ''}`}
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={handleDeleteAllDrawings}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete All
-                    </Button>
-                  </div>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    disabled={selectedDrawingIds.length === 0}
+                    onClick={handleDeleteSelectedDrawings}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {`Delete Selected${selectedDrawingIds.length > 0 ? ` (${selectedDrawingIds.length})` : ''}`}
+                  </Button>
                 )}
               </div>
             </DialogHeader>
@@ -2856,19 +2846,6 @@ const SiteDetail = () => {
                             )}
                             <p className="text-sm font-medium truncate flex-1">{drawing.file_name}</p>
                           </div>
-                          {isAdmin && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteExistingDrawing(drawing.id, drawing.file_url);
-                              }}
-                              title="Delete"
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          )}
                         </div>
                         <Button
                           size="sm"
