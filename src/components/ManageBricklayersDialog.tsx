@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Users, Mail, Building2, Plus, X, MapPin } from "lucide-react";
+import { Users, Mail, Building2, Plus, X, MapPin, House } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 
 interface Site {
@@ -447,7 +447,7 @@ export function ManageBricklayersDialog({ open, onOpenChange }: ManageBricklayer
         <DialogContent className="max-w-2xl" onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5" />
+              <House className="h-5 w-5" />
               Plots Assigned to {viewPlotsUser?.full_name || viewPlotsUser?.email}
             </DialogTitle>
           </DialogHeader>
