@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { Plus, Building2, FileText, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { developerLogos } from "@/lib/developerLogos";
+import { NonPlotInvoiceDialog } from "@/components/NonPlotInvoiceDialog";
 
 interface Developer {
   id: string;
@@ -46,6 +47,7 @@ const Dashboard = () => {
   const [numberOfPlots, setNumberOfPlots] = useState(1);
   const [creating, setCreating] = useState(false);
   const [allDevelopers, setAllDevelopers] = useState<Developer[]>([]);
+  const [nonPlotInvoiceDialogOpen, setNonPlotInvoiceDialogOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -288,6 +290,28 @@ const Dashboard = () => {
           </div>
         )}
 
+        {!isAdmin && (
+          <div className="grid gap-6 md:grid-cols-2 mb-8">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-6 w-6 text-primary" />
+                  Quick Actions
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Button 
+                  onClick={() => setNonPlotInvoiceDialogOpen(true)}
+                  className="w-full"
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Create Non-Plot Invoice
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {loading ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">Loading developers...</p>
@@ -410,6 +434,12 @@ const Dashboard = () => {
             </form>
           </DialogContent>
         </Dialog>
+
+        {/* Non-Plot Invoice Dialog for invited users */}
+        <NonPlotInvoiceDialog
+          open={nonPlotInvoiceDialogOpen}
+          onOpenChange={setNonPlotInvoiceDialogOpen}
+        />
 
       </main>
     </div>

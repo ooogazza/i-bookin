@@ -61,6 +61,7 @@ export const ZoomableImageViewer = ({ src, alt, startInFullscreen = false, onFul
   };
 
   const handleWheel = (e: React.WheelEvent) => {
+    // Allow wheel zoom both in fullscreen and normal view for desktop
     e.preventDefault();
     setIsInteracting(true);
     const delta = e.deltaY * -0.001;
@@ -185,8 +186,9 @@ export const ZoomableImageViewer = ({ src, alt, startInFullscreen = false, onFul
     checkMobile();
     window.addEventListener('resize', checkMobile);
     
+    // Wheel zoom enabled for all views (desktop and mobile)
     const container = containerRef.current;
-    if (container && !isMobile) {
+    if (container) {
       container.addEventListener('wheel', handleWheel as any, { passive: false });
     }
     
@@ -196,7 +198,7 @@ export const ZoomableImageViewer = ({ src, alt, startInFullscreen = false, onFul
         container.removeEventListener('wheel', handleWheel as any);
       }
     };
-  }, [isMobile]);
+  }, []);
 
   // Window-level listeners to end dragging even if mouse leaves container
   useEffect(() => {

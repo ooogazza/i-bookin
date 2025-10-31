@@ -25,6 +25,7 @@ import { usePinchZoom } from "@/hooks/usePinchZoom";
 import { PDFDocument } from 'pdf-lib';
 import { ZoomableImageViewer } from "@/components/ZoomableImageViewer";
 import { LiftTypeLabel } from "@/components/LiftTypeLabel";
+import { NonPlotInvoiceDialog } from "@/components/NonPlotInvoiceDialog";
 
 interface Site {
   id: string;
@@ -198,6 +199,7 @@ const SiteDetail = () => {
   const [userPlotsDialogOpen, setUserPlotsDialogOpen] = useState(false);
   const [selectedUserForDialog, setSelectedUserForDialog] = useState<User | null>(null);
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
+  const [nonPlotInvoiceDialogOpen, setNonPlotInvoiceDialogOpen] = useState(false);
   
   const stickyScrollRef = useRef<HTMLDivElement>(null);
   const mainScrollRef = useRef<HTMLDivElement>(null);
@@ -2110,6 +2112,18 @@ const SiteDetail = () => {
                 </Button>
               </>
             )}
+            {/* Show Non-Plot Invoice button only when no plot invoice items exist */}
+            {!isAdmin && invoiceItems.length === 0 && (
+              <Button 
+                onClick={() => setNonPlotInvoiceDialogOpen(true)}
+                variant="outline"
+                size="sm"
+                title="Create Non-Plot Invoice"
+              >
+                <FileText className="h-4 w-4" />
+                <span className="hidden lg:inline ml-2">Non-Plot Invoice</span>
+              </Button>
+            )}
             {invoiceItems.length > 0 && (
               <Button 
                 onClick={() => setInvoiceDialogOpen(true)}
@@ -3255,6 +3269,12 @@ const SiteDetail = () => {
             <ArrowUp className="h-5 w-5" />
           </Button>
         )}
+
+        {/* Non-Plot Invoice Dialog */}
+        <NonPlotInvoiceDialog
+          open={nonPlotInvoiceDialogOpen}
+          onOpenChange={setNonPlotInvoiceDialogOpen}
+        />
       </main>
     </div>
   );

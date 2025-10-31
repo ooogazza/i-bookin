@@ -258,8 +258,11 @@ const Sites = () => {
                     type="number"
                     min="0"
                     placeholder="0"
-                    value={numberOfPlots}
-                    onChange={(e) => setNumberOfPlots(e.target.value === "" ? 0 : parseInt(e.target.value))}
+                    value={numberOfPlots === 0 ? '' : numberOfPlots}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setNumberOfPlots(val === '' ? 0 : parseInt(val) || 0);
+                    }}
                     onFocus={(e) => e.target.select()}
                     autoFocus={false}
                     required

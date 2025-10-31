@@ -45,6 +45,7 @@ export const NonPlotInvoiceDialog = ({
   const [editingAmount, setEditingAmount] = useState(false);
   const [tempAmount, setTempAmount] = useState("0");
   const [notes, setNotes] = useState("");
+  const [isSending, setIsSending] = useState(false);
 
   const [gangMembers, setGangMembers] = useState<GangMember[]>([]);
   const [savedMembers, setSavedMembers] = useState<SavedGangMember[]>([]);
@@ -209,6 +210,7 @@ const handleAddExistingMember = (member: SavedGangMember) => {
       toast.error("Please allocate the full invoice amount");
       return;
     }
+    setIsSending(true);
     try {
       // Get user's full name
       let userName = user?.email || "Unknown";
@@ -257,10 +259,16 @@ const divisions = gangMembers.map(m => ({
       setGangMembers([]);
       onOpenChange(false);
 
+      // Play success sound
+      const audio = new Audio('data:audio/wav;base64,UklGRnoFAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoFAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA');
+      audio.play().catch(() => {}); // Ignore errors if audio can't play
+      
       toast.success("Invoice saved and sent to admin");
     } catch (err) {
       console.error(err);
       toast.error("Failed to save invoice");
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -385,13 +393,13 @@ const divisions = gangMembers.map(m => ({
 
               <Button
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                disabled={remainingToAllocate !== 0 || !notes.trim() || gangMembers.length === 0}
+                disabled={remainingToAllocate !== 0 || !notes.trim() || gangMembers.length === 0 || isSending}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleSaveInvoice();
                 }}
               >
-                Send to Admin
+                {isSending ? "Sending..." : "Send to Admin"}
               </Button>
             </div>
           </div>

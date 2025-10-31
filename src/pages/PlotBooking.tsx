@@ -286,14 +286,42 @@ const PlotBooking = () => {
                   step={1}
                 />
 
-                <div className="p-4 bg-muted rounded-lg">
+                <div className="p-4 bg-muted rounded-lg space-y-2">
                   <div className="flex justify-between mb-2">
                     <span className="text-muted-foreground">Total Value:</span>
                     <span className="font-semibold">£{selectedLiftValue.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Leaves:</span>
+                    <button
+                      onClick={() => setPercentage(Math.min(100, getRemainingPercentage(selectedLiftId)))}
+                      className="font-semibold text-primary hover:text-primary/80 transition-colors cursor-pointer"
+                    >
+                      £{((selectedLiftValue * getRemainingPercentage(selectedLiftId)) / 100).toFixed(2)}
+                    </button>
+                  </div>
+                  <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">Booking Value ({percentage}%):</span>
-                    <span className="font-semibold text-primary">£{bookingValue.toFixed(2)}</span>
+                    <button
+                      onClick={() => {
+                        const input = prompt("Enter booking value:", bookingValue.toFixed(2));
+                        if (input) {
+                          const value = parseFloat(input);
+                          if (!isNaN(value) && value > 0) {
+                            const newPercentage = Math.round((value / selectedLiftValue) * 100);
+                            const max = getRemainingPercentage(selectedLiftId);
+                            if (newPercentage <= max) {
+                              setPercentage(newPercentage);
+                            } else {
+                              toast.error(`Maximum available is ${max}%`);
+                            }
+                          }
+                        }
+                      }}
+                      className="font-semibold text-primary hover:text-primary/80 transition-colors cursor-pointer"
+                    >
+                      £{bookingValue.toFixed(2)}
+                    </button>
                   </div>
                 </div>
               </>
