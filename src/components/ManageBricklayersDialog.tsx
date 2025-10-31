@@ -114,7 +114,9 @@ export function ManageBricklayersDialog({
       }));
       setUsers(usersWithSites);
     } catch (error: any) {
-      console.error("Error fetching data:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error fetching data:", error);
+      }
       toast.error("Failed to load data");
     } finally {
       setLoading(false);
@@ -141,7 +143,9 @@ export function ManageBricklayersDialog({
         }
       });
       if (emailError) {
-        console.error("Email error:", emailError);
+        if (import.meta.env.DEV) {
+          console.error("Email error:", emailError);
+        }
         toast.success("User will get access when they sign up! (Email notification may be delayed)");
       } else {
         toast.success("Invitation sent! User will receive an email and automatically get access when they sign up.");
@@ -150,7 +154,9 @@ export function ManageBricklayersDialog({
       fetchData();
     } catch (error: any) {
       toast.error(error.message || "Failed to send invitation");
-      console.error("Error:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error:", error);
+      }
     } finally {
       setInviting(false);
     }
@@ -207,7 +213,9 @@ export function ManageBricklayersDialog({
       fetchData();
     } catch (error: any) {
       toast.error("Failed to update assignments");
-      console.error("Error:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error:", error);
+      }
     }
   };
   const getSiteNames = (siteIds: string[]) => {
@@ -239,7 +247,9 @@ export function ManageBricklayersDialog({
       })) || [];
       setUserPlots(plotsWithSite);
     } catch (error: any) {
-      console.error("Error fetching plots:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error fetching plots:", error);
+      }
       toast.error("Failed to load plots");
     } finally {
       setLoadingPlots(false);

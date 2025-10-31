@@ -16,7 +16,9 @@ const getActiveLetterhead = async () => {
     if (error) throw error;
     return data;
   } catch (err) {
-    console.error("Error fetching letterhead:", err);
+    if (import.meta.env.DEV) {
+      console.error("Error fetching letterhead:", err);
+    }
     return null;
   }
 };
@@ -39,7 +41,9 @@ const loadImageAsDataUrl = (url: string): Promise<string> => {
       }
     };
     img.onerror = (err) => {
-      console.error("Failed to load image:", url, err);
+      if (import.meta.env.DEV) {
+        console.error("Failed to load image:", url, err);
+      }
       reject(err);
     };
     img.src = url;
@@ -93,7 +97,9 @@ const generateOriginalPDFContent = async (doc: jsPDF, invoice: any, userName: st
   try {
     doc.addImage(roundedLogo, "PNG", 90, 10, 30, 20);
   } catch (e) {
-    console.error("Failed to add logo to PDF", e);
+    if (import.meta.env.DEV) {
+      console.error("Failed to add logo to PDF", e);
+    }
   }
 
   // Company name centered
@@ -188,7 +194,9 @@ const generateOriginalPDFContent = async (doc: jsPDF, invoice: any, userName: st
       doc.addImage(imageDataUrl, "PNG", 15, yPos, imgWidth, imgHeight);
       yPos += imgHeight + 10;
     } catch (e) {
-      console.error("Failed to add invoice image to PDF", e);
+      if (import.meta.env.DEV) {
+        console.error("Failed to add invoice image to PDF", e);
+      }
     }
   }
 
@@ -223,10 +231,14 @@ const generateLetterheadPDFContent = async (doc: jsPDF, invoice: any, userName: 
   
   // Add letterhead as full-page background
   try {
-    console.log("Adding letterhead to PDF as background");
+    if (import.meta.env.DEV) {
+      console.log("Adding letterhead to PDF as background");
+    }
     doc.addImage(letterheadDataUrl, "PNG", 0, 0, 210, 297);
   } catch (e) {
-    console.error("Failed to add letterhead to PDF", e);
+    if (import.meta.env.DEV) {
+      console.error("Failed to add letterhead to PDF", e);
+    }
   }
 
   // Position content on LEFT side
@@ -312,10 +324,14 @@ const generateLetterheadPDFContent = async (doc: jsPDF, invoice: any, userName: 
       if (yPos + imgHeight > 270) {
         doc.addPage();
         try {
-          console.log("Adding letterhead to new page for image");
+          if (import.meta.env.DEV) {
+            console.log("Adding letterhead to new page for image");
+          }
           doc.addImage(letterheadDataUrl, "PNG", 0, 0, 210, 297);
         } catch (e) {
-          console.error("Failed to add letterhead to new page", e);
+          if (import.meta.env.DEV) {
+            console.error("Failed to add letterhead to new page", e);
+          }
         }
         yPos = 20;
       }
@@ -323,7 +339,9 @@ const generateLetterheadPDFContent = async (doc: jsPDF, invoice: any, userName: 
       doc.addImage(imageDataUrl, "PNG", leftMargin, yPos, imgWidth, imgHeight);
       yPos += imgHeight + 10;
     } catch (e) {
-      console.error("Failed to add invoice image to PDF", e);
+      if (import.meta.env.DEV) {
+        console.error("Failed to add invoice image to PDF", e);
+      }
     }
   }
 
@@ -339,10 +357,14 @@ const generateLetterheadPDFContent = async (doc: jsPDF, invoice: any, userName: 
       if (yPos > 270) {
         doc.addPage();
         try {
-          console.log("Adding letterhead to new page");
+          if (import.meta.env.DEV) {
+            console.log("Adding letterhead to new page");
+          }
           doc.addImage(letterheadDataUrl, "PNG", 0, 0, 210, 297);
         } catch (e) {
-          console.error("Failed to add letterhead to new page", e);
+          if (import.meta.env.DEV) {
+            console.error("Failed to add letterhead to new page", e);
+          }
         }
         yPos = 20;
       }
@@ -364,7 +386,9 @@ const generateLetterheadPDFContent = async (doc: jsPDF, invoice: any, userName: 
   try {
     doc.addImage(roundedLogo, "PNG", leftMargin, 270, 20, 13);
   } catch (e) {
-    console.error("Failed to add logo to bottom", e);
+    if (import.meta.env.DEV) {
+      console.error("Failed to add logo to bottom", e);
+    }
   }
 };
 
@@ -388,26 +412,36 @@ export const generateInvoicePDFBase64 = async (invoice: any, userName?: string) 
 // Export PDF logic
 export const handleExportPDF = async (invoice: any, userName?: string, includeImage: boolean = true) => {
   try {
-    console.log("Exporting PDF for invoice:", invoice);
+    if (import.meta.env.DEV) {
+      console.log("Exporting PDF for invoice:", invoice);
+    }
 
     const doc = new jsPDF();
     
     // Fetch active letterhead
     const letterhead = await getActiveLetterhead();
-    console.log("Letterhead detected:", letterhead ? "YES" : "NO", letterhead);
+    if (import.meta.env.DEV) {
+      console.log("Letterhead detected:", letterhead ? "YES" : "NO", letterhead);
+    }
     
     // Create rounded logo
     const roundedLogo = await createRoundedLogo();
 
     // Use appropriate layout based on letterhead presence
     if (letterhead) {
-      console.log("Loading letterhead image from:", letterhead.file_url);
+      if (import.meta.env.DEV) {
+        console.log("Loading letterhead image from:", letterhead.file_url);
+      }
       // Load letterhead image as data URL
       const letterheadDataUrl = await loadImageAsDataUrl(letterhead.file_url);
-      console.log("Letterhead loaded successfully, generating PDF with letterhead layout");
+      if (import.meta.env.DEV) {
+        console.log("Letterhead loaded successfully, generating PDF with letterhead layout");
+      }
       await generateLetterheadPDFContent(doc, invoice, userName, roundedLogo, letterheadDataUrl);
     } else {
-      console.log("Using ORIGINAL centered layout (no letterhead)");
+      if (import.meta.env.DEV) {
+        console.log("Using ORIGINAL centered layout (no letterhead)");
+      }
       await generateOriginalPDFContent(doc, invoice, userName, roundedLogo);
     }
 
@@ -418,7 +452,9 @@ export const handleExportPDF = async (invoice: any, userName?: string, includeIm
       await saveBlobToDevice(pdfBlob, `${invoice.invoiceNumber}.pdf`, 'application/pdf');
       toast.success("PDF exported successfully");
     } catch (e) {
-      console.error("PDF save failed, falling back to download:", e);
+      if (import.meta.env.DEV) {
+        console.error("PDF save failed, falling back to download:", e);
+      }
       const downloadUrl = window.URL.createObjectURL(pdfBlob);
       const link = document.createElement('a');
       link.href = downloadUrl;
@@ -430,7 +466,9 @@ export const handleExportPDF = async (invoice: any, userName?: string, includeIm
       toast.success("PDF exported successfully");
     }
   } catch (err) {
-    console.error("PDF export error:", err);
+    if (import.meta.env.DEV) {
+      console.error("PDF export error:", err);
+    }
     toast.error("Failed to export PDF");
   }
 };
@@ -441,18 +479,26 @@ export const handleSendToAdmin = async (invoice: any, userName: string) => {
     const doc = new jsPDF();
 
     const letterhead = await getActiveLetterhead();
-    console.log("Letterhead detected for email:", letterhead ? "YES" : "NO");
+    if (import.meta.env.DEV) {
+      console.log("Letterhead detected for email:", letterhead ? "YES" : "NO");
+    }
 
     const roundedLogo = await createRoundedLogo();
 
     // Use appropriate layout based on letterhead presence
     if (letterhead) {
-      console.log("Loading letterhead for email from:", letterhead.file_url);
+      if (import.meta.env.DEV) {
+        console.log("Loading letterhead for email from:", letterhead.file_url);
+      }
       const letterheadDataUrl = await loadImageAsDataUrl(letterhead.file_url);
-      console.log("Letterhead loaded for email, generating PDF with letterhead layout");
+      if (import.meta.env.DEV) {
+        console.log("Letterhead loaded for email, generating PDF with letterhead layout");
+      }
       await generateLetterheadPDFContent(doc, invoice, userName, roundedLogo, letterheadDataUrl);
     } else {
-      console.log("Using ORIGINAL centered layout for email (no letterhead)");
+      if (import.meta.env.DEV) {
+        console.log("Using ORIGINAL centered layout for email (no letterhead)");
+      }
       await generateOriginalPDFContent(doc, invoice, userName, roundedLogo);
     }
 
@@ -486,7 +532,9 @@ const { error } = await supabase.functions.invoke("send-invoice-to-admin", {
 
     return { success: true };
   } catch (err) {
-    console.error("Error sending to admin:", err);
+    if (import.meta.env.DEV) {
+      console.error("Error sending to admin:", err);
+    }
     throw err;
   }
 };

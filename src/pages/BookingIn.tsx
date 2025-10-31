@@ -313,7 +313,9 @@ const BookingIn = () => {
       }
     } catch (error: any) {
       toast.error("Failed to load bookings");
-      console.error("Error:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error:", error);
+      }
     } finally {
       setLoading(false);
     }
@@ -358,7 +360,9 @@ const BookingIn = () => {
           viewed_by: user!.id
         });
       } catch (error: any) {
-        console.error("Error marking invoice as viewed:", error);
+        if (import.meta.env.DEV) {
+          console.error("Error marking invoice as viewed:", error);
+        }
       }
     }
   };
@@ -424,7 +428,9 @@ const BookingIn = () => {
       fetchBookings();
     } catch (error: any) {
       toast.error("Failed to confirm invoice");
-      console.error("Error:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error:", error);
+      }
     }
   };
   const handleExportInvoice = async (invoice: GroupedInvoice) => {
@@ -442,7 +448,9 @@ const BookingIn = () => {
       };
       await exportInvoicePDF(payload, invoice.booked_by.full_name);
     } catch (error: any) {
-      console.error("Export invoice error:", error);
+      if (import.meta.env.DEV) {
+        console.error("Export invoice error:", error);
+      }
       toast.error("Failed to export PDF");
     }
   };
@@ -484,7 +492,9 @@ const BookingIn = () => {
         toast.success("Invoice sent to admin successfully");
       }
     } catch (error: any) {
-      console.error("Error sending invoice:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error sending invoice:", error);
+      }
       toast.error("Failed to send invoice to admin");
     } finally {
       setSendingToAdmin(false);

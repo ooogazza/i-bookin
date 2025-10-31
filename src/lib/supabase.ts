@@ -78,7 +78,9 @@ export const checkUserRole = async (userId: string): Promise<boolean> => {
     .maybeSingle();
 
   if (error) {
-    console.error("Error checking user role:", error);
+    if (import.meta.env.DEV) {
+      console.error("Error checking user role:", error);
+    }
     return false;
   }
 

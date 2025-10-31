@@ -44,9 +44,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             checkUserRole(session.user.id).then(setIsAdmin).catch(() => setIsAdmin(false));
           }, 0);
         } else if (session?.user) {
-          // When offline, try to get cached admin status from localStorage
-          const cachedAdmin = localStorage.getItem(`admin-${session.user.id}`);
-          setIsAdmin(cachedAdmin === 'true');
+          // When offline, try to get cached admin status with integrity check
+          try {
+            const cachedData = localStorage.getItem(`admin-${session.user.id}`);
+            if (cachedData) {
+              const parsed = JSON.parse(cachedData);
+              // Only use cached data if it's less than 1 hour old
+              if (parsed.timestamp && parsed.timestamp > Date.now() - 3600000) {
+                setIsAdmin(parsed.isAdmin === true);
+              } else {
+                setIsAdmin(false);
+              }
+            } else {
+              setIsAdmin(false);
+            }
+          } catch {
+            setIsAdmin(false);
+          }
         } else {
           setIsAdmin(false);
         }
@@ -63,13 +77,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (session?.user && navigator.onLine) {
         checkUserRole(session.user.id).then((isAdmin) => {
           setIsAdmin(isAdmin);
-          // Cache admin status
-          localStorage.setItem(`admin-${session.user.id}`, String(isAdmin));
+          // Cache admin status with timestamp for integrity check
+          const cacheData = {
+            isAdmin,
+            timestamp: Date.now()
+          };
+          localStorage.setItem(`admin-${session.user.id}`, JSON.stringify(cacheData));
         }).catch(() => setIsAdmin(false));
       } else if (session?.user) {
-        // When offline, use cached admin status
-        const cachedAdmin = localStorage.getItem(`admin-${session.user.id}`);
-        setIsAdmin(cachedAdmin === 'true');
+        // When offline, use cached admin status with integrity check
+        try {
+          const cachedData = localStorage.getItem(`admin-${session.user.id}`);
+          if (cachedData) {
+            const parsed = JSON.parse(cachedData);
+            // Only use cached data if it's less than 1 hour old
+            if (parsed.timestamp && parsed.timestamp > Date.now() - 3600000) {
+              setIsAdmin(parsed.isAdmin === true);
+            } else {
+              setIsAdmin(false);
+            }
+          } else {
+            setIsAdmin(false);
+          }
+        } catch {
+          setIsAdmin(false);
+        }
       }
       
       setLoading(false);

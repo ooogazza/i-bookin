@@ -10,15 +10,27 @@ export const sendInvoiceWithOfflineSupport = async (
 ): Promise<{ success: boolean; queued?: boolean }> => {
   // Check if online
   if (!isOnline()) {
-    console.log('Offline mode: Storing invoice for later sync');
+    if (import.meta.env.DEV) {
+      console.log('Offline mode: Storing invoice for later sync');
+    }
     
     try {
       // Build request payload with pre-generated PDF so SW can send while app is closed
       const pdfBase64 = await generateInvoicePDFBase64(invoice, userName);
       
       // Get user email from cached session (don't make API call when offline)
-      const session = JSON.parse(localStorage.getItem('sb-mmihdfqltklnybxotvdx-auth-token') || '{}');
-      const bookedByEmail = session?.user?.email || '';
+      let session: any = {};
+      try {
+        const sessionData = localStorage.getItem('sb-mmihdfqltklnybxotvdx-auth-token');
+        if (sessionData) {
+          session = JSON.parse(sessionData);
+        }
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.warn('Failed to parse session from localStorage:', error);
+        }
+      }
+      const bookedByEmail = session?.user?.email || 'unknown@example.com';
 
       const requestBody = {
         invoiceNumber: invoice.invoiceNumber,
@@ -48,7 +60,9 @@ export const sendInvoiceWithOfflineSupport = async (
 
       // Store the invoice + request details in IndexedDB
       const id = await storePendingInvoice(invoice, userName, { url, headers, body: requestBody });
-      console.log('Invoice stored for offline sync:', id);
+      if (import.meta.env.DEV) {
+        console.log('Invoice stored for offline sync:', id);
+      }
       
       // Register background sync if supported
       await registerBackgroundSync('sync-invoices');
@@ -59,7 +73,9 @@ export const sendInvoiceWithOfflineSupport = async (
       
       return { success: true, queued: true };
     } catch (error) {
-      console.error('Failed to store invoice offline:', error);
+      if (import.meta.env.DEV) {
+        console.error('Failed to store invoice offline:', error);
+      }
       toast.error('Failed to save invoice for offline sync');
       throw error;
     }
@@ -70,17 +86,28 @@ export const sendInvoiceWithOfflineSupport = async (
     await originalSendToAdmin(invoice, userName);
     return { success: true, queued: false };
   } catch (error) {
-    console.error('Failed to send invoice online:', error);
+    if (import.meta.env.DEV) {
+      console.error('Failed to send invoice online:', error);
+      console.log('Send failed, storing for offline sync');
+    }
     
-    // If sending fails, store for later
-    console.log('Send failed, storing for offline sync');
     try {
       // Build and store request so SW/background can send later
       const pdfBase64 = await generateInvoicePDFBase64(invoice, userName);
       
       // Get user email from cached session (don't make API call when offline)
-      const session = JSON.parse(localStorage.getItem('sb-mmihdfqltklnybxotvdx-auth-token') || '{}');
-      const bookedByEmail = session?.user?.email || '';
+      let session: any = {};
+      try {
+        const sessionData = localStorage.getItem('sb-mmihdfqltklnybxotvdx-auth-token');
+        if (sessionData) {
+          session = JSON.parse(sessionData);
+        }
+      } catch (parseError) {
+        if (import.meta.env.DEV) {
+          console.warn('Failed to parse session from localStorage:', parseError);
+        }
+      }
+      const bookedByEmail = session?.user?.email || 'unknown@example.com';
 
       const requestBody = {
         invoiceNumber: invoice.invoiceNumber,
@@ -109,7 +136,9 @@ export const sendInvoiceWithOfflineSupport = async (
       } as Record<string, string>;
 
       const id = await storePendingInvoice(invoice, userName, { url, headers, body: requestBody });
-      console.log('Invoice stored after send failure:', id);
+      if (import.meta.env.DEV) {
+        console.log('Invoice stored after send failure:', id);
+      }
       
       await registerBackgroundSync('sync-invoices');
       
@@ -119,7 +148,9 @@ export const sendInvoiceWithOfflineSupport = async (
       
       return { success: true, queued: true };
     } catch (offlineError) {
-      console.error('Failed to store invoice after send failure:', offlineError);
+      if (import.meta.env.DEV) {
+        console.error('Failed to store invoice after send failure:', offlineError);
+      }
       throw error;
     }
   }

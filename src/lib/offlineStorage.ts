@@ -101,11 +101,17 @@ export const registerBackgroundSync = async (tag: string): Promise<void> => {
     try {
       const registration = await navigator.serviceWorker.ready;
       await (registration as any).sync.register(tag);
-      console.log('Background sync registered:', tag);
+      if (import.meta.env.DEV) {
+        console.log('Background sync registered:', tag);
+      }
     } catch (error) {
-      console.error('Background sync registration failed:', error);
+      if (import.meta.env.DEV) {
+        console.error('Background sync registration failed:', error);
+      }
     }
   } else {
-    console.log('Background sync not supported');
+    if (import.meta.env.DEV) {
+      console.log('Background sync not supported');
+    }
   }
 };
