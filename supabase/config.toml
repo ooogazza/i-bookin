@@ -2,3 +2,6 @@ project_id = "mmihdfqltklnybxotvdx"
 
 [functions.send-invitation-email]
 verify_jwt = true
+
+[functions.process-offline-invoice]
+verify_jwt = false

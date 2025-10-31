@@ -41,7 +41,9 @@ export const sendInvoiceWithOfflineSupport = async (
           bookedByEmail,
           totalValue: invoice.total,
           createdAt: new Date().toISOString(),
+          notes: invoice.notes || null,
         },
+        userId: session?.user?.id || null,
         gangMembers: (invoice.gangMembers || []).map((m: any) => ({
           name: m.name,
           type: m.type,
@@ -50,7 +52,7 @@ export const sendInvoiceWithOfflineSupport = async (
         })),
       };
 
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-invoice-to-admin`;
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-offline-invoice`;
       const apiKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
       const headers = {
         'Content-Type': 'application/json',
@@ -118,7 +120,9 @@ export const sendInvoiceWithOfflineSupport = async (
           bookedByEmail,
           totalValue: invoice.total,
           createdAt: new Date().toISOString(),
+          notes: invoice.notes || null,
         },
+        userId: session?.user?.id || null,
         gangMembers: (invoice.gangMembers || []).map((m: any) => ({
           name: m.name,
           type: m.type,
@@ -127,7 +131,7 @@ export const sendInvoiceWithOfflineSupport = async (
         })),
       };
 
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-invoice-to-admin`;
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-offline-invoice`;
       const apiKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
       const headers = {
         'Content-Type': 'application/json',

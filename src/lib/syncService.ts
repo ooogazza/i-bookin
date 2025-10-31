@@ -27,13 +27,26 @@ export const syncPendingInvoices = async (): Promise<void> => {
         if (import.meta.env.DEV) {
           console.log(`Syncing invoice: ${pending.id}`);
         }
-        
-        // Send the invoice using the existing send function
-        await sendInvoiceToAdmin(pending.invoiceData, pending.userName);
-        
+
+        // Prefer stored request details (ensures DB insert + emails via edge function)
+        if ((pending as any).requestUrl && (pending as any).requestBody) {
+          const res = await fetch((pending as any).requestUrl, {
+            method: 'POST',
+            headers: (pending as any).requestHeaders || { 'Content-Type': 'application/json' },
+            body: JSON.stringify((pending as any).requestBody),
+          });
+
+          if (!res.ok) {
+            throw new Error(`Request failed: ${res.status}`);
+          }
+        } else {
+          // Fallback to original send if no request details are available
+          await sendInvoiceToAdmin(pending.invoiceData, pending.userName);
+        }
+
         // Delete from IndexedDB after successful send
         await deletePendingInvoice(pending.id);
-        
+
         if (import.meta.env.DEV) {
           console.log(`Successfully synced and removed invoice: ${pending.id}`);
         }
