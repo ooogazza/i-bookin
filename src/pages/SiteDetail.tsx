@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -152,6 +152,7 @@ const SiteDetail = () => {
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerContent, setViewerContent] = useState<{ url: string; type: string; name: string } | null>(null);
   const [selectedDrawingIds, setSelectedDrawingIds] = useState<string[]>([]);
+  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   
   const [plotDialogOpen, setPlotDialogOpen] = useState(false);
   const [selectedPlot, setSelectedPlot] = useState<Plot | null>(null);
@@ -301,8 +302,15 @@ const SiteDetail = () => {
 
   // Clear drawing selections when dialog closes
   useEffect(() => {
-    if (!drawingsDialogOpen) setSelectedDrawingIds([]);
-  }, [drawingsDialogOpen]);
+    if (!drawingsDialogOpen) {
+      setSelectedDrawingIds([]);
+      // Clear any pending long press timer
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        setLongPressTimer(null);
+      }
+    }
+  }, [drawingsDialogOpen, longPressTimer]);
 
   const fetchSiteData = async () => {
     try {
@@ -875,6 +883,27 @@ const SiteDetail = () => {
     setSelectedDrawingIds((prev) =>
       prev.includes(id) ? prev.filter((d) => d !== id) : [...prev, id]
     );
+  };
+
+  const selectAllDrawings = () => {
+    const allIds = existingDrawings.map((d) => d.id);
+    setSelectedDrawingIds(allIds);
+    toast.success(`Selected all ${allIds.length} drawings`);
+  };
+
+  const handleLongPressStart = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    const timer = setTimeout(() => {
+      selectAllDrawings();
+    }, 500); // 500ms long press
+    setLongPressTimer(timer);
+  };
+
+  const handleLongPressEnd = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
   };
 
   const handleDeleteSelectedDrawings = async () => {
@@ -2828,6 +2857,11 @@ const SiteDetail = () => {
                         key={drawing.id} 
                         className="overflow-hidden cursor-pointer hover:border-primary transition-colors"
                         onClick={() => handleViewDrawing(drawing.file_url, drawing.file_type, drawing.file_name, drawing.preview_url)}
+                        onMouseDown={isAdmin ? handleLongPressStart : undefined}
+                        onMouseUp={isAdmin ? handleLongPressEnd : undefined}
+                        onMouseLeave={isAdmin ? handleLongPressEnd : undefined}
+                        onTouchStart={isAdmin ? handleLongPressStart : undefined}
+                        onTouchEnd={isAdmin ? handleLongPressEnd : undefined}
                       >
                       <CardContent className="p-4 space-y-2">
                         {drawing.file_type.startsWith('image/') ? (
