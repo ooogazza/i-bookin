@@ -206,7 +206,6 @@ const SiteDetail = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [userPlotsDialogOpen, setUserPlotsDialogOpen] = useState(false);
   const [selectedUserForDialog, setSelectedUserForDialog] = useState<User | null>(null);
-  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const [nonPlotInvoiceDialogOpen, setNonPlotInvoiceDialogOpen] = useState(false);
   const [highlightedPlotId, setHighlightedPlotId] = useState<string | null>(null);
   const [uploadedInvoiceImage, setUploadedInvoiceImage] = useState<File | null>(null);
@@ -1289,37 +1288,15 @@ const SiteDetail = () => {
       }
     });
 
-    toast.success(`Highlighting ${userPlots.length} plot(s). Long press to clear.`);
+    toast.success(`Highlighting ${userPlots.length} plot(s). Click a plot to clear.`);
   };
 
   const handleUserClick = (user: User) => {
     setSelectedUserForDialog(user);
     setUserPlotsDialogOpen(true);
-  };
-
-  const handleUserLongPressStart = (userId: string, e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    const timer = setTimeout(() => {
-      // Long press detected - toggle highlight
-      if (selectedUserForHighlight === userId && highlightedPlots.length > 0) {
-        // Clear if already highlighted
-        clearHighlights();
-        setDropdownOpen(false);
-        toast.info("Highlights cleared");
-      } else {
-        // Highlight plots
-        handleUserSelect(userId);
-        setDropdownOpen(false);
-      }
-    }, 500); // 500ms for long press
-    setLongPressTimer(timer);
-  };
-
-  const handleUserLongPressEnd = () => {
-    if (longPressTimer) {
-      clearTimeout(longPressTimer);
-      setLongPressTimer(null);
-    }
+    // Highlight the user's plots and close dropdown
+    handleUserSelect(user.user_id);
+    setDropdownOpen(false);
   };
 
   const scrollToPlot = (plotNumber: number) => {
@@ -1328,59 +1305,11 @@ const SiteDetail = () => {
       const yOffset = -180;
       const y = plotElement.getBoundingClientRect().top + window.pageYOffset + yOffset;
       window.scrollTo({ top: y, behavior: 'smooth' });
-      
-      // Highlight the row briefly
-      plotElement.classList.add('bg-primary/20');
-      setTimeout(() => {
-        plotElement.classList.remove('bg-primary/20');
-      }, 2000);
     }
+    // Clear highlights and close dialog when plot is clicked
+    clearHighlights();
     setUserPlotsDialogOpen(false);
   };
-
-  // Long press handler
-  useEffect(() => {
-    if (highlightedPlots.length === 0) return;
-
-    let pressTimer: NodeJS.Timeout;
-
-    const handleTouchStart = (e: TouchEvent) => {
-      pressTimer = setTimeout(() => {
-        clearHighlights();
-        setDropdownOpen(false);
-        toast.info("Highlights cleared");
-      }, 500); // 500ms for long press
-    };
-
-    const handleTouchEnd = () => {
-      clearTimeout(pressTimer);
-    };
-
-    const handleMouseDown = () => {
-      pressTimer = setTimeout(() => {
-        clearHighlights();
-        setDropdownOpen(false);
-        toast.info("Highlights cleared");
-      }, 500);
-    };
-
-    const handleMouseUp = () => {
-      clearTimeout(pressTimer);
-    };
-
-    document.addEventListener('touchstart', handleTouchStart);
-    document.addEventListener('touchend', handleTouchEnd);
-    document.addEventListener('mousedown', handleMouseDown);
-    document.addEventListener('mouseup', handleMouseUp);
-
-    return () => {
-      clearTimeout(pressTimer);
-      document.removeEventListener('touchstart', handleTouchStart);
-      document.removeEventListener('touchend', handleTouchEnd);
-      document.removeEventListener('mousedown', handleMouseDown);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [highlightedPlots]);
 
   // Scroll indicator handler
   useEffect(() => {
@@ -2137,11 +2066,6 @@ const SiteDetail = () => {
                       key={u.user_id} 
                       className="flex items-center justify-between p-3 cursor-pointer hover:bg-muted"
                       onClick={() => handleUserClick(u)}
-                      onMouseDown={(e) => handleUserLongPressStart(u.user_id, e)}
-                      onMouseUp={handleUserLongPressEnd}
-                      onMouseLeave={handleUserLongPressEnd}
-                      onTouchStart={(e) => handleUserLongPressStart(u.user_id, e)}
-                      onTouchEnd={handleUserLongPressEnd}
                       onSelect={(e) => e.preventDefault()}
                     >
                       <div className="flex-1 flex items-center gap-2">
