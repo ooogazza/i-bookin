@@ -368,6 +368,23 @@ const generateLetterheadPDFContent = async (doc: jsPDF, invoice: any, userName: 
   }
 };
 
+// Helper: generate invoice PDF and return base64 string (no side effects)
+export const generateInvoicePDFBase64 = async (invoice: any, userName?: string) => {
+  const doc = new jsPDF();
+
+  const letterhead = await getActiveLetterhead();
+  const roundedLogo = await createRoundedLogo();
+
+  if (letterhead) {
+    const letterheadDataUrl = await loadImageAsDataUrl(letterhead.file_url);
+    await generateLetterheadPDFContent(doc, invoice, userName, roundedLogo, letterheadDataUrl);
+  } else {
+    await generateOriginalPDFContent(doc, invoice, userName, roundedLogo);
+  }
+
+  return doc.output("dataurlstring").split(",")[1];
+};
+
 // Export PDF logic
 export const handleExportPDF = async (invoice: any, userName?: string) => {
   try {

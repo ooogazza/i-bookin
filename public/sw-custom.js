@@ -93,8 +93,29 @@ function deleteInvoice(db, id) {
 }
 
 async function sendInvoice(invoice) {
-  // This would need to call your edge function
-  // For now, we'll just log it
-  console.log('Sending invoice:', invoice);
-  // In production, you'd make the actual API call here
+  try {
+    const url = invoice.requestUrl;
+    const headers = invoice.requestHeaders || { 'Content-Type': 'application/json' };
+    const body = invoice.requestBody;
+
+    if (!url || !body) {
+      throw new Error('Missing request details on pending invoice');
+    }
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`Request failed: ${res.status} ${text}`);
+    }
+
+    return true;
+  } catch (err) {
+    console.error('sendInvoice failed:', err);
+    throw err;
+  }
 }

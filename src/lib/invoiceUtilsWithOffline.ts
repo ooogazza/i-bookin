@@ -1,6 +1,7 @@
-import { handleSendToAdmin as originalSendToAdmin } from './invoiceUtils';
+import { handleSendToAdmin as originalSendToAdmin, generateInvoicePDFBase64 } from './invoiceUtils';
 import { storePendingInvoice, isOnline, registerBackgroundSync } from './offlineStorage';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 // Wrapper for sending invoices with offline support
 export const sendInvoiceWithOfflineSupport = async (
@@ -12,8 +13,39 @@ export const sendInvoiceWithOfflineSupport = async (
     console.log('Offline mode: Storing invoice for later sync');
     
     try {
-      // Store the invoice in IndexedDB
-      const id = await storePendingInvoice(invoice, userName);
+      // Build request payload with pre-generated PDF so SW can send while app is closed
+      const pdfBase64 = await generateInvoicePDFBase64(invoice, userName);
+      const { data: userData } = await supabase.auth.getUser();
+      const bookedByEmail = userData?.user?.email || '';
+
+      const requestBody = {
+        invoiceNumber: invoice.invoiceNumber,
+        pdfBase64,
+        imageUrl: invoice.imageUrl || null,
+        invoiceDetails: {
+          bookedBy: userName,
+          bookedByEmail,
+          totalValue: invoice.total,
+          createdAt: new Date().toISOString(),
+        },
+        gangMembers: (invoice.gangMembers || []).map((m: any) => ({
+          name: m.name,
+          type: m.type,
+          amount: m.amount,
+          email: m.email || null,
+        })),
+      };
+
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-invoice-to-admin`;
+      const apiKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+      const headers = {
+        'Content-Type': 'application/json',
+        'apikey': apiKey,
+        'Authorization': `Bearer ${apiKey}`,
+      } as Record<string, string>;
+
+      // Store the invoice + request details in IndexedDB
+      const id = await storePendingInvoice(invoice, userName, { url, headers, body: requestBody });
       console.log('Invoice stored for offline sync:', id);
       
       // Register background sync if supported
@@ -41,7 +73,38 @@ export const sendInvoiceWithOfflineSupport = async (
     // If sending fails, store for later
     console.log('Send failed, storing for offline sync');
     try {
-      const id = await storePendingInvoice(invoice, userName);
+      // Build and store request so SW/background can send later
+      const pdfBase64 = await generateInvoicePDFBase64(invoice, userName);
+      const { data: userData } = await supabase.auth.getUser();
+      const bookedByEmail = userData?.user?.email || '';
+
+      const requestBody = {
+        invoiceNumber: invoice.invoiceNumber,
+        pdfBase64,
+        imageUrl: invoice.imageUrl || null,
+        invoiceDetails: {
+          bookedBy: userName,
+          bookedByEmail,
+          totalValue: invoice.total,
+          createdAt: new Date().toISOString(),
+        },
+        gangMembers: (invoice.gangMembers || []).map((m: any) => ({
+          name: m.name,
+          type: m.type,
+          amount: m.amount,
+          email: m.email || null,
+        })),
+      };
+
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-invoice-to-admin`;
+      const apiKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+      const headers = {
+        'Content-Type': 'application/json',
+        'apikey': apiKey,
+        'Authorization': `Bearer ${apiKey}`,
+      } as Record<string, string>;
+
+      const id = await storePendingInvoice(invoice, userName, { url, headers, body: requestBody });
       console.log('Invoice stored after send failure:', id);
       
       await registerBackgroundSync('sync-invoices');

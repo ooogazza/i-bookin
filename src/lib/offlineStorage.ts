@@ -9,6 +9,9 @@ interface PendingInvoice {
   invoiceData: any;
   userName: string;
   type: 'send-to-admin';
+  requestUrl?: string;
+  requestHeaders?: Record<string, string>;
+  requestBody?: any;
 }
 
 // Initialize IndexedDB
@@ -32,7 +35,8 @@ export const initDB = (): Promise<IDBDatabase> => {
 // Store a pending invoice
 export const storePendingInvoice = async (
   invoiceData: any,
-  userName: string
+  userName: string,
+  request?: { url: string; headers: Record<string, string>; body: any }
 ): Promise<string> => {
   const db = await initDB();
   const id = `invoice-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -43,15 +47,18 @@ export const storePendingInvoice = async (
     invoiceData,
     userName,
     type: 'send-to-admin',
+    requestUrl: request?.url,
+    requestHeaders: request?.headers,
+    requestBody: request?.body,
   };
 
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([STORE_NAME], 'readwrite');
     const store = transaction.objectStore(STORE_NAME);
-    const request = store.add(pendingInvoice);
+    const requestAdd = store.add(pendingInvoice);
 
-    request.onsuccess = () => resolve(id);
-    request.onerror = () => reject(request.error);
+    requestAdd.onsuccess = () => resolve(id);
+    requestAdd.onerror = () => reject(requestAdd.error);
   });
 };
 

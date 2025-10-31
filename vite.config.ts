@@ -74,6 +74,8 @@ export default defineConfig(({ mode }) => ({
           globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2,json}"],
           navigateFallback: "index.html",
           navigateFallbackDenylist: [/^\/api/],
+          // Import our custom background sync logic into the generated service worker
+          importScripts: ["sw-custom.js"],
           runtimeCaching: [
             {
               urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

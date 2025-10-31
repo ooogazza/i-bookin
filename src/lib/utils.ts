@@ -26,9 +26,22 @@ export async function saveBlobToDevice(
 
   const isMobile = isMobileDevice();
 
-  // On mobile, skip the file picker dialog and go straight to download
+  // On mobile, prefer native share to save directly into Files/Downloads when available
   if (isMobile) {
-    // Try direct download first on mobile (saves to Downloads folder)
+    try {
+      const n: any = navigator as any;
+      if (typeof n.share === 'function') {
+        const file = new File([blob], suggestedName, { type });
+        if (!n.canShare || n.canShare({ files: [file] })) {
+          await n.share({ files: [file], title: suggestedName });
+          return "share";
+        }
+      }
+    } catch (e) {
+      console.debug("Web Share API failed, falling back to direct download", e);
+    }
+
+    // Direct download to device's downloads folder
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
