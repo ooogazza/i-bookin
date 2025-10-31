@@ -364,6 +364,12 @@ const divisions = gangMembers.map(m => ({
       return;
     }
     
+    // If there's an image, ask user if they want to include it
+    let includeImage = true;
+    if (uploadedImage || imagePreviewUrl) {
+      includeImage = confirm("Include attached image in the PDF export?");
+    }
+    
     // Get user's full name
     let userName = user?.email || "Unknown";
     if (user) {
@@ -378,7 +384,7 @@ const divisions = gangMembers.map(m => ({
     }
     
     const payload = buildInvoice();
-    handleExportPDF(payload, userName);
+    handleExportPDF(payload, userName, includeImage);
   };
 
   return (

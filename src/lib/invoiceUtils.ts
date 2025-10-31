@@ -386,7 +386,7 @@ export const generateInvoicePDFBase64 = async (invoice: any, userName?: string) 
 };
 
 // Export PDF logic
-export const handleExportPDF = async (invoice: any, userName?: string) => {
+export const handleExportPDF = async (invoice: any, userName?: string, includeImage: boolean = true) => {
   try {
     console.log("Exporting PDF for invoice:", invoice);
 

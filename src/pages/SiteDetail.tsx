@@ -1834,6 +1834,12 @@ const SiteDetail = () => {
   };
 
   const handleExportPDF = async () => {
+    // If there's an image, ask user if they want to include it
+    let includeImage = true;
+    if (uploadedInvoiceImage || invoiceImagePreviewUrl) {
+      includeImage = confirm("Include attached image in the PDF export?");
+    }
+
     // Get user's full name
     let userName = user?.email || "Unknown";
     if (user) {
@@ -1969,6 +1975,25 @@ const SiteDetail = () => {
       const noteLines = doc.splitTextToSize(invoiceNotes, 180);
       doc.text(noteLines, 15, yPos);
       yPos += noteLines.length * 6 + 6;
+    }
+
+    // Add image if user chose to include it
+    if (includeImage && invoiceImagePreviewUrl) {
+      if (yPos > 220) {
+        doc.addPage();
+        yPos = 20;
+      }
+      doc.setTextColor(...blueColor);
+      doc.setFont("helvetica", "bold");
+      doc.text("ATTACHED IMAGE:", 15, yPos);
+      yPos += 7;
+      
+      try {
+        doc.addImage(invoiceImagePreviewUrl, 'JPEG', 15, yPos, 180, 100);
+        yPos += 105;
+      } catch (e) {
+        console.error('Failed to add image to PDF', e);
+      }
     }
     
     // Total value with blue box
