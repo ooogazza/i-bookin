@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Plus, Building2, FileText, Trash2 } from "lucide-react";
+import { Plus, Building2, FileText, Trash2, UserCog } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { developerLogos } from "@/lib/developerLogos";
 import { NonPlotInvoiceDialog } from "@/components/NonPlotInvoiceDialog";
@@ -293,8 +293,7 @@ const Dashboard = () => {
             <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setManageBricklayersDialogOpen(true)}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Plus className="h-5 w-5 text-primary" />
-                  <Building2 className="h-6 w-6 text-primary" />
+                  <UserCog className="h-6 w-6 text-primary" />
                   Manage Bricklayers
                 </CardTitle>
                 <CardDescription>
