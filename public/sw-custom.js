@@ -38,12 +38,26 @@ async function syncInvoices() {
     
     // Notify all clients about sync completion
     const clients = await self.clients.matchAll();
-    clients.forEach(client => {
-      client.postMessage({
-        type: 'BACKGROUND_SYNC_SUCCESS',
-        count: pendingInvoices.length
+    
+    if (clients.length > 0) {
+      // App is open, notify clients
+      clients.forEach(client => {
+        client.postMessage({
+          type: 'BACKGROUND_SYNC_SUCCESS',
+          count: pendingInvoices.length
+        });
       });
-    });
+    } else {
+      // App is closed, show notification
+      await self.registration.showNotification('Invoices Sent', {
+        body: `${pendingInvoices.length} invoice${pendingInvoices.length !== 1 ? 's' : ''} sent successfully!`,
+        icon: '/apple-touch-icon.png',
+        badge: '/favicon.png',
+        tag: 'invoice-sync',
+        requireInteraction: false,
+        silent: false
+      });
+    }
     
   } catch (error) {
     console.error('Background sync failed:', error);
