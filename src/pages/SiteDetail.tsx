@@ -177,8 +177,6 @@ const SiteDetail = () => {
   const [tempNotesAmount, setTempNotesAmount] = useState("");
   const [editingBookingPercentage, setEditingBookingPercentage] = useState(false);
   const [tempBookingPercentage, setTempBookingPercentage] = useState("");
-  const [editingLeavesValue, setEditingLeavesValue] = useState(false);
-  const [tempLeavesValue, setTempLeavesValue] = useState("");
   const [editingBookingValue, setEditingBookingValue] = useState(false);
   const [tempBookingValue, setTempBookingValue] = useState("");
   
@@ -2818,60 +2816,9 @@ const SiteDetail = () => {
                     </p>
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-muted-foreground">Leaves:</span>
-                      {editingLeavesValue ? (
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={tempLeavesValue}
-                          onChange={(e) => setTempLeavesValue(e.target.value)}
-                          onBlur={() => {
-                            const val = parseFloat(tempLeavesValue);
-                            const totalLiftValue = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType);
-                            const maxLeaves = totalLiftValue * ((100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType)) / 100);
-                            if (!isNaN(val) && val > 0) {
-                              // Allow any value, calculate percentage accordingly
-                              const newPerc = Math.min(100, Math.round((val / totalLiftValue) * 100));
-                              const availablePerc = 100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
-                              if (newPerc <= availablePerc) {
-                                setBookingPercentage(newPerc);
-                              } else {
-                                toast.error(`Max available: £${maxLeaves.toFixed(2)}`);
-                              }
-                            }
-                            setEditingLeavesValue(false);
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              const val = parseFloat(tempLeavesValue);
-                              const totalLiftValue = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType);
-                              const maxLeaves = totalLiftValue * ((100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType)) / 100);
-                              if (!isNaN(val) && val > 0) {
-                                const newPerc = Math.min(100, Math.round((val / totalLiftValue) * 100));
-                                const availablePerc = 100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
-                                if (newPerc <= availablePerc) {
-                                  setBookingPercentage(newPerc);
-                                } else {
-                                  toast.error(`Max available: £${maxLeaves.toFixed(2)}`);
-                                }
-                              }
-                              setEditingLeavesValue(false);
-                            }
-                          }}
-                          className="w-28 h-7 text-lg font-bold text-primary text-right"
-                          autoFocus
-                        />
-                      ) : (
-                        <button
-                          onClick={() => {
-                            const leavesValue = (getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * ((100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType)) / 100));
-                            setTempLeavesValue(leavesValue.toFixed(2));
-                            setEditingLeavesValue(true);
-                          }}
-                          className="text-lg font-bold text-primary hover:text-primary/80 transition-colors cursor-pointer"
-                        >
-                          £{(getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * ((100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType)) / 100)).toFixed(2)}
-                        </button>
-                      )}
+                      <span className="text-lg font-bold text-primary">
+                        £{(getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * ((100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType) - bookingPercentage) / 100)).toFixed(2)}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -2953,15 +2900,11 @@ const SiteDetail = () => {
                           const val = parseFloat(tempBookingValue);
                           const totalLiftValue = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType);
                           const maxValue = totalLiftValue * (100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType)) / 100;
-                          if (!isNaN(val) && val > 0) {
-                            // Allow any value, calculate percentage accordingly
-                            const newPerc = Math.min(100, Math.round((val / totalLiftValue) * 100));
-                            const availablePerc = 100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
-                            if (newPerc <= availablePerc) {
-                              setBookingPercentage(newPerc);
-                            } else {
-                              toast.error(`Max available: £${maxValue.toFixed(2)}`);
-                            }
+                          if (!isNaN(val) && val > 0 && val <= maxValue) {
+                            const newPerc = Math.round((val / totalLiftValue) * 100);
+                            setBookingPercentage(newPerc);
+                          } else if (val > maxValue) {
+                            toast.error(`Max available: £${maxValue.toFixed(2)}`);
                           }
                           setEditingBookingValue(false);
                         }}
@@ -2970,14 +2913,11 @@ const SiteDetail = () => {
                             const val = parseFloat(tempBookingValue);
                             const totalLiftValue = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType);
                             const maxValue = totalLiftValue * (100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType)) / 100;
-                            if (!isNaN(val) && val > 0) {
-                              const newPerc = Math.min(100, Math.round((val / totalLiftValue) * 100));
-                              const availablePerc = 100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
-                              if (newPerc <= availablePerc) {
-                                setBookingPercentage(newPerc);
-                              } else {
-                                toast.error(`Max available: £${maxValue.toFixed(2)}`);
-                              }
+                            if (!isNaN(val) && val > 0 && val <= maxValue) {
+                              const newPerc = Math.round((val / totalLiftValue) * 100);
+                              setBookingPercentage(newPerc);
+                            } else if (val > maxValue) {
+                              toast.error(`Max available: £${maxValue.toFixed(2)}`);
                             }
                             setEditingBookingValue(false);
                           }
