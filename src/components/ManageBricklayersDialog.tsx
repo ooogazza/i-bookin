@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Users, Mail, Building2, Plus, X } from "lucide-react";
+import { Users, Mail, Building2, Plus, X, MapPin } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 
 interface Site {
@@ -25,6 +26,14 @@ interface UserWithSites {
   assignedSites: string[];
 }
 
+interface PlotWithSite {
+  id: string;
+  plot_number: number;
+  site_id: string;
+  site_name: string;
+  site_location: string | null;
+}
+
 interface ManageBricklayersDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -32,6 +41,7 @@ interface ManageBricklayersDialogProps {
 
 export function ManageBricklayersDialog({ open, onOpenChange }: ManageBricklayersDialogProps) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviting, setInviting] = useState(false);
   const [users, setUsers] = useState<UserWithSites[]>([]);
@@ -41,6 +51,9 @@ export function ManageBricklayersDialog({ open, onOpenChange }: ManageBricklayer
   const [selectedSites, setSelectedSites] = useState<string[]>([]);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingAssignment, setPendingAssignment] = useState<{ userId: string; siteId: string } | null>(null);
+  const [viewPlotsUser, setViewPlotsUser] = useState<UserWithSites | null>(null);
+  const [userPlots, setUserPlots] = useState<PlotWithSite[]>([]);
+  const [loadingPlots, setLoadingPlots] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -223,6 +236,50 @@ export function ManageBricklayersDialog({ open, onOpenChange }: ManageBricklayer
       .join(", ") || "No sites assigned";
   };
 
+  const handleViewPlots = async (user: UserWithSites) => {
+    setViewPlotsUser(user);
+    setLoadingPlots(true);
+    
+    try {
+      const { data: plots, error } = await supabase
+        .from("plots")
+        .select(`
+          id,
+          plot_number,
+          site_id,
+          sites (
+            name,
+            location
+          )
+        `)
+        .eq("assigned_to", user.id)
+        .order("site_id")
+        .order("plot_number");
+
+      if (error) throw error;
+
+      const plotsWithSite: PlotWithSite[] = plots?.map(p => ({
+        id: p.id,
+        plot_number: p.plot_number,
+        site_id: p.site_id,
+        site_name: (p.sites as any)?.name || "Unknown Site",
+        site_location: (p.sites as any)?.location || null,
+      })) || [];
+
+      setUserPlots(plotsWithSite);
+    } catch (error: any) {
+      console.error("Error fetching plots:", error);
+      toast.error("Failed to load plots");
+    } finally {
+      setLoadingPlots(false);
+    }
+  };
+
+  const handlePlotClick = (plot: PlotWithSite) => {
+    navigate(`/site/${plot.site_id}?plot=${plot.id}`);
+    onOpenChange(false);
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -307,13 +364,23 @@ export function ManageBricklayersDialog({ open, onOpenChange }: ManageBricklayer
                               </span>
                             </div>
                           </div>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleManageUserSites(user)}
-                          >
-                            Manage Sites
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleViewPlots(user)}
+                            >
+                              <MapPin className="h-4 w-4 mr-1" />
+                              View Plots
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleManageUserSites(user)}
+                            >
+                              Manage Sites
+                            </Button>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -373,6 +440,54 @@ export function ManageBricklayersDialog({ open, onOpenChange }: ManageBricklayer
             >
               Save Changes
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Plots Dialog */}
+      <Dialog open={!!viewPlotsUser} onOpenChange={(open) => !open && setViewPlotsUser(null)}>
+        <DialogContent className="max-w-2xl" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MapPin className="h-5 w-5" />
+              Plots Assigned to {viewPlotsUser?.full_name || viewPlotsUser?.email}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+            {loadingPlots ? (
+              <p className="text-center py-8 text-muted-foreground">Loading plots...</p>
+            ) : userPlots.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <MapPin className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <p>No plots assigned yet</p>
+              </div>
+            ) : (
+              userPlots.map(plot => (
+                <Card 
+                  key={plot.id} 
+                  className="hover:bg-muted/50 transition-colors cursor-pointer"
+                  onClick={() => handlePlotClick(plot)}
+                >
+                  <CardContent className="py-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <p className="font-medium">Plot {plot.plot_number}</p>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Building2 className="h-3 w-3" />
+                          <span>{plot.site_name}</span>
+                        </div>
+                        {plot.site_location && (
+                          <p className="text-xs text-muted-foreground">{plot.site_location}</p>
+                        )}
+                      </div>
+                      <Button variant="ghost" size="sm">
+                        View →
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
         </DialogContent>
       </Dialog>
