@@ -2116,6 +2116,17 @@ const SiteDetail = () => {
                 </Button>
               </>
             )}
+            {!isAdmin && invoiceItems.length === 0 && (
+              <Button 
+                onClick={() => setNonPlotInvoiceDialogOpen(true)}
+                variant="outline"
+                size="sm"
+                title="Create Non-Plot Invoice"
+              >
+                <FileText className="h-4 w-4" />
+                <span className="hidden lg:inline ml-2">Non-Plot Invoice</span>
+              </Button>
+            )}
             {invoiceItems.length > 0 && (
               <Button 
                 onClick={() => setInvoiceDialogOpen(true)}
