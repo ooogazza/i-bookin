@@ -292,30 +292,30 @@ const BookingIn = () => {
 
     // Mark as viewed for admins
     if (isAdmin && !invoice.is_viewed) {
+      // Update UI immediately (optimistic update)
+      setGroupedInvoices((prev: GroupedInvoice[]) =>
+        prev.map((inv: GroupedInvoice) =>
+          inv.invoice_number === invoice.invoice_number ? ({ ...inv, is_viewed: true } as GroupedInvoice) : inv,
+        ),
+      );
+
+      setUserInvoices((prev: UserInvoices[]) =>
+        prev.map((user: UserInvoices) => ({
+          ...user,
+          invoices: user.invoices.map((inv: GroupedInvoice) =>
+            inv.invoice_number === invoice.invoice_number ? ({ ...inv, is_viewed: true } as GroupedInvoice) : inv,
+          ),
+        })),
+      );
+
+      setUnviewedCount((prev) => Math.max(0, prev - 1));
+
+      // Then update database in background
       try {
         await supabase.from("invoice_views").insert({
           invoice_number: invoice.invoice_number,
           viewed_by: user!.id,
         });
-
-        // Update local state
-        setGroupedInvoices((prev: GroupedInvoice[]) =>
-          prev.map((inv: GroupedInvoice) =>
-            inv.invoice_number === invoice.invoice_number ? ({ ...inv, is_viewed: true } as GroupedInvoice) : inv,
-          ),
-        );
-
-        // Update userInvoices state
-        setUserInvoices((prev: UserInvoices[]) =>
-          prev.map((user: UserInvoices) => ({
-            ...user,
-            invoices: user.invoices.map((inv: GroupedInvoice) =>
-              inv.invoice_number === invoice.invoice_number ? ({ ...inv, is_viewed: true } as GroupedInvoice) : inv,
-            ),
-          })),
-        );
-
-        setUnviewedCount((prev) => Math.max(0, prev - 1));
       } catch (error: any) {
         console.error("Error marking invoice as viewed:", error);
       }
