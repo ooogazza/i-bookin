@@ -27,6 +27,7 @@ import { ZoomableImageViewer } from "@/components/ZoomableImageViewer";
 import { LiftTypeLabel } from "@/components/LiftTypeLabel";
 import { NonPlotInvoiceDialog } from "@/components/NonPlotInvoiceDialog";
 import { playSuccessSound } from "@/lib/soundUtils";
+import { saveBlobToDevice } from "@/lib/utils";
 
 interface Site {
   id: string;
@@ -876,21 +877,10 @@ const SiteDetail = () => {
 
   const handleExportDrawing = async (fileUrl: string, fileName: string) => {
     try {
-      // Fetch the file as a blob
       const response = await fetch(fileUrl);
       const blob = await response.blob();
-      
-      // Create a download URL
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      // Clean up
-      window.URL.revokeObjectURL(downloadUrl);
+
+      await saveBlobToDevice(blob, fileName, blob.type);
       toast.success('Drawing exported successfully');
     } catch (error) {
       console.error('Download error:', error);

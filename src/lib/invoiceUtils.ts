@@ -2,6 +2,7 @@ import { toast } from "sonner";
 import jsPDF from "jspdf";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
+import { saveBlobToDevice } from "@/lib/utils";
 
 // Helper to fetch active letterhead
 const getActiveLetterhead = async () => {
@@ -303,18 +304,24 @@ export const handleExportPDF = async (invoice: any, userName?: string) => {
       generateOriginalPDFContent(doc, invoice, userName, roundedLogo);
     }
 
-    // Force direct download to device storage
+    // Prefer native file save or share on mobile/PWA
     const pdfBlob = doc.output('blob');
-    const downloadUrl = window.URL.createObjectURL(pdfBlob);
-    const link = document.createElement('a');
-    link.href = downloadUrl;
-    link.download = `${invoice.invoiceNumber}.pdf`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(downloadUrl);
-    
-    toast.success("PDF exported successfully");
+
+    try {
+      await saveBlobToDevice(pdfBlob, `${invoice.invoiceNumber}.pdf`, 'application/pdf');
+      toast.success("PDF exported successfully");
+    } catch (e) {
+      console.error("PDF save failed, falling back to download:", e);
+      const downloadUrl = window.URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `${invoice.invoiceNumber}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+      toast.success("PDF exported successfully");
+    }
   } catch (err) {
     console.error("PDF export error:", err);
     toast.error("Failed to export PDF");
