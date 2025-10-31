@@ -13,7 +13,7 @@ const Landing = () => {
           I-Bookin
         </h1>
         
-        <p className="text-2xl text-muted-foreground mb-12">Brickwork Invoice Manager</p>
+        <p className="text-2xl text-muted-foreground mb-12">Brickwork Invoic Manager</p>
         
         <p className="text-xl text-muted-foreground max-w-2xl mb-12">
           Professional construction payment management system for tracking lifts, managing bookings, and streamlining payments for building projects.
