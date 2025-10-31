@@ -283,6 +283,20 @@ const SiteDetail = () => {
     }
   }, [searchParams, plots]);
 
+  // Handle house type editing from URL query parameter
+  useEffect(() => {
+    const houseTypeIdFromUrl = searchParams.get('houseTypeId');
+    if (houseTypeIdFromUrl && houseTypes.length > 0) {
+      const houseTypeToEdit = houseTypes.find(ht => ht.id === houseTypeIdFromUrl);
+      if (houseTypeToEdit) {
+        openHouseTypeDialog(houseTypeToEdit);
+        // Clear the param after opening
+        searchParams.delete('houseTypeId');
+        setSearchParams(searchParams);
+      }
+    }
+  }, [searchParams, houseTypes]);
+
   const fetchSiteData = async () => {
     try {
       const { data: siteData, error: siteError } = await supabase

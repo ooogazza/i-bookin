@@ -37,9 +37,10 @@ interface PlotWithSite {
 interface ManageBricklayersDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  filteredUserId?: string;
 }
 
-export function ManageBricklayersDialog({ open, onOpenChange }: ManageBricklayersDialogProps) {
+export function ManageBricklayersDialog({ open, onOpenChange, filteredUserId }: ManageBricklayersDialogProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [inviteEmail, setInviteEmail] = useState("");
@@ -60,6 +61,17 @@ export function ManageBricklayersDialog({ open, onOpenChange }: ManageBricklayer
       fetchData();
     }
   }, [open]);
+
+  // Auto-select user if filteredUserId is provided
+  useEffect(() => {
+    if (filteredUserId && users.length > 0 && open) {
+      const userToShow = users.find(u => u.id === filteredUserId);
+      if (userToShow) {
+        setSelectedUser(userToShow);
+        setSelectedSites(userToShow.assignedSites);
+      }
+    }
+  }, [filteredUserId, users, open]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -348,7 +360,10 @@ export function ManageBricklayersDialog({ open, onOpenChange }: ManageBricklayer
                 </Card>
               ) : (
                 <div className="space-y-2">
-                  {users.map(user => (
+                  {(filteredUserId 
+                    ? users.filter(u => u.id === filteredUserId)
+                    : users
+                  ).map(user => (
                     <Card key={user.id} className="hover:bg-muted/50 transition-colors">
                       <CardContent className="py-4">
                         <div className="flex items-center justify-between">

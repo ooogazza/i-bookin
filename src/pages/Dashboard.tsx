@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,6 +37,7 @@ interface Site {
 const Dashboard = () => {
   const navigate = useNavigate();
   const { isAdmin, user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [developers, setDevelopers] = useState<Developer[]>([]);
   const [loading, setLoading] = useState(true);
   const [unviewedInvoicesCount, setUnviewedInvoicesCount] = useState(0);
@@ -51,6 +52,7 @@ const Dashboard = () => {
   const [allDevelopers, setAllDevelopers] = useState<Developer[]>([]);
   const [nonPlotInvoiceDialogOpen, setNonPlotInvoiceDialogOpen] = useState(false);
   const [manageBricklayersDialogOpen, setManageBricklayersDialogOpen] = useState(false);
+  const [filteredBricklayerId, setFilteredBricklayerId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (user) {
@@ -61,6 +63,18 @@ const Dashboard = () => {
       }
     }
   }, [user, isAdmin]);
+
+  // Handle bricklayer filtering from URL
+  useEffect(() => {
+    const bricklayerIdFromUrl = searchParams.get('bricklayerId');
+    if (bricklayerIdFromUrl && isAdmin) {
+      setFilteredBricklayerId(bricklayerIdFromUrl);
+      setManageBricklayersDialogOpen(true);
+      // Clear the param after opening
+      searchParams.delete('bricklayerId');
+      setSearchParams(searchParams);
+    }
+  }, [searchParams, isAdmin]);
 
   const fetchDevelopers = async () => {
     if (!user) return;
@@ -461,7 +475,13 @@ const Dashboard = () => {
         {/* Manage Bricklayers Dialog */}
         <ManageBricklayersDialog
           open={manageBricklayersDialogOpen}
-          onOpenChange={setManageBricklayersDialogOpen}
+          onOpenChange={(open) => {
+            setManageBricklayersDialogOpen(open);
+            if (!open) {
+              setFilteredBricklayerId(undefined);
+            }
+          }}
+          filteredUserId={filteredBricklayerId}
         />
 
       </main>

@@ -145,7 +145,7 @@ export const DashboardSearch = () => {
         }
         break;
       case "house_type":
-        // Navigate to site where this house type exists
+        // Navigate to site where this house type exists and open edit dialog
         supabase
           .from("house_types")
           .select("site_id")
@@ -153,12 +153,13 @@ export const DashboardSearch = () => {
           .single()
           .then(({ data }) => {
             if (data) {
-              navigate(`/site/${data.site_id}`);
+              navigate(`/site/${data.site_id}?houseTypeId=${result.id}`);
             }
           });
         break;
       case "bricklayer":
-        toast.info("Bricklayer management coming soon");
+        // Navigate to dashboard with filtered bricklayer
+        navigate(`/dashboard?bricklayerId=${result.id}`);
         break;
     }
   };
