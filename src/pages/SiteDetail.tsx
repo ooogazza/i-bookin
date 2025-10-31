@@ -177,8 +177,11 @@ const SiteDetail = () => {
   const [tempNotesAmount, setTempNotesAmount] = useState("");
   const [editingBookingPercentage, setEditingBookingPercentage] = useState(false);
   const [tempBookingPercentage, setTempBookingPercentage] = useState("");
+  const [editingLeavesValue, setEditingLeavesValue] = useState(false);
+  const [tempLeavesValue, setTempLeavesValue] = useState("");
   const [editingBookingValue, setEditingBookingValue] = useState(false);
   const [tempBookingValue, setTempBookingValue] = useState("");
+  const [overrideBookedValue, setOverrideBookedValue] = useState<number | null>(null);
   
   const { savedMembers, fetchSavedMembers } = useSavedGangMembers();
   
@@ -2816,9 +2819,62 @@ const SiteDetail = () => {
                     </p>
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-muted-foreground">Leaves:</span>
-                      <span className="text-lg font-bold text-primary">
-                        £{(getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * ((100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType) - bookingPercentage) / 100)).toFixed(2)}
-                      </span>
+                      {editingLeavesValue ? (
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={tempLeavesValue}
+                          onChange={(e) => setTempLeavesValue(e.target.value)}
+                          onBlur={() => {
+                            const val = parseFloat(tempLeavesValue);
+                            const total = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType);
+                            const alreadyPct = getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
+                            const availableMoney = total * ((100 - alreadyPct) / 100);
+                            if (!isNaN(val) && val >= 0) {
+                              const clampedLeaves = Math.min(Math.max(val, 0), availableMoney);
+                              const bookedAmount = parseFloat((availableMoney - clampedLeaves).toFixed(2));
+                              if (bookedAmount > 0) {
+                                setOverrideBookedValue(bookedAmount);
+                                const perc = Math.round((bookedAmount / total) * 100);
+                                const maxPerc = 100 - alreadyPct;
+                                setBookingPercentage(Math.min(perc, maxPerc));
+                              } else {
+                                toast.error("Enter an amount smaller than available to leave after booking");
+                              }
+                            }
+                            setEditingLeavesValue(false);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              (e.currentTarget as HTMLInputElement).blur();
+                            }
+                          }}
+                          className="w-28 h-7 text-lg font-bold text-primary text-right"
+                          autoFocus
+                        />
+                      ) : (
+                        <button
+                          onClick={() => {
+                            const total = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType);
+                            const alreadyPct = getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
+                            const availableMoney = total * ((100 - alreadyPct) / 100);
+                            const currentBooked = overrideBookedValue ?? (total * (bookingPercentage / 100));
+                            const leaves = Math.max(availableMoney - currentBooked, 0);
+                            setTempLeavesValue(leaves.toFixed(2));
+                            setEditingLeavesValue(true);
+                          }}
+                          className="text-lg font-bold text-primary hover:text-primary/80 transition-colors cursor-pointer"
+                        >
+                          £{(() => {
+                            const total = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType);
+                            const alreadyPct = getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
+                            const availableMoney = total * ((100 - alreadyPct) / 100);
+                            const currentBooked = overrideBookedValue ?? (total * (bookingPercentage / 100));
+                            const leaves = Math.max(availableMoney - currentBooked, 0);
+                            return leaves.toFixed(2);
+                          })()}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -2847,6 +2903,7 @@ const SiteDetail = () => {
                           const val = parseInt(tempBookingPercentage);
                           const maxVal = 100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
                           if (!isNaN(val) && val >= 1 && val <= maxVal) {
+                            setOverrideBookedValue(null);
                             setBookingPercentage(val);
                           }
                           setEditingBookingPercentage(false);
@@ -2856,6 +2913,7 @@ const SiteDetail = () => {
                             const val = parseInt(tempBookingPercentage);
                             const maxVal = 100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
                             if (!isNaN(val) && val >= 1 && val <= maxVal) {
+                              setOverrideBookedValue(null);
                               setBookingPercentage(val);
                             }
                             setEditingBookingPercentage(false);
@@ -2880,7 +2938,7 @@ const SiteDetail = () => {
                   </div>
                   <Slider
                     value={[bookingPercentage]}
-                    onValueChange={(value) => setBookingPercentage(value[0])}
+                    onValueChange={(value) => { setOverrideBookedValue(null); setBookingPercentage(value[0]); }}
                     min={1}
                     max={100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType)}
                     step={1}
@@ -2899,8 +2957,10 @@ const SiteDetail = () => {
                         onBlur={() => {
                           const val = parseFloat(tempBookingValue);
                           const totalLiftValue = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType);
-                          const maxValue = totalLiftValue * (100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType)) / 100;
+                          const alreadyPct = getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
+                          const maxValue = totalLiftValue * (100 - alreadyPct) / 100;
                           if (!isNaN(val) && val > 0 && val <= maxValue) {
+                            setOverrideBookedValue(val);
                             const newPerc = Math.round((val / totalLiftValue) * 100);
                             setBookingPercentage(newPerc);
                           } else if (val > maxValue) {
@@ -2910,16 +2970,7 @@ const SiteDetail = () => {
                         }}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
-                            const val = parseFloat(tempBookingValue);
-                            const totalLiftValue = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType);
-                            const maxValue = totalLiftValue * (100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType)) / 100;
-                            if (!isNaN(val) && val > 0 && val <= maxValue) {
-                              const newPerc = Math.round((val / totalLiftValue) * 100);
-                              setBookingPercentage(newPerc);
-                            } else if (val > maxValue) {
-                              toast.error(`Max available: £${maxValue.toFixed(2)}`);
-                            }
-                            setEditingBookingValue(false);
+                            (e.currentTarget as HTMLInputElement).blur();
                           }
                         }}
                         className="w-36 h-8 text-xl font-bold text-primary text-right"
@@ -2929,12 +2980,12 @@ const SiteDetail = () => {
                       <button
                         className="text-xl font-bold text-primary hover:text-primary/80 transition-colors cursor-pointer"
                         onClick={() => {
-                          const currentValue = (getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * bookingPercentage) / 100;
+                          const currentValue = overrideBookedValue ?? ((getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * bookingPercentage) / 100);
                           setTempBookingValue(currentValue.toFixed(2));
                           setEditingBookingValue(true);
                         }}
                       >
-                        £{((getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * bookingPercentage) / 100).toFixed(2)}
+                        £{overrideBookedValue?.toFixed(2) ?? ((getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * bookingPercentage) / 100).toFixed(2)}
                       </button>
                     )}
                   </div>
