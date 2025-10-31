@@ -621,29 +621,6 @@ const BookingIn = () => {
       )}
 
       <main className="container py-12 space-y-8">
-        {/* Hero Section */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-primary/80 p-8 md:p-12 shadow-xl">
-          <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,transparent,rgba(255,255,255,0.5))]" />
-          <div className="relative">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-3 rounded-xl bg-white/20 backdrop-blur-sm">
-                <FileText className="h-8 w-8 text-primary-foreground" />
-              </div>
-              <h1 className="text-4xl md:text-5xl font-bold text-primary-foreground">
-                Booking In
-              </h1>
-            </div>
-            <p className="text-primary-foreground/90 text-lg">
-              {isAdmin ? "Review and confirm submitted invoices" : "Track all your submitted invoices"}
-            </p>
-            {isAdmin && unviewedCount > 0 && (
-              <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm text-primary-foreground px-4 py-2 rounded-lg mt-4">
-                <span className="font-semibold">{unviewedCount} new invoices to review</span>
-              </div>
-            )}
-          </div>
-        </div>
-
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary/30 border-t-primary mb-4" />

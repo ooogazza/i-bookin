@@ -2181,54 +2181,6 @@ const SiteDetail = () => {
           </div>
         )}
         
-        {/* Hero Section */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-primary/80 p-8 md:p-12 shadow-xl">
-          <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,transparent,rgba(255,255,255,0.5))]" />
-          <div className="relative">
-            <div className="flex flex-col md:flex-row md:items-center gap-6">
-              {developerLogo && (
-                <div className="flex-shrink-0">
-                  <div className="p-4 rounded-2xl bg-white/20 backdrop-blur-sm">
-                    <img 
-                      src={developerLogo} 
-                      alt={developer?.name || "Developer"}
-                      className="h-16 w-auto object-contain"
-                    />
-                  </div>
-                </div>
-              )}
-              <div className="flex-1">
-                <p className="text-primary-foreground/80 text-sm font-medium mb-2">
-                  {developer?.name || "Developer"}
-                </p>
-                <h1 className="text-4xl md:text-5xl font-bold text-primary-foreground mb-3">
-                  {site.name}
-                </h1>
-                {site.location && (
-                  <p className="text-primary-foreground/90 text-lg">
-                    {site.location}
-                  </p>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-3">
-                <div className="px-5 py-3 rounded-xl bg-white/20 backdrop-blur-sm text-center min-w-[120px]">
-                  <p className="text-primary-foreground/80 text-sm mb-1">Total Plots</p>
-                  <p className="text-2xl font-bold text-primary-foreground">{plots.length}</p>
-                </div>
-                <div className="px-5 py-3 rounded-xl bg-white/20 backdrop-blur-sm text-center min-w-[120px]">
-                  <p className="text-primary-foreground/80 text-sm mb-1">House Types</p>
-                  <p className="text-2xl font-bold text-primary-foreground">{houseTypes.length}</p>
-                </div>
-              </div>
-            </div>
-            {site.description && (
-              <p className="text-primary-foreground/90 mt-6 max-w-3xl">
-                {site.description}
-              </p>
-            )}
-          </div>
-        </div>
-
         {/* House Types Section */}
         {houseTypes.length > 0 && isAdmin && (
           <div>

@@ -276,25 +276,6 @@ const Dashboard = () => {
       />
       
       <main className="container py-12 space-y-8">
-        {/* Hero Section */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-primary/80 p-8 md:p-12 shadow-xl">
-          <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,transparent,rgba(255,255,255,0.5))]" />
-          <div className="relative">
-            <h1 className="text-4xl md:text-5xl font-bold text-primary-foreground mb-3">
-              Welcome back, {user?.email?.split('@')[0] || 'User'}
-            </h1>
-            <p className="text-primary-foreground/90 text-lg mb-6">
-              {isAdmin ? "Manage your entire construction workflow" : "View your assigned sites and invoices"}
-            </p>
-            {isAdmin && unconfirmedInvoicesCount > 0 && (
-              <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm text-primary-foreground px-4 py-2 rounded-lg">
-                <FileText className="h-5 w-5" />
-                <span className="font-semibold">{unconfirmedInvoicesCount} invoices awaiting confirmation</span>
-              </div>
-            )}
-          </div>
-        </div>
-
         {/* Quick Actions */}
         {isAdmin && (
           <div>
