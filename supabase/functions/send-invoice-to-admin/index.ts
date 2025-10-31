@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,6 +28,35 @@ interface SendInvoiceRequest {
   gangMembers: GangMember[];
 }
 
+const gangMemberSchema = z.object({
+  name: z.string().trim().max(100),
+  type: z.string().max(50),
+  amount: z.number().nonnegative().max(1000000),
+  email: z.string().email().max(255).optional()
+});
+
+const invoiceSchema = z.object({
+  invoiceNumber: z.string().trim().max(50),
+  pdfBase64: z.string().max(10485760), // 10MB limit
+  imageUrl: z.string().url().optional().nullable(),
+  invoiceDetails: z.object({
+    bookedBy: z.string().trim().max(255),
+    bookedByEmail: z.string().email().max(255),
+    totalValue: z.number().nonnegative().max(100000000),
+    createdAt: z.string().datetime()
+  }),
+  gangMembers: z.array(gangMemberSchema).max(100)
+});
+
+function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -34,7 +64,25 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { invoiceNumber, pdfBase64, imageUrl, invoiceDetails, gangMembers }: SendInvoiceRequest = await req.json();
+    // Validate input
+    const rawBody = await req.json();
+    const validationResult = invoiceSchema.safeParse(rawBody);
+    
+    if (!validationResult.success) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "Invalid input", 
+          details: validationResult.error.issues 
+        }),
+        { 
+          status: 400, 
+          headers: { "Content-Type": "application/json", ...corsHeaders } 
+        }
+      );
+    }
+
+    const { invoiceNumber, pdfBase64, imageUrl, invoiceDetails, gangMembers } = validationResult.data;
 
     console.log(`Processing invoice email: ${invoiceNumber}`);
 
@@ -132,7 +180,7 @@ const handler = async (req: Request): Promise<Response> => {
         <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <h2 style="margin-top: 0; color: #1f2937;">Gang Division</h2>
           ${gangMembers.map(m => `
-            <p style="margin: 8px 0;"><strong>${m.name}</strong> (${m.type}): £${m.amount.toFixed(2)}</p>
+            <p style="margin: 8px 0;"><strong>${escapeHtml(m.name)}</strong> (${escapeHtml(m.type)}): £${m.amount.toFixed(2)}</p>
           `).join('')}
           <p style="margin-top: 15px; padding-top: 15px; border-top: 2px solid #d1d5db;"><strong>Total Allocated:</strong> £${gangMembers.reduce((sum, m) => sum + m.amount, 0).toFixed(2)}</p>
         </div>
@@ -149,14 +197,14 @@ const handler = async (req: Request): Promise<Response> => {
       body: JSON.stringify({
         from: "I-Bookin <noreply@i-bookin.uk>",
         to: uniqueRecipients,
-        subject: `New Invoice Submitted: ${invoiceNumber}`,
+        subject: `New Invoice Submitted: ${escapeHtml(invoiceNumber)}`,
         html: `
           <!DOCTYPE html>
           <html>
             <head>
               <meta charset="utf-8">
               <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>New Invoice: ${invoiceNumber}</title>
+              <title>New Invoice: ${escapeHtml(invoiceNumber)}</title>
             </head>
             <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
               <table role="presentation" style="width: 100%; border-collapse: collapse;">
@@ -183,11 +231,11 @@ const handler = async (req: Request): Promise<Response> => {
                             <table style="width: 100%; border-collapse: collapse;">
                               <tr>
                                 <td style="padding: 8px 0; color: #6B7280; font-size: 14px;">Invoice Number:</td>
-                                <td style="padding: 8px 0; color: #1F2937; font-weight: 600; text-align: right;">${invoiceNumber}</td>
+                                <td style="padding: 8px 0; color: #1F2937; font-weight: 600; text-align: right;">${escapeHtml(invoiceNumber)}</td>
                               </tr>
                               <tr>
                                 <td style="padding: 8px 0; color: #6B7280; font-size: 14px;">Booked By:</td>
-                                <td style="padding: 8px 0; color: #1F2937; font-weight: 600; text-align: right;">${invoiceDetails.bookedBy}</td>
+                                <td style="padding: 8px 0; color: #1F2937; font-weight: 600; text-align: right;">${escapeHtml(invoiceDetails.bookedBy)}</td>
                               </tr>
                               <tr>
                                 <td style="padding: 8px 0; color: #6B7280; font-size: 14px;">Total Value:</td>
@@ -245,7 +293,7 @@ const handler = async (req: Request): Promise<Response> => {
         `,
         attachments: [
           {
-            filename: `${invoiceNumber}.pdf`,
+            filename: `${escapeHtml(invoiceNumber)}.pdf`,
             content: pdfBase64,
           },
         ],

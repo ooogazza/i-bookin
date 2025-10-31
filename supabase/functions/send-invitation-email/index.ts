@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,6 +12,22 @@ interface InvitationRequest {
   siteName: string;
   invitedBy: string;
   customDomain?: string;
+}
+
+const invitationSchema = z.object({
+  email: z.string().email().max(255),
+  siteName: z.string().trim().min(1).max(255),
+  invitedBy: z.string().trim().min(1).max(255),
+  customDomain: z.string().url().optional()
+});
+
+function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -51,7 +68,25 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("User is not an admin");
     }
 
-    const { email, siteName, invitedBy, customDomain }: InvitationRequest = await req.json();
+    // Validate input
+    const rawBody = await req.json();
+    const validationResult = invitationSchema.safeParse(rawBody);
+    
+    if (!validationResult.success) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "Invalid input", 
+          details: validationResult.error.issues 
+        }),
+        { 
+          status: 400, 
+          headers: { "Content-Type": "application/json", ...corsHeaders } 
+        }
+      );
+    }
+
+    const { email, siteName, invitedBy, customDomain } = validationResult.data;
 
     const appUrl = customDomain || "https://i-bookin.com";
 
@@ -80,7 +115,7 @@ const handler = async (req: Request): Promise<Response> => {
                     <td style="padding: 40px;">
                       <h2 style="margin: 0 0 20px; color: #1F2937; font-size: 24px; font-weight: 600;">You've Been Invited!</h2>
                       <p style="margin: 0 0 20px; color: #4B5563; font-size: 16px; line-height: 1.6;">
-                        <strong>${invitedBy}</strong> has invited you to join <strong>${siteName}</strong> on I-Bookin.
+                        <strong>${escapeHtml(invitedBy)}</strong> has invited you to join <strong>${escapeHtml(siteName)}</strong> on I-Bookin.
                       </p>
                       <p style="margin: 0 0 30px; color: #6B7280; font-size: 15px; line-height: 1.6;">
                         I-Bookin is a professional construction payment management system for tracking lifts, managing bookings, and streamlining payments for building projects.
@@ -98,7 +133,7 @@ const handler = async (req: Request): Promise<Response> => {
                       </table>
                       
                       <p style="margin: 30px 0 0; color: #6B7280; font-size: 14px; line-height: 1.6;">
-                        <strong>Important:</strong> Please ensure you sign up using this email address (<strong>${email}</strong>) to access your assigned site.
+                        <strong>Important:</strong> Please ensure you sign up using this email address (<strong>${escapeHtml(email)}</strong>) to access your assigned site.
                       </p>
                       <p style="margin: 10px 0 0; color: #6B7280; font-size: 14px; line-height: 1.6;">
                         If you didn't expect this invitation, you can safely ignore this email.
@@ -135,7 +170,7 @@ const handler = async (req: Request): Promise<Response> => {
       body: JSON.stringify({
         from: "I-Bookin <noreply@i-bookin.uk>",
         to: [email],
-        subject: `You've been invited to ${siteName} on I-Bookin`,
+        subject: `You've been invited to ${escapeHtml(siteName)} on I-Bookin`,
         html: emailHtml,
       }),
     });
