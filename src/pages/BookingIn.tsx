@@ -308,6 +308,18 @@ const BookingIn = () => {
         })),
       );
 
+      // Update the currently open user dialog immediately
+      setSelectedUser((prev: UserInvoices | null) =>
+        prev
+          ? {
+              ...prev,
+              invoices: prev.invoices.map((inv: GroupedInvoice) =>
+                inv.invoice_number === invoice.invoice_number ? ({ ...inv, is_viewed: true } as GroupedInvoice) : inv,
+              ),
+            }
+          : prev,
+      );
+
       setUnviewedCount((prev) => Math.max(0, prev - 1));
 
       // Then update database in background
