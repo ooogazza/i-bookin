@@ -9,6 +9,18 @@ export interface AuthContextType {
 }
 
 export const signIn = async (email: string, password: string) => {
+  // Check if offline
+  if (!navigator.onLine) {
+    return { 
+      data: null, 
+      error: { 
+        message: 'Cannot sign in while offline. Please check your internet connection.',
+        name: 'OfflineError',
+        status: 0
+      } as any
+    };
+  }
+  
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,

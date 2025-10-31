@@ -38,11 +38,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Check admin status
-        if (session?.user) {
+        // Check admin status only if online
+        if (session?.user && navigator.onLine) {
           setTimeout(() => {
-            checkUserRole(session.user.id).then(setIsAdmin);
+            checkUserRole(session.user.id).then(setIsAdmin).catch(() => setIsAdmin(false));
           }, 0);
+        } else if (session?.user) {
+          // When offline, try to get cached admin status from localStorage
+          const cachedAdmin = localStorage.getItem(`admin-${session.user.id}`);
+          setIsAdmin(cachedAdmin === 'true');
         } else {
           setIsAdmin(false);
         }
@@ -56,10 +60,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       
-      if (session?.user) {
-        checkUserRole(session.user.id).then(setIsAdmin);
+      if (session?.user && navigator.onLine) {
+        checkUserRole(session.user.id).then((isAdmin) => {
+          setIsAdmin(isAdmin);
+          // Cache admin status
+          localStorage.setItem(`admin-${session.user.id}`, String(isAdmin));
+        }).catch(() => setIsAdmin(false));
+      } else if (session?.user) {
+        // When offline, use cached admin status
+        const cachedAdmin = localStorage.getItem(`admin-${session.user.id}`);
+        setIsAdmin(cachedAdmin === 'true');
       }
       
+      setLoading(false);
+    }).catch(() => {
+      // If getSession fails (offline), try to load from cache
       setLoading(false);
     });
 

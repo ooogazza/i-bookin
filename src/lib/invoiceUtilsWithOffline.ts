@@ -15,8 +15,10 @@ export const sendInvoiceWithOfflineSupport = async (
     try {
       // Build request payload with pre-generated PDF so SW can send while app is closed
       const pdfBase64 = await generateInvoicePDFBase64(invoice, userName);
-      const { data: userData } = await supabase.auth.getUser();
-      const bookedByEmail = userData?.user?.email || '';
+      
+      // Get user email from cached session (don't make API call when offline)
+      const session = JSON.parse(localStorage.getItem('sb-mmihdfqltklnybxotvdx-auth-token') || '{}');
+      const bookedByEmail = session?.user?.email || '';
 
       const requestBody = {
         invoiceNumber: invoice.invoiceNumber,
@@ -75,8 +77,10 @@ export const sendInvoiceWithOfflineSupport = async (
     try {
       // Build and store request so SW/background can send later
       const pdfBase64 = await generateInvoicePDFBase64(invoice, userName);
-      const { data: userData } = await supabase.auth.getUser();
-      const bookedByEmail = userData?.user?.email || '';
+      
+      // Get user email from cached session (don't make API call when offline)
+      const session = JSON.parse(localStorage.getItem('sb-mmihdfqltklnybxotvdx-auth-token') || '{}');
+      const bookedByEmail = session?.user?.email || '';
 
       const requestBody = {
         invoiceNumber: invoice.invoiceNumber,
