@@ -231,7 +231,10 @@ const BookingIn = () => {
         confirmed_by_admin: invoice.status === "confirmed",
         // Check actual status
         is_non_plot: true,
-        profiles: profilesMap[invoice.user_id] || { full_name: "Unknown", email: "" },
+        profiles: profilesMap[invoice.user_id] || {
+          full_name: "Unknown",
+          email: ""
+        },
         gang_divisions: invoice.non_plot_gang_divisions || []
       }));
 
@@ -481,11 +484,12 @@ const BookingIn = () => {
           amount: m.amount
         }))
       };
-      
+
       // Use offline-aware send function
-      const { sendInvoiceWithOfflineSupport } = await import("@/lib/invoiceUtilsWithOffline");
+      const {
+        sendInvoiceWithOfflineSupport
+      } = await import("@/lib/invoiceUtilsWithOffline");
       const result = await sendInvoiceWithOfflineSupport(payload, invoice.booked_by.full_name);
-      
       if (result.queued) {
         toast.info("Invoice queued for sending when online");
       } else {
@@ -831,7 +835,7 @@ const BookingIn = () => {
                         })}
                               </p>
                               {invoice.items[0]?.gang_divisions && invoice.items[0].gang_divisions.length > 0 && <div className="mt-2">
-                                  <p className="text-xs text-muted-foreground mb-1">Gang</p>
+                                  <p className="text-xs text-muted-foreground mb-1">Gang Split:</p>
                                   <div className="space-y-1">
                                     {invoice.items[0].gang_divisions.map((member, idx) => <div key={idx} className="flex items-center justify-between gap-2">
                                         <p className="text-sm font-bold">{member.member_name}</p>
@@ -1059,11 +1063,7 @@ const BookingIn = () => {
                 {selectedInvoice.image_url && <div className="border-t pt-3 md:pt-4">
                     <h4 className="font-semibold mb-2 text-sm md:text-base">Attached Image</h4>
                     <div className="bg-muted/50 p-3 rounded-lg">
-                      <img 
-                        src={selectedInvoice.image_url} 
-                        alt="Invoice attachment" 
-                        className="w-full h-auto rounded-md max-h-96 object-contain"
-                      />
+                      <img src={selectedInvoice.image_url} alt="Invoice attachment" className="w-full h-auto rounded-md max-h-96 object-contain" />
                     </div>
                   </div>}
 
