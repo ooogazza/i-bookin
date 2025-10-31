@@ -79,17 +79,17 @@ export const Header = ({
                 variant="default"
                 onClick={() => openInvoiceDialog(`NPINV-${Date.now()}`)}
                 size="sm"
-                className="whitespace-nowrap"
+                className="whitespace-nowrap gap-1.5"
               >
                 {isMobile ? (
                   <>
+                    <Plus className="h-4 w-4" />
                     <FileText className="h-4 w-4" />
-                    <Plus className="h-4 w-4 -ml-1" />
                   </>
                 ) : (
                   <>
-                    <FileText className="mr-2 h-4 w-4" />
-                    <Plus className="h-3 w-3 mr-2" />
+                    <Plus className="h-4 w-4" />
+                    <FileText className="h-4 w-4" />
                     <span>Non-Plot Invoice</span>
                   </>
                 )}
@@ -98,9 +98,10 @@ export const Header = ({
                 variant="default"
                 onClick={() => navigate("/booking-in")}
                 size="sm"
-                className="whitespace-nowrap"
+                className="whitespace-nowrap gap-1.5"
               >
-                <FileText className="md:mr-2 h-4 w-4" />
+                <Plus className="h-4 w-4" />
+                <FileText className="h-4 w-4" />
                 <span className="hidden md:inline">Invoices</span>
               </Button>
             </>
