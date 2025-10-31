@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -150,7 +151,7 @@ const SiteDetail = () => {
   const [selectedHouseTypeForDrawings, setSelectedHouseTypeForDrawings] = useState<HouseType | null>(null);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerContent, setViewerContent] = useState<{ url: string; type: string; name: string } | null>(null);
-  
+  const [selectedDrawingIds, setSelectedDrawingIds] = useState<string[]>([]);
   
   const [plotDialogOpen, setPlotDialogOpen] = useState(false);
   const [selectedPlot, setSelectedPlot] = useState<Plot | null>(null);
@@ -297,6 +298,11 @@ const SiteDetail = () => {
       }
     }
   }, [searchParams, houseTypes]);
+
+  // Clear drawing selections when dialog closes
+  useEffect(() => {
+    if (!drawingsDialogOpen) setSelectedDrawingIds([]);
+  }, [drawingsDialogOpen]);
 
   const fetchSiteData = async () => {
     try {
@@ -865,6 +871,42 @@ const SiteDetail = () => {
     }
   };
 
+  const toggleSelectDrawing = (id: string) => {
+    setSelectedDrawingIds((prev) =>
+      prev.includes(id) ? prev.filter((d) => d !== id) : [...prev, id]
+    );
+  };
+
+  const handleDeleteSelectedDrawings = async () => {
+    if (selectedDrawingIds.length === 0) return;
+    if (!confirm(`Delete ${selectedDrawingIds.length} selected drawings?`)) return;
+
+    try {
+      const toDelete = existingDrawings.filter((d) => selectedDrawingIds.includes(d.id));
+      for (const drawing of toDelete) {
+        const urlParts = drawing.file_url.split('/house-type-drawings/');
+        if (urlParts.length > 1) {
+          const filePath = urlParts[1];
+          await supabase.storage
+            .from('house-type-drawings')
+            .remove([filePath]);
+        }
+
+        await supabase
+          .from('house_type_drawings')
+          .delete()
+          .eq('id', drawing.id);
+      }
+
+      setExistingDrawings((prev) => prev.filter((d) => !selectedDrawingIds.includes(d.id)));
+      setSelectedDrawingIds([]);
+      toast.success('Selected drawings deleted');
+    } catch (error: any) {
+      toast.error('Failed to delete selected drawings');
+      console.error('Error:', error);
+    }
+  };
+
   const handleViewDrawing = (url: string, type: string, name: string, previewUrl?: string) => {
     console.log('Opening viewer:', { url, type, name, previewUrl });
     // For PDFs, use preview URL if available, otherwise use the PDF URL
@@ -886,6 +928,7 @@ const SiteDetail = () => {
       .order("display_order");
     
     setExistingDrawings(drawings || []);
+    setSelectedDrawingIds([]);
     setDrawingsDialogOpen(true);
   };
 
@@ -2660,14 +2703,25 @@ const SiteDetail = () => {
                   {selectedHouseTypeForDrawings?.name} - Drawings
                 </DialogTitle>
                 {isAdmin && (existingDrawings.length > 0 || uploadedDrawings.length > 0) && (
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={handleDeleteAllDrawings}
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete All
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      disabled={selectedDrawingIds.length === 0}
+                      onClick={handleDeleteSelectedDrawings}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      {`Delete Selected${selectedDrawingIds.length > 0 ? ` (${selectedDrawingIds.length})` : ''}`}
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleDeleteAllDrawings}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete All
+                    </Button>
+                  </div>
                 )}
               </div>
             </DialogHeader>
@@ -2791,7 +2845,17 @@ const SiteDetail = () => {
                           </div>
                         )}
                         <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium truncate flex-1">{drawing.file_name}</p>
+                          <div className="flex items-center gap-2 flex-1">
+                            {isAdmin && (
+                              <Checkbox
+                                checked={selectedDrawingIds.includes(drawing.id)}
+                                onCheckedChange={() => toggleSelectDrawing(drawing.id)}
+                                onClick={(e) => e.stopPropagation()}
+                                aria-label="Select drawing for deletion"
+                              />
+                            )}
+                            <p className="text-sm font-medium truncate flex-1">{drawing.file_name}</p>
+                          </div>
                           {isAdmin && (
                             <Button
                               variant="ghost"
