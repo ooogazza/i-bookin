@@ -177,6 +177,10 @@ const SiteDetail = () => {
   const [tempNotesAmount, setTempNotesAmount] = useState("");
   const [editingBookingPercentage, setEditingBookingPercentage] = useState(false);
   const [tempBookingPercentage, setTempBookingPercentage] = useState("");
+  const [editingLeavesValue, setEditingLeavesValue] = useState(false);
+  const [tempLeavesValue, setTempLeavesValue] = useState("");
+  const [editingBookingValue, setEditingBookingValue] = useState(false);
+  const [tempBookingValue, setTempBookingValue] = useState("");
   
   const { savedMembers, fetchSavedMembers } = useSavedGangMembers();
   
@@ -2818,15 +2822,49 @@ const SiteDetail = () => {
                     </p>
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-muted-foreground">Leaves:</span>
-                      <button
-                        onClick={() => {
-                          const remaining = 100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
-                          setBookingPercentage(remaining);
-                        }}
-                        className="text-lg font-bold text-primary hover:text-primary/80 transition-colors cursor-pointer"
-                      >
-                        £{(getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * ((100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType)) / 100)).toFixed(2)}
-                      </button>
+                      {editingLeavesValue ? (
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={tempLeavesValue}
+                          onChange={(e) => setTempLeavesValue(e.target.value)}
+                          onBlur={() => {
+                            const val = parseFloat(tempLeavesValue);
+                            const maxLeaves = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * ((100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType)) / 100);
+                            if (!isNaN(val) && val > 0 && val <= maxLeaves) {
+                              const newPerc = Math.round((val / getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType)) * 100);
+                              setBookingPercentage(newPerc);
+                            }
+                            setEditingLeavesValue(false);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              const val = parseFloat(tempLeavesValue);
+                              const maxLeaves = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * ((100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType)) / 100);
+                              if (!isNaN(val) && val > 0 && val <= maxLeaves) {
+                                const newPerc = Math.round((val / getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType)) * 100);
+                                setBookingPercentage(newPerc);
+                              } else {
+                                toast.error(`Max available: £${maxLeaves.toFixed(2)}`);
+                              }
+                              setEditingLeavesValue(false);
+                            }
+                          }}
+                          className="w-28 h-7 text-lg font-bold text-primary text-right"
+                          autoFocus
+                        />
+                      ) : (
+                        <button
+                          onClick={() => {
+                            const leavesValue = (getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * ((100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType)) / 100));
+                            setTempLeavesValue(leavesValue.toFixed(2));
+                            setEditingLeavesValue(true);
+                          }}
+                          className="text-lg font-bold text-primary hover:text-primary/80 transition-colors cursor-pointer"
+                        >
+                          £{(getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * ((100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType)) / 100)).toFixed(2)}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -2898,25 +2936,49 @@ const SiteDetail = () => {
                 <div className="p-4 bg-primary/10 rounded-lg">
                   <div className="flex justify-between items-center">
                     <span className="font-medium">Booking Value:</span>
-                    <button
-                      className="text-xl font-bold text-primary hover:text-primary/80 transition-colors cursor-pointer"
-                      onClick={() => {
-                        const currentValue = (getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * bookingPercentage) / 100;
-                        const newValue = prompt(`Enter booking value (£)`, currentValue.toFixed(2));
-                        if (newValue) {
-                          const val = parseFloat(newValue);
+                    {editingBookingValue ? (
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={tempBookingValue}
+                        onChange={(e) => setTempBookingValue(e.target.value)}
+                        onBlur={() => {
+                          const val = parseFloat(tempBookingValue);
                           const maxValue = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * (100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType)) / 100;
                           if (!isNaN(val) && val > 0 && val <= maxValue) {
                             const newPerc = Math.round((val / getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType)) * 100);
                             setBookingPercentage(newPerc);
-                          } else {
-                            toast.error(`Value must be between £0 and £${maxValue.toFixed(2)}`);
                           }
-                        }
-                      }}
-                    >
-                      £{((getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * bookingPercentage) / 100).toFixed(2)}
-                    </button>
+                          setEditingBookingValue(false);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const val = parseFloat(tempBookingValue);
+                            const maxValue = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * (100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType)) / 100;
+                            if (!isNaN(val) && val > 0 && val <= maxValue) {
+                              const newPerc = Math.round((val / getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType)) * 100);
+                              setBookingPercentage(newPerc);
+                            } else {
+                              toast.error(`Max available: £${maxValue.toFixed(2)}`);
+                            }
+                            setEditingBookingValue(false);
+                          }
+                        }}
+                        className="w-36 h-8 text-xl font-bold text-primary text-right"
+                        autoFocus
+                      />
+                    ) : (
+                      <button
+                        className="text-xl font-bold text-primary hover:text-primary/80 transition-colors cursor-pointer"
+                        onClick={() => {
+                          const currentValue = (getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * bookingPercentage) / 100;
+                          setTempBookingValue(currentValue.toFixed(2));
+                          setEditingBookingValue(true);
+                        }}
+                      >
+                        £{((getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * bookingPercentage) / 100).toFixed(2)}
+                      </button>
+                    )}
                   </div>
                 </div>
 
