@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { handleExportPDF, handleSendToAdmin } from "@/lib/invoiceUtils";
 import { GangDivisionCard } from "@/components/invoice/GangDivisionCard";
+import { playSuccessSound } from "@/lib/soundUtils";
 
 interface SavedGangMember {
   id: string;
@@ -260,8 +261,7 @@ const divisions = gangMembers.map(m => ({
       onOpenChange(false);
 
       // Play success sound
-      const audio = new Audio('data:audio/wav;base64,UklGRnoFAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoFAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA');
-      audio.play().catch(() => {}); // Ignore errors if audio can't play
+      playSuccessSound();
       
       toast.success("Invoice saved and sent to admin");
     } catch (err) {

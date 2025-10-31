@@ -26,6 +26,7 @@ import { PDFDocument } from 'pdf-lib';
 import { ZoomableImageViewer } from "@/components/ZoomableImageViewer";
 import { LiftTypeLabel } from "@/components/LiftTypeLabel";
 import { NonPlotInvoiceDialog } from "@/components/NonPlotInvoiceDialog";
+import { playSuccessSound } from "@/lib/soundUtils";
 
 interface Site {
   id: string;
@@ -1702,6 +1703,8 @@ const SiteDetail = () => {
         console.error("Email error:", emailError);
         toast.success("Invoice created! (Email notification may be delayed)");
       } else {
+        // Play success sound
+        playSuccessSound();
         toast.success("Invoice sent to admin successfully");
       }
 
