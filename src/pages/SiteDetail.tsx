@@ -1294,20 +1294,25 @@ const SiteDetail = () => {
   const handleUserClick = (user: User) => {
     setSelectedUserForDialog(user);
     setUserPlotsDialogOpen(true);
-    // Highlight the user's plots and close dropdown
-    handleUserSelect(user.user_id);
     setDropdownOpen(false);
   };
 
   const scrollToPlot = (plotNumber: number) => {
+    // Clear any existing highlights first
+    clearHighlights();
+    
     const plotElement = document.querySelector(`[data-plot-number="${plotNumber}"]`);
     if (plotElement) {
       const yOffset = -180;
       const y = plotElement.getBoundingClientRect().top + window.pageYOffset + yOffset;
       window.scrollTo({ top: y, behavior: 'smooth' });
+      
+      // Highlight only this plot
+      setHighlightedPlots([plotNumber]);
+      plotElement.classList.add('bg-primary/20');
     }
-    // Clear highlights and close dialog when plot is clicked
-    clearHighlights();
+    
+    // Close dialog when plot is clicked
     setUserPlotsDialogOpen(false);
   };
 
