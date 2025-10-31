@@ -24,6 +24,7 @@ interface BookingData {
   status: string;
   created_at: string;
   notes: string | null;
+  image_url?: string | null;
   is_non_plot?: boolean;
   profiles: {
     full_name: string;
@@ -57,6 +58,7 @@ interface GroupedInvoice {
   items: BookingData[];
   total_value: number;
   notes: string | null;
+  image_url?: string | null;
   is_viewed?: boolean;
   is_confirmed?: boolean;
 }
@@ -147,6 +149,7 @@ const BookingIn = () => {
       let plotQuery = supabase.from("bookings").select(`
           *,
           notes,
+          image_url,
           confirmed_by_admin,
           profiles!bookings_booked_by_fkey (
             full_name,
@@ -224,6 +227,7 @@ const BookingIn = () => {
         status: invoice.status,
         created_at: invoice.created_at,
         notes: invoice.notes,
+        image_url: invoice.image_url,
         confirmed_by_admin: invoice.status === "confirmed",
         // Check actual status
         is_non_plot: true,
@@ -247,12 +251,17 @@ const BookingIn = () => {
             items: [],
             total_value: 0,
             notes: booking.notes,
+            image_url: booking.image_url,
             is_confirmed: booking.confirmed_by_admin || false
           };
         }
         // Update is_confirmed if any booking in the invoice is confirmed
         if (booking.confirmed_by_admin) {
           acc[booking.invoice_number].is_confirmed = true;
+        }
+        // Update image_url if not set yet
+        if (booking.image_url && !acc[booking.invoice_number].image_url) {
+          acc[booking.invoice_number].image_url = booking.image_url;
         }
         acc[booking.invoice_number].items.push(booking);
         acc[booking.invoice_number].total_value += booking.booked_value;
@@ -424,6 +433,7 @@ const BookingIn = () => {
         invoiceNumber: invoice.invoice_number,
         total: invoice.total_value,
         notes: invoice.notes || "",
+        imageUrl: invoice.image_url || null,
         gangMembers: (invoice.items[0]?.gang_divisions || []).map(m => ({
           name: m.member_name,
           type: m.member_type,
@@ -456,6 +466,7 @@ const BookingIn = () => {
         invoiceNumber: invoice.invoice_number,
         total: invoice.total_value,
         notes: invoice.notes || "",
+        imageUrl: invoice.image_url || null,
         gangMembers: (invoice.items[0]?.gang_divisions || []).map(m => ({
           name: m.member_name,
           type: m.member_type,

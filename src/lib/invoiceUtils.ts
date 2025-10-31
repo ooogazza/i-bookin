@@ -86,7 +86,7 @@ const createRoundedLogo = (): Promise<string> => {
 };
 
 // Generate PDF with ORIGINAL centered layout (no letterhead)
-const generateOriginalPDFContent = (doc: jsPDF, invoice: any, userName: string | undefined, roundedLogo: string) => {
+const generateOriginalPDFContent = async (doc: jsPDF, invoice: any, userName: string | undefined, roundedLogo: string) => {
   const blueColor: [number, number, number] = [37, 99, 235];
   
   // Add centered logo
@@ -150,6 +150,30 @@ const generateOriginalPDFContent = (doc: jsPDF, invoice: any, userName: string |
     yPos += noteLines.length * 6 + 6;
   }
 
+  // Add invoice image if available
+  if (invoice.imageUrl) {
+    try {
+      doc.setTextColor(...blueColor);
+      doc.setFont("helvetica", "bold");
+      doc.text("ATTACHED IMAGE:", 15, yPos);
+      yPos += 7;
+      
+      const imageDataUrl = await loadImageAsDataUrl(invoice.imageUrl);
+      const imgWidth = 180;
+      const imgHeight = 100;
+      
+      if (yPos + imgHeight > 270) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
+      doc.addImage(imageDataUrl, "PNG", 15, yPos, imgWidth, imgHeight);
+      yPos += imgHeight + 10;
+    } catch (e) {
+      console.error("Failed to add invoice image to PDF", e);
+    }
+  }
+
   // Gang division section
   if (invoice.gangMembers && invoice.gangMembers.length > 0) {
     doc.setTextColor(...blueColor);
@@ -176,7 +200,7 @@ const generateOriginalPDFContent = (doc: jsPDF, invoice: any, userName: string |
 };
 
 // Generate PDF with NEW left-aligned layout (with letterhead)
-const generateLetterheadPDFContent = (doc: jsPDF, invoice: any, userName: string | undefined, roundedLogo: string, letterheadDataUrl: string) => {
+const generateLetterheadPDFContent = async (doc: jsPDF, invoice: any, userName: string | undefined, roundedLogo: string, letterheadDataUrl: string) => {
   const blueColor: [number, number, number] = [37, 99, 235];
   
   // Add letterhead as full-page background
@@ -235,6 +259,36 @@ const generateLetterheadPDFContent = (doc: jsPDF, invoice: any, userName: string
     const noteLines = doc.splitTextToSize(invoice.notes, contentWidth - 10);
     doc.text(noteLines, leftMargin, yPos);
     yPos += noteLines.length * 6 + 6;
+  }
+
+  // Add invoice image if available
+  if (invoice.imageUrl) {
+    try {
+      doc.setTextColor(...blueColor);
+      doc.setFont("helvetica", "bold");
+      doc.text("ATTACHED IMAGE:", leftMargin, yPos);
+      yPos += 7;
+      
+      const imageDataUrl = await loadImageAsDataUrl(invoice.imageUrl);
+      const imgWidth = contentWidth - 10;
+      const imgHeight = 70;
+      
+      if (yPos + imgHeight > 270) {
+        doc.addPage();
+        try {
+          console.log("Adding letterhead to new page for image");
+          doc.addImage(letterheadDataUrl, "PNG", 0, 0, 210, 297);
+        } catch (e) {
+          console.error("Failed to add letterhead to new page", e);
+        }
+        yPos = 20;
+      }
+      
+      doc.addImage(imageDataUrl, "PNG", leftMargin, yPos, imgWidth, imgHeight);
+      yPos += imgHeight + 10;
+    } catch (e) {
+      console.error("Failed to add invoice image to PDF", e);
+    }
   }
 
   if (invoice.gangMembers && invoice.gangMembers.length > 0) {
@@ -298,10 +352,10 @@ export const handleExportPDF = async (invoice: any, userName?: string) => {
       // Load letterhead image as data URL
       const letterheadDataUrl = await loadImageAsDataUrl(letterhead.file_url);
       console.log("Letterhead loaded successfully, generating PDF with letterhead layout");
-      generateLetterheadPDFContent(doc, invoice, userName, roundedLogo, letterheadDataUrl);
+      await generateLetterheadPDFContent(doc, invoice, userName, roundedLogo, letterheadDataUrl);
     } else {
       console.log("Using ORIGINAL centered layout (no letterhead)");
-      generateOriginalPDFContent(doc, invoice, userName, roundedLogo);
+      await generateOriginalPDFContent(doc, invoice, userName, roundedLogo);
     }
 
     // Prefer native file save or share on mobile/PWA
@@ -343,10 +397,10 @@ export const handleSendToAdmin = async (invoice: any, userName: string) => {
       console.log("Loading letterhead for email from:", letterhead.file_url);
       const letterheadDataUrl = await loadImageAsDataUrl(letterhead.file_url);
       console.log("Letterhead loaded for email, generating PDF with letterhead layout");
-      generateLetterheadPDFContent(doc, invoice, userName, roundedLogo, letterheadDataUrl);
+      await generateLetterheadPDFContent(doc, invoice, userName, roundedLogo, letterheadDataUrl);
     } else {
       console.log("Using ORIGINAL centered layout for email (no letterhead)");
-      generateOriginalPDFContent(doc, invoice, userName, roundedLogo);
+      await generateOriginalPDFContent(doc, invoice, userName, roundedLogo);
     }
 
 const pdfBase64 = doc.output("dataurlstring").split(",")[1];
@@ -359,6 +413,7 @@ const { error } = await supabase.functions.invoke("send-invoice-to-admin", {
   body: {
     invoiceNumber: invoice.invoiceNumber,
     pdfBase64,
+    imageUrl: invoice.imageUrl || null,
     invoiceDetails: {
       bookedBy: userName,
       bookedByEmail,

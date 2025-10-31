@@ -17,6 +17,7 @@ interface GangMember {
 interface SendInvoiceRequest {
   invoiceNumber: string;
   pdfBase64: string;
+  imageUrl?: string | null;
   invoiceDetails: {
     bookedBy: string;
     bookedByEmail: string;
@@ -33,7 +34,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { invoiceNumber, pdfBase64, invoiceDetails, gangMembers }: SendInvoiceRequest = await req.json();
+    const { invoiceNumber, pdfBase64, imageUrl, invoiceDetails, gangMembers }: SendInvoiceRequest = await req.json();
 
     console.log(`Processing invoice email: ${invoiceNumber}`);
 
@@ -107,6 +108,17 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`Sending email to ${uniqueRecipients.length} recipient(s): ${uniqueRecipients.join(', ')}`);
 
     const appUrl = "https://i-bookin.com";
+
+    // Build invoice image HTML
+    let imageHtml = "";
+    if (imageUrl) {
+      imageHtml = `
+        <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h2 style="margin-top: 0; color: #1f2937;">Attached Image</h2>
+          <img src="${imageUrl}" alt="Invoice attachment" style="max-width: 100%; height: auto; border-radius: 4px; margin-top: 10px;" />
+        </div>
+      `;
+    }
 
     // Build gang members HTML
     let gangMembersHtml = "";
@@ -182,6 +194,8 @@ const handler = async (req: Request): Promise<Response> => {
                               </tr>
                             </table>
                           </div>
+                          
+                          ${imageHtml}
                           
                           ${gangMembersHtml}
                           
