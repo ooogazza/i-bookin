@@ -1170,6 +1170,12 @@ const SiteDetail = () => {
   };
   
   const handlePlotNumberClick = async (plot: Plot) => {
+    // Clear all highlights when opening plot summary
+    clearHighlights();
+    setHighlightedPlotId(null);
+    searchParams.delete('plot');
+    setSearchParams(searchParams);
+    
     setSelectedPlotForSummary(plot);
     setPlotSummaryDialogOpen(true);
     
@@ -1243,12 +1249,6 @@ const SiteDetail = () => {
   };
 
   const clearHighlights = () => {
-    highlightedPlots.forEach(plotNumber => {
-      const plotElement = document.querySelector(`[data-plot-number="${plotNumber}"]`);
-      if (plotElement) {
-        plotElement.classList.remove('bg-primary/20');
-      }
-    });
     setHighlightedPlots([]);
     setSelectedUserForHighlight(null);
     setShowScrollUpIndicator(false);
@@ -1277,16 +1277,9 @@ const SiteDetail = () => {
       window.scrollTo({ top: y, behavior: 'smooth' });
     }
 
-    // Highlight all user's plots persistently
+    // Highlight all user's plots persistently (state will trigger re-render)
     const plotNumbers = userPlots.map(p => p.plot_number);
     setHighlightedPlots(plotNumbers);
-    
-    userPlots.forEach(plot => {
-      const plotElement = document.querySelector(`[data-plot-number="${plot.plot_number}"]`);
-      if (plotElement) {
-        plotElement.classList.add('bg-primary/20');
-      }
-    });
 
     toast.success(`Highlighting ${userPlots.length} plot(s). Click a plot to clear.`);
   };
@@ -1307,9 +1300,8 @@ const SiteDetail = () => {
       const y = plotElement.getBoundingClientRect().top + window.pageYOffset + yOffset;
       window.scrollTo({ top: y, behavior: 'smooth' });
       
-      // Highlight only this plot
+      // Highlight only this plot (state will trigger re-render with highlight)
       setHighlightedPlots([plotNumber]);
-      plotElement.classList.add('bg-primary/20');
     }
     
     // Close dialog when plot is clicked
@@ -2285,7 +2277,7 @@ const SiteDetail = () => {
               </thead>
               <tbody>
                 {plots.map(plot => {
-                  const isHighlighted = highlightedPlotId === plot.id;
+                  const isHighlighted = highlightedPlotId === plot.id || highlightedPlots.includes(plot.plot_number);
                   return (
                     <tr 
                       key={plot.id} 
