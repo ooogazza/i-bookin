@@ -10,8 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Users, Mail, Building2, Plus, X, MapPin, House } from "lucide-react";
+import { Users, Mail, Building2, Plus, X, MapPin, House, FileText } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Site {
   id: string;
@@ -43,6 +44,7 @@ interface ManageBricklayersDialogProps {
 export function ManageBricklayersDialog({ open, onOpenChange, filteredUserId }: ManageBricklayersDialogProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviting, setInviting] = useState(false);
   const [users, setUsers] = useState<UserWithSites[]>([]);
@@ -61,17 +63,6 @@ export function ManageBricklayersDialog({ open, onOpenChange, filteredUserId }: 
       fetchData();
     }
   }, [open]);
-
-  // Auto-select user if filteredUserId is provided
-  useEffect(() => {
-    if (filteredUserId && users.length > 0 && open) {
-      const userToShow = users.find(u => u.id === filteredUserId);
-      if (userToShow) {
-        setSelectedUser(userToShow);
-        setSelectedSites(userToShow.assignedSites);
-      }
-    }
-  }, [filteredUserId, users, open]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -292,6 +283,12 @@ export function ManageBricklayersDialog({ open, onOpenChange, filteredUserId }: 
     onOpenChange(false);
   };
 
+  const handleViewInvoices = (bricklayerUser: UserWithSites) => {
+    // Navigate to booking-in page with user filter
+    navigate(`/booking-in?userId=${bricklayerUser.id}`);
+    onOpenChange(false);
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -366,32 +363,45 @@ export function ManageBricklayersDialog({ open, onOpenChange, filteredUserId }: 
                   ).map(user => (
                     <Card key={user.id} className="hover:bg-muted/50 transition-colors">
                       <CardContent className="py-4">
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-1">
-                            <p className="font-medium">{user.full_name || user.email}</p>
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="space-y-1 flex-1 min-w-0">
+                            <p className="font-medium truncate">{user.full_name || user.email}</p>
                             <div className="flex items-center gap-2 text-sm">
-                              <Building2 className="h-3 w-3" />
-                              <span className="text-muted-foreground">
+                              <Building2 className="h-3 w-3 flex-shrink-0" />
+                              <span className="text-muted-foreground truncate">
                                 {user.assignedSites.length > 0 
                                   ? getSiteNames(user.assignedSites)
                                   : "No sites assigned"}
                               </span>
                             </div>
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 flex-shrink-0">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleViewInvoices(user)}
+                              title="View Invoices"
+                            >
+                              <FileText className="h-4 w-4" />
+                              {!isMobile && <span className="ml-2">View Invoices</span>}
+                            </Button>
                             <Button 
                               variant="outline" 
                               size="sm"
                               onClick={() => handleViewPlots(user)}
+                              title="View Plots"
                             >
-                              View Plots
+                              <House className="h-4 w-4" />
+                              {!isMobile && <span className="ml-2">View Plots</span>}
                             </Button>
                             <Button 
                               variant="outline" 
                               size="sm"
                               onClick={() => handleManageUserSites(user)}
+                              title="Manage Sites"
                             >
-                              Manage Sites
+                              <Building2 className="h-4 w-4" />
+                              {!isMobile && <span className="ml-2">Manage Sites</span>}
                             </Button>
                           </div>
                         </div>

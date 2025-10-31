@@ -69,8 +69,11 @@ const Dashboard = () => {
     const bricklayerIdFromUrl = searchParams.get('bricklayerId');
     if (bricklayerIdFromUrl && isAdmin) {
       setFilteredBricklayerId(bricklayerIdFromUrl);
-      setManageBricklayersDialogOpen(true);
-      // Clear the param after opening
+      // Open the manage bricklayers dialog after data loads
+      setTimeout(() => {
+        setManageBricklayersDialogOpen(true);
+      }, 500);
+      // Clear the param
       searchParams.delete('bricklayerId');
       setSearchParams(searchParams);
     }

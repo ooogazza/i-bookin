@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -88,6 +88,7 @@ const LIFT_LABELS = {
 const BookingIn = () => {
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [bookings, setBookings] = useState<BookingData[]>([]);
   const [groupedInvoices, setGroupedInvoices] = useState<GroupedInvoice[]>([]);
   const [userInvoices, setUserInvoices] = useState<UserInvoices[]>([]);
@@ -102,6 +103,21 @@ const BookingIn = () => {
   useEffect(() => {
     fetchBookings();
   }, [user, isAdmin]);
+
+  // Handle user filtering from URL
+  useEffect(() => {
+    const userIdFromUrl = searchParams.get('userId');
+    if (userIdFromUrl && userInvoices.length > 0) {
+      const userToShow = userInvoices.find(u => u.user_id === userIdFromUrl);
+      if (userToShow) {
+        setSelectedUser(userToShow);
+        setUserInvoicesDialogOpen(true);
+      }
+      // Clear the param after opening
+      searchParams.delete('userId');
+      setSearchParams(searchParams);
+    }
+  }, [searchParams, userInvoices]);
 
   const fetchBookings = async () => {
     if (!user) return;
