@@ -5,9 +5,15 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+// Helper to detect mobile devices
+function isMobileDevice(): boolean {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+    (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
+}
+
 // Cross-platform helper to save a Blob directly to device storage when possible
-// Tries File System Access API (best on Android PWAs), then Web Share (iOS/Android),
-// and finally falls back to a normal browser download.
+// On mobile: automatically downloads to device's downloads folder
+// On desktop: may show save dialog depending on browser
 export async function saveBlobToDevice(
   blob: Blob,
   suggestedName: string,
@@ -18,7 +24,24 @@ export async function saveBlobToDevice(
     ? suggestedName.slice(suggestedName.lastIndexOf(".")).toLowerCase()
     : "";
 
-  // 1) Try native file save (Chrome/Android supports this in PWAs)
+  const isMobile = isMobileDevice();
+
+  // On mobile, skip the file picker dialog and go straight to download
+  if (isMobile) {
+    // Try direct download first on mobile (saves to Downloads folder)
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = suggestedName;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    return "download";
+  }
+
+  // Desktop: Try native file save (Chrome/Edge supports this)
   try {
     const w = window as any;
     if (typeof w.showSaveFilePicker === "function") {
@@ -39,22 +62,10 @@ export async function saveBlobToDevice(
       return "fs";
     }
   } catch (e) {
-    console.warn("showSaveFilePicker failed, will try share/download fallback", e);
+    console.warn("showSaveFilePicker failed, will try download fallback", e);
   }
 
-  // 2) Try Web Share with files (good on iOS & Android)
-  try {
-    const navAny = navigator as any;
-    const file = new File([blob], suggestedName, { type });
-    if (navAny.canShare?.({ files: [file] })) {
-      await navAny.share({ files: [file], title: suggestedName, text: suggestedName });
-      return "share";
-    }
-  } catch (e) {
-    console.warn("navigator.share failed, will try download fallback", e);
-  }
-
-  // 3) Fallback to classic download (may open viewer on some mobile browsers)
+  // Fallback to classic download
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
