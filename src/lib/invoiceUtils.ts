@@ -159,8 +159,26 @@ const generateOriginalPDFContent = async (doc: jsPDF, invoice: any, userName: st
       yPos += 7;
       
       const imageDataUrl = await loadImageAsDataUrl(invoice.imageUrl);
-      const imgWidth = 180;
-      const imgHeight = 100;
+      
+      // Create a temporary image to get dimensions
+      const img = new Image();
+      img.src = imageDataUrl;
+      await new Promise((resolve) => { img.onload = resolve; });
+      
+      // Calculate scaled dimensions maintaining aspect ratio
+      const maxWidth = 180;
+      const maxHeight = 120;
+      let imgWidth = img.width;
+      let imgHeight = img.height;
+      
+      // Scale down if needed
+      if (imgWidth > maxWidth || imgHeight > maxHeight) {
+        const widthRatio = maxWidth / imgWidth;
+        const heightRatio = maxHeight / imgHeight;
+        const scale = Math.min(widthRatio, heightRatio);
+        imgWidth = imgWidth * scale;
+        imgHeight = imgHeight * scale;
+      }
       
       if (yPos + imgHeight > 270) {
         doc.addPage();
@@ -270,8 +288,26 @@ const generateLetterheadPDFContent = async (doc: jsPDF, invoice: any, userName: 
       yPos += 7;
       
       const imageDataUrl = await loadImageAsDataUrl(invoice.imageUrl);
-      const imgWidth = contentWidth - 10;
-      const imgHeight = 70;
+      
+      // Create a temporary image to get dimensions
+      const img = new Image();
+      img.src = imageDataUrl;
+      await new Promise((resolve) => { img.onload = resolve; });
+      
+      // Calculate scaled dimensions maintaining aspect ratio
+      const maxWidth = contentWidth - 10;
+      const maxHeight = 100;
+      let imgWidth = img.width;
+      let imgHeight = img.height;
+      
+      // Scale down if needed
+      if (imgWidth > maxWidth || imgHeight > maxHeight) {
+        const widthRatio = maxWidth / imgWidth;
+        const heightRatio = maxHeight / imgHeight;
+        const scale = Math.min(widthRatio, heightRatio);
+        imgWidth = imgWidth * scale;
+        imgHeight = imgHeight * scale;
+      }
       
       if (yPos + imgHeight > 270) {
         doc.addPage();

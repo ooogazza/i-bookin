@@ -1038,6 +1038,17 @@ const BookingIn = () => {
                     <p className="text-xs md:text-sm text-muted-foreground whitespace-pre-wrap bg-muted/50 p-3 rounded-lg">{selectedInvoice.notes}</p>
                   </div>}
 
+                {selectedInvoice.image_url && <div className="border-t pt-3 md:pt-4">
+                    <h4 className="font-semibold mb-2 text-sm md:text-base">Attached Image</h4>
+                    <div className="bg-muted/50 p-3 rounded-lg">
+                      <img 
+                        src={selectedInvoice.image_url} 
+                        alt="Invoice attachment" 
+                        className="w-full h-auto rounded-md max-h-96 object-contain"
+                      />
+                    </div>
+                  </div>}
+
                 <div className="border-t pt-3 md:pt-4">
                   <h4 className="font-semibold mb-2 md:mb-3 text-sm md:text-base">Gang Division</h4>
                   <div className="space-y-2 md:space-y-3">
