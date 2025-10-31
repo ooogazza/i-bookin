@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -124,6 +124,7 @@ const LIFT_LABELS: Record<string, string> = {
 const SiteDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user, isAdmin } = useAuth();
   const [site, setSite] = useState<Site | null>(null);
   const [developer, setDeveloper] = useState<{ name: string } | null>(null);
@@ -206,6 +207,7 @@ const SiteDetail = () => {
   const [selectedUserForDialog, setSelectedUserForDialog] = useState<User | null>(null);
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const [nonPlotInvoiceDialogOpen, setNonPlotInvoiceDialogOpen] = useState(false);
+  const [highlightedPlotId, setHighlightedPlotId] = useState<string | null>(null);
   
   const stickyScrollRef = useRef<HTMLDivElement>(null);
   const mainScrollRef = useRef<HTMLDivElement>(null);
@@ -261,6 +263,22 @@ const SiteDetail = () => {
       if (isAdmin) fetchAvailableUsers();
     }
   }, [id, isAdmin]);
+
+  // Handle plot highlight from URL query parameter
+  useEffect(() => {
+    const plotIdFromUrl = searchParams.get('plot');
+    if (plotIdFromUrl && plots.length > 0) {
+      setHighlightedPlotId(plotIdFromUrl);
+      
+      // Scroll to the highlighted plot after a short delay to ensure DOM is ready
+      setTimeout(() => {
+        const plotElement = document.querySelector(`[data-plot-id="${plotIdFromUrl}"]`);
+        if (plotElement) {
+          plotElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 300);
+    }
+  }, [searchParams, plots]);
 
   const fetchSiteData = async () => {
     try {
@@ -2274,14 +2292,31 @@ const SiteDetail = () => {
                 </tr>
               </thead>
               <tbody>
-                {plots.map(plot => (
-                  <tr key={plot.id} className="border-b transition-colors" data-plot-number={plot.plot_number}>
-                    <td 
-                      className="p-2 font-medium cursor-pointer hover:bg-primary/10 sticky left-0 bg-card z-20 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
-                      onClick={() => handlePlotNumberClick(plot)}
+                {plots.map(plot => {
+                  const isHighlighted = highlightedPlotId === plot.id;
+                  return (
+                    <tr 
+                      key={plot.id} 
+                      className={`border-b transition-colors ${isHighlighted ? 'bg-primary/20' : ''}`}
+                      data-plot-number={plot.plot_number}
+                      data-plot-id={plot.id}
+                      onClick={() => {
+                        if (isHighlighted) {
+                          setHighlightedPlotId(null);
+                          searchParams.delete('plot');
+                          setSearchParams(searchParams);
+                        }
+                      }}
                     >
-                      {plot.plot_number}
-                    </td>
+                      <td 
+                        className={`p-2 font-medium cursor-pointer hover:bg-primary/10 sticky left-0 z-20 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${isHighlighted ? 'bg-primary/20' : 'bg-card'}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePlotNumberClick(plot);
+                        }}
+                      >
+                        {plot.plot_number}
+                      </td>
                     <td 
                       className={`p-2 ${(isAdmin || plot.house_types) ? 'cursor-pointer hover:bg-primary/10' : ''}`}
                       onClick={() => {
@@ -2324,10 +2359,11 @@ const SiteDetail = () => {
                         >
                           <Settings className="h-4 w-4" />
                         </Button>
-                      </td>
-                    )}
-                  </tr>
-                ))}
+                       </td>
+                     )}
+                   </tr>
+                  );
+                })}
               </tbody>
             </table>
               </div>
