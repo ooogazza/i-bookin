@@ -34,7 +34,6 @@ import { PlotSettingsDialog } from "@/components/PlotSettingsDialog";
 import { AddTypeSelectionDialog } from "@/components/AddTypeSelectionDialog";
 import { AddGarageTypeDialog } from "@/components/AddGarageTypeDialog";
 import { getGarageLabel, getGarageIcon } from "@/lib/garageTypes";
-
 interface Site {
   id: string;
   name: string;
@@ -44,7 +43,6 @@ interface Site {
   number_of_house_types: number;
   developer_id: string | null;
 }
-
 interface HouseType {
   id: string;
   name: string;
@@ -53,13 +51,11 @@ interface HouseType {
   created_at?: string;
   price_last_updated?: string;
 }
-
 interface LiftValue {
   id: string;
   lift_type: string;
   value: number;
 }
-
 interface Plot {
   id: string;
   plot_number: number;
@@ -67,7 +63,6 @@ interface Plot {
   assigned_to: string | null;
   house_types: HouseType | null;
 }
-
 interface Booking {
   id: string;
   lift_value_id: string;
@@ -76,7 +71,6 @@ interface Booking {
   garage_id?: string | null;
   garage_lift_type?: string | null;
 }
-
 interface Garage {
   id: string;
   plot_id: string;
@@ -88,7 +82,6 @@ interface Garage {
   snag_patch_int_value: number;
   snag_patch_ext_value: number;
 }
-
 interface GarageType {
   id: string;
   garage_type: string;
@@ -98,7 +91,6 @@ interface GarageType {
   snag_patch_int_value: number;
   snag_patch_ext_value: number;
 }
-
 interface User {
   user_id: string;
   profiles: {
@@ -106,7 +98,6 @@ interface User {
     email: string;
   };
 }
-
 interface AssignmentHistory {
   id: string;
   user_id: string;
@@ -117,13 +108,11 @@ interface AssignmentHistory {
     full_name: string;
   } | null;
 }
-
 interface AvailableUser {
   id: string;
   full_name: string;
   email: string;
 }
-
 interface InvoiceItem {
   plot: Plot;
   liftType: string;
@@ -134,13 +123,11 @@ interface InvoiceItem {
   garageId?: string;
   garageLiftType?: string;
 }
-
 interface GangMember {
   name: string;
   type: string;
   amount: number;
 }
-
 const LIFT_LABELS: Record<string, string> = {
   lift_1: "Lift 1",
   lift_2: "Lift 2",
@@ -152,16 +139,22 @@ const LIFT_LABELS: Record<string, string> = {
   snag_patch_int: "Snag/Patch Int",
   snag_patch_ext: "Snag/Patch Ext",
   dod: "D.O.D",
-  no_ri: "No RI",
+  no_ri: "No RI"
 };
-
 const SiteDetail = () => {
-  const { id } = useParams();
+  const {
+    id
+  } = useParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { user, isAdmin } = useAuth();
+  const {
+    user,
+    isAdmin
+  } = useAuth();
   const [site, setSite] = useState<Site | null>(null);
-  const [developer, setDeveloper] = useState<{ name: string } | null>(null);
+  const [developer, setDeveloper] = useState<{
+    name: string;
+  } | null>(null);
   const [houseTypes, setHouseTypes] = useState<HouseType[]>([]);
   const [plots, setPlots] = useState<Plot[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -170,7 +163,6 @@ const SiteDetail = () => {
   const [availableUsers, setAvailableUsers] = useState<AvailableUser[]>([]);
   const [pendingInvitations, setPendingInvitations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  
   const [houseTypeDialogOpen, setHouseTypeDialogOpen] = useState(false);
   const [editingHouseType, setEditingHouseType] = useState<HouseType | null>(null);
   const [houseTypeName, setHouseTypeName] = useState("");
@@ -182,27 +174,26 @@ const SiteDetail = () => {
   const [drawingsDialogOpen, setDrawingsDialogOpen] = useState(false);
   const [selectedHouseTypeForDrawings, setSelectedHouseTypeForDrawings] = useState<HouseType | null>(null);
   const [viewerOpen, setViewerOpen] = useState(false);
-  const [viewerContent, setViewerContent] = useState<{ url: string; type: string; name: string } | null>(null);
+  const [viewerContent, setViewerContent] = useState<{
+    url: string;
+    type: string;
+    name: string;
+  } | null>(null);
   const [selectedDrawingIds, setSelectedDrawingIds] = useState<string[]>([]);
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const [longPressTriggered, setLongPressTriggered] = useState(false);
-  
   const [plotDialogOpen, setPlotDialogOpen] = useState(false);
   const [selectedPlot, setSelectedPlot] = useState<Plot | null>(null);
   const [selectedHouseTypeId, setSelectedHouseTypeId] = useState("");
-  
   const [userAssignDialogOpen, setUserAssignDialogOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState("");
-
   const [inviteUserDialogOpen, setInviteUserDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
-
   const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
   const [selectedBookingPlot, setSelectedBookingPlot] = useState<Plot | null>(null);
   const [selectedBookingLiftType, setSelectedBookingLiftType] = useState("");
   const [bookingPercentage, setBookingPercentage] = useState(100);
   const [showLeavesValue, setShowLeavesValue] = useState(false);
-  
   const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>([]);
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [gangMembers, setGangMembers] = useState<GangDivisionMember[]>([]);
@@ -221,18 +212,20 @@ const SiteDetail = () => {
   const [editingBookingValue, setEditingBookingValue] = useState(false);
   const [tempBookingValue, setTempBookingValue] = useState("");
   const [overrideBookedValue, setOverrideBookedValue] = useState<number | null>(null);
-  
-  const { savedMembers, fetchSavedMembers } = useSavedGangMembers();
-  
+  const {
+    savedMembers,
+    fetchSavedMembers
+  } = useSavedGangMembers();
   const [plotSummaryDialogOpen, setPlotSummaryDialogOpen] = useState(false);
   const [selectedPlotForSummary, setSelectedPlotForSummary] = useState<Plot | null>(null);
   const [plotAssignmentHistory, setPlotAssignmentHistory] = useState<AssignmentHistory[]>([]);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [showStickyHeader, setShowStickyHeader] = useState(false);
-  
   const [isTableDragging, setIsTableDragging] = useState(false);
-  const [tableScrollStart, setTableScrollStart] = useState({ scrollLeft: 0, clientX: 0 });
-  
+  const [tableScrollStart, setTableScrollStart] = useState({
+    scrollLeft: 0,
+    clientX: 0
+  });
   const [searchPlotNumber, setSearchPlotNumber] = useState("");
   const [searchPhase, setSearchPhase] = useState("");
   const [selectedUserForHighlight, setSelectedUserForHighlight] = useState<string | null>(null);
@@ -253,23 +246,24 @@ const SiteDetail = () => {
   const [addGarageTypeDialogOpen, setAddGarageTypeDialogOpen] = useState(false);
   const [editingGarageType, setEditingGarageType] = useState<GarageType | null>(null);
   const [garageTypes, setGarageTypes] = useState<GarageType[]>([]);
-  
   const stickyScrollRef = useRef<HTMLDivElement>(null);
   const mainScrollRef = useRef<HTMLDivElement>(null);
-  
-  const { containerRef: pinchZoomContainerRef, scale: zoomScale, position: zoomPosition, style: zoomStyle } = usePinchZoom({
+  const {
+    containerRef: pinchZoomContainerRef,
+    scale: zoomScale,
+    position: zoomPosition,
+    style: zoomStyle
+  } = usePinchZoom({
     minScale: 0.5,
     maxScale: 3,
-    onlyMobile: true,
+    onlyMobile: true
   });
-
   useEffect(() => {
     const handleScroll = () => {
       const shouldShow = window.scrollY > 300;
       setShowBackToTop(shouldShow);
       setShowStickyHeader(shouldShow);
     };
-
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -278,30 +272,24 @@ const SiteDetail = () => {
   useEffect(() => {
     const stickyScroll = stickyScrollRef.current;
     const mainScroll = mainScrollRef.current;
-
     if (!stickyScroll || !mainScroll) return;
-
     const syncStickyFromMain = () => {
       if (stickyScroll) {
         stickyScroll.scrollLeft = mainScroll.scrollLeft;
       }
     };
-
     const syncMainFromSticky = () => {
       if (mainScroll) {
         mainScroll.scrollLeft = stickyScroll.scrollLeft;
       }
     };
-
     mainScroll.addEventListener('scroll', syncStickyFromMain);
     stickyScroll.addEventListener('scroll', syncMainFromSticky);
-
     return () => {
       mainScroll.removeEventListener('scroll', syncStickyFromMain);
       stickyScroll.removeEventListener('scroll', syncMainFromSticky);
     };
   }, [showStickyHeader]);
-
   useEffect(() => {
     if (id) {
       fetchSiteData();
@@ -314,12 +302,15 @@ const SiteDetail = () => {
     const plotIdFromUrl = searchParams.get('plot');
     if (plotIdFromUrl && plots.length > 0) {
       setHighlightedPlotId(plotIdFromUrl);
-      
+
       // Scroll to the highlighted plot after a short delay to ensure DOM is ready
       setTimeout(() => {
         const plotElement = document.querySelector(`[data-plot-id="${plotIdFromUrl}"]`);
         if (plotElement) {
-          plotElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          plotElement.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          });
         }
       }, 300);
     }
@@ -350,45 +341,38 @@ const SiteDetail = () => {
       }
     }
   }, [drawingsDialogOpen, longPressTimer]);
-
   const fetchSiteData = async () => {
     try {
-      const { data: siteData, error: siteError } = await supabase
-        .from("sites")
-        .select("*")
-        .eq("id", id)
-        .single();
-
+      const {
+        data: siteData,
+        error: siteError
+      } = await supabase.from("sites").select("*").eq("id", id).single();
       if (siteError) throw siteError;
       setSite(siteData);
 
       // Fetch developer if site has developer_id
       if (siteData?.developer_id) {
-        const { data: devData, error: devError } = await supabase
-          .from("developers")
-          .select("name")
-          .eq("id", siteData.developer_id)
-          .single();
-        
+        const {
+          data: devData,
+          error: devError
+        } = await supabase.from("developers").select("name").eq("id", siteData.developer_id).single();
         if (!devError && devData) {
           setDeveloper(devData);
         }
       }
-
-      const { data: houseTypesData, error: houseTypesError } = await supabase
-        .from("house_types")
-        .select(`
+      const {
+        data: houseTypesData,
+        error: houseTypesError
+      } = await supabase.from("house_types").select(`
           *,
           lift_values (*)
-        `)
-        .eq("site_id", id);
-
+        `).eq("site_id", id);
       if (houseTypesError) throw houseTypesError;
       setHouseTypes(houseTypesData || []);
-
-      const { data: plotsData, error: plotsError } = await supabase
-        .from("plots")
-        .select(`
+      const {
+        data: plotsData,
+        error: plotsError
+      } = await supabase.from("plots").select(`
           *,
           house_types (
             id,
@@ -396,12 +380,9 @@ const SiteDetail = () => {
             total_value,
             lift_values (*)
           )
-        `)
-        .eq("site_id", id)
-        .order("plot_number");
-
+        `).eq("site_id", id).order("plot_number");
       if (plotsError) throw plotsError;
-      
+
       // Filter plots if not admin
       let filteredPlots = plotsData || [];
       if (!isAdmin && user) {
@@ -410,54 +391,47 @@ const SiteDetail = () => {
       setPlots(filteredPlots as any);
 
       // Fetch bookings for the site
-      const { data: bookingsData, error: bookingsError } = await supabase
-        .from("bookings")
-        .select("id, lift_value_id, plot_id, percentage, garage_id, garage_lift_type")
-        .in("plot_id", (plotsData || []).map(p => p.id));
-
+      const {
+        data: bookingsData,
+        error: bookingsError
+      } = await supabase.from("bookings").select("id, lift_value_id, plot_id, percentage, garage_id, garage_lift_type").in("plot_id", (plotsData || []).map(p => p.id));
       if (bookingsError) throw bookingsError;
       setBookings(bookingsData || []);
 
       // Fetch garages for the site
-      const { data: garagesData, error: garagesError } = await supabase
-        .from("garages")
-        .select("*")
-        .in("plot_id", (plotsData || []).map(p => p.id));
-
+      const {
+        data: garagesData,
+        error: garagesError
+      } = await supabase.from("garages").select("*").in("plot_id", (plotsData || []).map(p => p.id));
       if (garagesError) throw garagesError;
       setGarages(garagesData || []);
 
       // Fetch garage types for the site
-      const { data: garageTypesData, error: garageTypesError } = await supabase
-        .from("garage_types")
-        .select("*")
-        .eq("site_id", id);
-
+      const {
+        data: garageTypesData,
+        error: garageTypesError
+      } = await supabase.from("garage_types").select("*").eq("site_id", id);
       if (garageTypesError) throw garageTypesError;
       setGarageTypes(garageTypesData || []);
-
       if (isAdmin) {
-        const { data: usersData, error: usersError } = await supabase
-          .from("user_site_assignments")
-          .select(`
+        const {
+          data: usersData,
+          error: usersError
+        } = await supabase.from("user_site_assignments").select(`
             user_id,
             profiles!inner (
               full_name,
               email
             )
-          `)
-          .eq("site_id", id);
-
+          `).eq("site_id", id);
         if (usersError) throw usersError;
         setUsers(usersData as any || []);
 
         // Fetch pending invitations
-        const { data: invitationsData, error: invitationsError } = await supabase
-          .from("invitations")
-          .select("*")
-          .eq("site_id", id)
-          .eq("status", "pending");
-
+        const {
+          data: invitationsData,
+          error: invitationsError
+        } = await supabase.from("invitations").select("*").eq("site_id", id).eq("status", "pending");
         if (!invitationsError && invitationsData) {
           setPendingInvitations(invitationsData);
         }
@@ -469,21 +443,18 @@ const SiteDetail = () => {
       setLoading(false);
     }
   };
-
   const fetchAvailableUsers = async () => {
     try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, full_name, email")
-        .order("full_name");
-
+      const {
+        data,
+        error
+      } = await supabase.from("profiles").select("id, full_name, email").order("full_name");
       if (error) throw error;
       setAvailableUsers(data || []);
     } catch (error: any) {
       console.error("Error fetching users:", error);
     }
   };
-
   const openHouseTypeDialog = async (houseType?: HouseType) => {
     if (houseType) {
       setEditingHouseType(houseType);
@@ -493,13 +464,11 @@ const SiteDetail = () => {
         values[lv.lift_type] = lv.value;
       });
       setLiftValues(values);
-      
+
       // Fetch existing drawings
-      const { data: drawings } = await supabase
-        .from("house_type_drawings")
-        .select("*")
-        .eq("house_type_id", houseType.id)
-        .order("display_order");
+      const {
+        data: drawings
+      } = await supabase.from("house_type_drawings").select("*").eq("house_type_id", houseType.id).order("display_order");
       setExistingDrawings(drawings || []);
     } else {
       setEditingHouseType(null);
@@ -511,14 +480,11 @@ const SiteDetail = () => {
     setUploadProgress({});
     setHouseTypeDialogOpen(true);
   };
-
   const handleSaveHouseType = async () => {
     if (!site || !user) return;
-
     try {
       // Calculate total value from all lift values
       const totalValue = Object.values(liftValues).reduce((sum, value) => sum + (value || 0), 0);
-
       if (editingHouseType) {
         // Track price changes for history
         const priceChanges = [];
@@ -536,52 +502,46 @@ const SiteDetail = () => {
         }
 
         // Update house type with price_last_updated timestamp
-        await supabase
-          .from("house_types")
-          .update({ 
-            name: houseTypeName, 
-            total_value: totalValue,
-            price_last_updated: priceChanges.length > 0 ? new Date().toISOString() : undefined
-          })
-          .eq("id", editingHouseType.id);
-
+        await supabase.from("house_types").update({
+          name: houseTypeName,
+          total_value: totalValue,
+          price_last_updated: priceChanges.length > 0 ? new Date().toISOString() : undefined
+        }).eq("id", editingHouseType.id);
         for (const [liftType, value] of Object.entries(liftValues)) {
           const existing = editingHouseType.lift_values.find(lv => lv.lift_type === liftType);
           if (existing) {
-            await supabase
-              .from("lift_values")
-              .update({ value })
-              .eq("id", existing.id);
+            await supabase.from("lift_values").update({
+              value
+            }).eq("id", existing.id);
           } else {
-            await supabase
-              .from("lift_values")
-              .insert({ house_type_id: editingHouseType.id, lift_type: liftType as any, value });
+            await supabase.from("lift_values").insert({
+              house_type_id: editingHouseType.id,
+              lift_type: liftType as any,
+              value
+            });
           }
         }
 
         // Insert price history records
         if (priceChanges.length > 0) {
-          await supabase
-            .from("house_type_price_history")
-            .insert(priceChanges);
+          await supabase.from("house_type_price_history").insert(priceChanges);
         }
-
         toast.success("House type updated");
       } else {
-        const { data: newHouseType, error } = await supabase
-          .from("house_types")
-          .insert({ site_id: site.id, name: houseTypeName, total_value: totalValue })
-          .select()
-          .single();
-
+        const {
+          data: newHouseType,
+          error
+        } = await supabase.from("house_types").insert({
+          site_id: site.id,
+          name: houseTypeName,
+          total_value: totalValue
+        }).select().single();
         if (error) throw error;
-
         const liftValuesArray = Object.entries(liftValues).map(([liftType, value]) => ({
           house_type_id: newHouseType.id,
           lift_type: liftType as any,
           value
         }));
-
         if (liftValuesArray.length > 0) {
           await supabase.from("lift_values").insert(liftValuesArray);
         }
@@ -600,7 +560,6 @@ const SiteDetail = () => {
         });
         toast.success("House type created");
       }
-
       setHouseTypeDialogOpen(false);
       fetchSiteData();
     } catch (error: any) {
@@ -608,68 +567,66 @@ const SiteDetail = () => {
       console.error("Error:", error);
     }
   };
-
   const generatePdfPreview = async (file: File): Promise<string> => {
     try {
       // Import pdf.js dynamically
       const pdfjsLib = await import('pdfjs-dist');
-      
+
       // Use a worker from unpkg which is more reliable
       pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
-      
       const arrayBuffer = await file.arrayBuffer();
-      const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+      const loadingTask = pdfjsLib.getDocument({
+        data: arrayBuffer
+      });
       const pdf = await loadingTask.promise;
-      
+
       // Get the first page
       const page = await pdf.getPage(1);
-      const viewport = page.getViewport({ scale: 1.5 });
-      
+      const viewport = page.getViewport({
+        scale: 1.5
+      });
+
       // Create canvas
       const canvas = document.createElement('canvas');
       const context = canvas.getContext('2d');
       if (!context) return '';
-      
       canvas.width = viewport.width;
       canvas.height = viewport.height;
-      
+
       // Render PDF page to canvas
       await page.render({
         canvasContext: context,
-        viewport: viewport,
+        viewport: viewport
       } as any).promise;
-      
       return canvas.toDataURL('image/png');
     } catch (error) {
       console.error('Error generating PDF preview:', error);
       return '';
     }
   };
-
   const splitPdfPages = async (file: File): Promise<File[]> => {
     try {
       const arrayBuffer = await file.arrayBuffer();
       const pdfDoc = await PDFDocument.load(arrayBuffer);
       const pageCount = pdfDoc.getPageCount();
-      
       if (pageCount <= 1) {
         return [file];
       }
-
       const splitFiles: File[] = [];
       const baseName = file.name.replace('.pdf', '');
-      
       for (let i = 0; i < pageCount; i++) {
         const newPdf = await PDFDocument.create();
         const [copiedPage] = await newPdf.copyPages(pdfDoc, [i]);
         newPdf.addPage(copiedPage);
-        
         const pdfBytes = await newPdf.save();
-        const blob = new Blob([pdfBytes as any], { type: 'application/pdf' });
-        const newFile = new File([blob], `${baseName}_Page_${i + 1}.pdf`, { type: 'application/pdf' });
+        const blob = new Blob([pdfBytes as any], {
+          type: 'application/pdf'
+        });
+        const newFile = new File([blob], `${baseName}_Page_${i + 1}.pdf`, {
+          type: 'application/pdf'
+        });
         splitFiles.push(newFile);
       }
-      
       return splitFiles;
     } catch (error) {
       console.error('Error splitting PDF:', error);
@@ -677,20 +634,18 @@ const SiteDetail = () => {
       return [file];
     }
   };
-
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!editingHouseType) {
       toast.error("Please save the house type first before uploading drawings");
       return;
     }
-
     const files = Array.from(e.target.files || []);
-    
+
     // Validate file types and sizes
     const validFiles = files.filter(file => {
       const isValidType = file.type === 'application/pdf' || file.type.startsWith('image/');
       const isValidSize = file.size <= 50 * 1024 * 1024; // 50MB limit
-      
+
       if (!isValidType) {
         toast.error(`${file.name}: Only PDF and image files are allowed`);
         return false;
@@ -701,7 +656,6 @@ const SiteDetail = () => {
       }
       return true;
     });
-
     if (validFiles.length === 0) return;
 
     // Instant confirmation
@@ -710,30 +664,30 @@ const SiteDetail = () => {
     // Process PDFs and split multi-page ones
     const processedFiles: File[] = [];
     const newPreviews: Record<string, string> = {};
-    
     for (const file of validFiles) {
       if (file.type === 'application/pdf') {
         try {
           const splitFiles = await splitPdfPages(file);
           console.log(`Split ${file.name} into ${splitFiles.length} pages`);
-          
+
           // Generate previews for each split PDF
           for (let i = 0; i < splitFiles.length; i++) {
             const splitFile = splitFiles[i];
             processedFiles.push(splitFile);
-            
+
             // Generate preview
             const preview = await generatePdfPreview(splitFile);
             if (preview) {
               newPreviews[splitFile.name] = preview;
             }
-            
+
             // Show progress
             if ((i + 1) % 10 === 0 || i === splitFiles.length - 1) {
-              toast.info(`Processed ${i + 1} of ${splitFiles.length} pages...`, { duration: 2000 });
+              toast.info(`Processed ${i + 1} of ${splitFiles.length} pages...`, {
+                duration: 2000
+              });
             }
           }
-          
           if (splitFiles.length > 1) {
             toast.success(`Split ${file.name} into ${splitFiles.length} pages`);
           }
@@ -745,91 +699,101 @@ const SiteDetail = () => {
         processedFiles.push(file);
       }
     }
-
     console.log(`Total processed files: ${processedFiles.length}`);
-    setPdfPreviewUrls(prev => ({ ...prev, ...newPreviews }));
+    setPdfPreviewUrls(prev => ({
+      ...prev,
+      ...newPreviews
+    }));
     setUploadedDrawings([...uploadedDrawings, ...processedFiles]);
-    
+
     // Auto-upload starts here
     toast.success(`Uploading ${processedFiles.length} file(s)...`);
-    
+
     // Start uploading in background
     setTimeout(async () => {
       try {
         let uploadedCount = 0;
-        
         for (let i = 0; i < processedFiles.length; i++) {
           const file = processedFiles[i];
           const progressKey = `${file.name}-${uploadedDrawings.length + i}`;
-          
           try {
             // Update progress: 0%
-            setUploadProgress(prev => ({ ...prev, [progressKey]: 0 }));
-            
+            setUploadProgress(prev => ({
+              ...prev,
+              [progressKey]: 0
+            }));
             const fileExt = file.name.split('.').pop();
             const fileName = `${editingHouseType.id}/${Date.now()}-${i}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-            
-            // Update progress: 50%
-            setUploadProgress(prev => ({ ...prev, [progressKey]: 50 }));
-            
-            const { data: uploadData, error: uploadError } = await supabase.storage
-              .from('house-type-drawings')
-              .upload(fileName, file, {
-                contentType: file.type,
-                upsert: false
-              });
 
+            // Update progress: 50%
+            setUploadProgress(prev => ({
+              ...prev,
+              [progressKey]: 50
+            }));
+            const {
+              data: uploadData,
+              error: uploadError
+            } = await supabase.storage.from('house-type-drawings').upload(fileName, file, {
+              contentType: file.type,
+              upsert: false
+            });
             if (uploadError) throw uploadError;
 
             // Update progress: 75%
-            setUploadProgress(prev => ({ ...prev, [progressKey]: 75 }));
-
-            const { data: { publicUrl } } = supabase.storage
-              .from('house-type-drawings')
-              .getPublicUrl(fileName);
-
+            setUploadProgress(prev => ({
+              ...prev,
+              [progressKey]: 75
+            }));
+            const {
+              data: {
+                publicUrl
+              }
+            } = supabase.storage.from('house-type-drawings').getPublicUrl(fileName);
             let previewUrl = null;
             if (file.type === 'application/pdf') {
               const preview = newPreviews[file.name];
               if (preview) {
                 const previewBlob = await fetch(preview).then(r => r.blob());
                 const previewFileName = `${editingHouseType.id}/preview-${Date.now()}-${i}.png`;
-                
-                const { error: previewError } = await supabase.storage
-                  .from('house-type-drawings')
-                  .upload(previewFileName, previewBlob, {
-                    contentType: 'image/png',
-                    upsert: false
-                  });
-
+                const {
+                  error: previewError
+                } = await supabase.storage.from('house-type-drawings').upload(previewFileName, previewBlob, {
+                  contentType: 'image/png',
+                  upsert: false
+                });
                 if (!previewError) {
-                  const { data: { publicUrl: previewPublicUrl } } = supabase.storage
-                    .from('house-type-drawings')
-                    .getPublicUrl(previewFileName);
+                  const {
+                    data: {
+                      publicUrl: previewPublicUrl
+                    }
+                  } = supabase.storage.from('house-type-drawings').getPublicUrl(previewFileName);
                   previewUrl = previewPublicUrl;
                 }
               }
             }
 
             // Update progress: 90%
-            setUploadProgress(prev => ({ ...prev, [progressKey]: 90 }));
-
-            await supabase
-              .from('house_type_drawings')
-              .insert({
-                house_type_id: editingHouseType.id,
-                file_name: file.name,
-                file_url: publicUrl,
-                file_type: file.type,
-                preview_url: previewUrl,
-                uploaded_by: user.id,
-                display_order: i
-              });
+            setUploadProgress(prev => ({
+              ...prev,
+              [progressKey]: 90
+            }));
+            await supabase.from('house_type_drawings').insert({
+              house_type_id: editingHouseType.id,
+              file_name: file.name,
+              file_url: publicUrl,
+              file_type: file.type,
+              preview_url: previewUrl,
+              uploaded_by: user.id,
+              display_order: i
+            });
 
             // Update progress: 100%
-            setUploadProgress(prev => ({ ...prev, [progressKey]: 100 }));
+            setUploadProgress(prev => ({
+              ...prev,
+              [progressKey]: 100
+            }));
             uploadedCount++;
-            
+
             // Show progress every 5 files
             if (uploadedCount % 5 === 0) {
               toast.info(`Uploaded ${uploadedCount} of ${processedFiles.length} files...`);
@@ -838,38 +802,38 @@ const SiteDetail = () => {
             // Remove from progress after a short delay
             setTimeout(() => {
               setUploadProgress(prev => {
-                const newProgress = { ...prev };
+                const newProgress = {
+                  ...prev
+                };
                 delete newProgress[progressKey];
                 return newProgress;
               });
             }, 1000);
-
           } catch (error) {
             console.error('Upload error:', error);
             toast.error(`Failed to upload ${file.name}`);
             setUploadProgress(prev => {
-              const newProgress = { ...prev };
+              const newProgress = {
+                ...prev
+              };
               delete newProgress[progressKey];
               return newProgress;
             });
           }
         }
-
         toast.success(`Successfully uploaded ${uploadedCount} of ${processedFiles.length} files!`);
-        
+
         // Clear the uploaded drawings list but keep the indicator
         // Don't clear uploadedDrawings here - keep the green tick
-        
+
         // Refresh to show new drawings
         await fetchSiteData();
-        
       } catch (error: any) {
         console.error('Upload process error:', error);
         toast.error('Some files failed to upload');
       }
     }, 100);
   };
-
   const handleRemoveUploadedDrawing = (index: number) => {
     const newDrawings = uploadedDrawings.filter((_, i) => i !== index);
     setUploadedDrawings(newDrawings);
@@ -878,25 +842,16 @@ const SiteDetail = () => {
       setPdfPreviewUrls({});
     }
   };
-
   const handleDeleteExistingDrawing = async (drawingId: string, fileUrl: string) => {
     if (!confirm("Delete this drawing?")) return;
-
     try {
       // Extract file path from URL
       const urlParts = fileUrl.split('/house-type-drawings/');
       if (urlParts.length > 1) {
         const filePath = urlParts[1];
-        await supabase.storage
-          .from('house-type-drawings')
-          .remove([filePath]);
+        await supabase.storage.from('house-type-drawings').remove([filePath]);
       }
-
-      await supabase
-        .from('house_type_drawings')
-        .delete()
-        .eq('id', drawingId);
-
+      await supabase.from('house_type_drawings').delete().eq('id', drawingId);
       setExistingDrawings(existingDrawings.filter(d => d.id !== drawingId));
       toast.success("Drawing deleted");
     } catch (error: any) {
@@ -904,26 +859,18 @@ const SiteDetail = () => {
       console.error("Error:", error);
     }
   };
-
   const handleDeleteAllDrawings = async () => {
     if (!selectedHouseTypeForDrawings) return;
     if (!confirm(`Delete all ${existingDrawings.length + uploadedDrawings.length} drawings?`)) return;
-
     try {
       // Delete existing drawings from storage and database
       for (const drawing of existingDrawings) {
         const urlParts = drawing.file_url.split('/house-type-drawings/');
         if (urlParts.length > 1) {
           const filePath = urlParts[1];
-          await supabase.storage
-            .from('house-type-drawings')
-            .remove([filePath]);
+          await supabase.storage.from('house-type-drawings').remove([filePath]);
         }
-
-        await supabase
-          .from('house_type_drawings')
-          .delete()
-          .eq('id', drawing.id);
+        await supabase.from('house_type_drawings').delete().eq('id', drawing.id);
       }
 
       // Clear uploaded drawings that haven't been saved yet
@@ -935,15 +882,11 @@ const SiteDetail = () => {
       console.error("Error:", error);
     }
   };
-
   const toggleSelectDrawing = (id: string) => {
-    setSelectedDrawingIds((prev) =>
-      prev.includes(id) ? prev.filter((d) => d !== id) : [...prev, id]
-    );
+    setSelectedDrawingIds(prev => prev.includes(id) ? prev.filter(d => d !== id) : [...prev, id]);
   };
-
   const selectAllDrawings = () => {
-    const allIds = existingDrawings.map((d) => d.id);
+    const allIds = existingDrawings.map(d => d.id);
     // Toggle: if all are selected, clear them; otherwise select all
     if (selectedDrawingIds.length === allIds.length) {
       setSelectedDrawingIds([]);
@@ -955,7 +898,6 @@ const SiteDetail = () => {
       toast.success(`Selected all ${allIds.length} drawings`);
     }
   };
-
   const handleLongPressStart = (e: React.MouseEvent | React.TouchEvent) => {
     setLongPressTriggered(false);
     const timer = setTimeout(() => {
@@ -963,14 +905,12 @@ const SiteDetail = () => {
     }, 500); // 500ms long press
     setLongPressTimer(timer);
   };
-
   const handleLongPressEnd = (e: React.MouseEvent | React.TouchEvent) => {
     if (longPressTimer) {
       clearTimeout(longPressTimer);
       setLongPressTimer(null);
     }
   };
-
   const handleDrawingCardClick = (drawing: any) => {
     // Prevent opening if long press was just triggered
     if (longPressTriggered) {
@@ -979,29 +919,20 @@ const SiteDetail = () => {
     }
     handleViewDrawing(drawing.file_url, drawing.file_type, drawing.file_name, drawing.preview_url);
   };
-
   const handleDeleteSelectedDrawings = async () => {
     if (selectedDrawingIds.length === 0) return;
     if (!confirm(`Delete ${selectedDrawingIds.length} selected drawings?`)) return;
-
     try {
-      const toDelete = existingDrawings.filter((d) => selectedDrawingIds.includes(d.id));
+      const toDelete = existingDrawings.filter(d => selectedDrawingIds.includes(d.id));
       for (const drawing of toDelete) {
         const urlParts = drawing.file_url.split('/house-type-drawings/');
         if (urlParts.length > 1) {
           const filePath = urlParts[1];
-          await supabase.storage
-            .from('house-type-drawings')
-            .remove([filePath]);
+          await supabase.storage.from('house-type-drawings').remove([filePath]);
         }
-
-        await supabase
-          .from('house_type_drawings')
-          .delete()
-          .eq('id', drawing.id);
+        await supabase.from('house_type_drawings').delete().eq('id', drawing.id);
       }
-
-      setExistingDrawings((prev) => prev.filter((d) => !selectedDrawingIds.includes(d.id)));
+      setExistingDrawings(prev => prev.filter(d => !selectedDrawingIds.includes(d.id)));
       setSelectedDrawingIds([]);
       toast.success('Selected drawings deleted');
     } catch (error: any) {
@@ -1009,37 +940,38 @@ const SiteDetail = () => {
       console.error('Error:', error);
     }
   };
-
   const handleViewDrawing = (url: string, type: string, name: string, previewUrl?: string) => {
-    console.log('Opening viewer:', { url, type, name, previewUrl });
+    console.log('Opening viewer:', {
+      url,
+      type,
+      name,
+      previewUrl
+    });
     // For PDFs, use preview URL if available, otherwise use the PDF URL
-    const displayUrl = (type === 'application/pdf' && previewUrl) ? previewUrl : url;
-    setViewerContent({ url: displayUrl, type, name });
+    const displayUrl = type === 'application/pdf' && previewUrl ? previewUrl : url;
+    setViewerContent({
+      url: displayUrl,
+      type,
+      name
+    });
     // Close the drawings dialog
     setDrawingsDialogOpen(false);
     // Open viewer in fullscreen mode directly
     setViewerOpen(true);
   };
-
   const openDrawingsDialog = async (houseType: HouseType) => {
     setSelectedHouseTypeForDrawings(houseType);
-    
-    const { data: drawings } = await supabase
-      .from("house_type_drawings")
-      .select("*")
-      .eq("house_type_id", houseType.id)
-      .order("display_order");
-    
+    const {
+      data: drawings
+    } = await supabase.from("house_type_drawings").select("*").eq("house_type_id", houseType.id).order("display_order");
     setExistingDrawings(drawings || []);
     setSelectedDrawingIds([]);
     setDrawingsDialogOpen(true);
   };
-
   const handleExportDrawing = async (fileUrl: string, fileName: string) => {
     try {
       const response = await fetch(fileUrl);
       const blob = await response.blob();
-
       await saveBlobToDevice(blob, fileName, blob.type);
       toast.success('Drawing exported successfully');
     } catch (error) {
@@ -1047,24 +979,18 @@ const SiteDetail = () => {
       toast.error('Failed to export drawing');
     }
   };
-
   const handlePlotClick = (plot: Plot) => {
     if (!isAdmin) return;
-    
     setSelectedPlot(plot);
     setSelectedHouseTypeId(plot.house_type_id || "");
     setPlotDialogOpen(true);
   };
-
   const handleAssignHouseType = async () => {
     if (!selectedPlot) return;
-
     try {
-      await supabase
-        .from("plots")
-        .update({ house_type_id: selectedHouseTypeId || null })
-        .eq("id", selectedPlot.id);
-
+      await supabase.from("plots").update({
+        house_type_id: selectedHouseTypeId || null
+      }).eq("id", selectedPlot.id);
       toast.success("House type assigned to plot");
       setPlotDialogOpen(false);
       fetchSiteData();
@@ -1073,16 +999,12 @@ const SiteDetail = () => {
       console.error("Error:", error);
     }
   };
-
   const handleAssignUserToPlot = async () => {
     if (!selectedPlot || !selectedUserId) return;
-
     try {
-      await supabase
-        .from("plots")
-        .update({ assigned_to: selectedUserId })
-        .eq("id", selectedPlot.id);
-
+      await supabase.from("plots").update({
+        assigned_to: selectedUserId
+      }).eq("id", selectedPlot.id);
       toast.success("Bricklayer assigned to plot");
       setUserAssignDialogOpen(false);
       setPlotDialogOpen(false);
@@ -1092,37 +1014,27 @@ const SiteDetail = () => {
       console.error("Error:", error);
     }
   };
-
   const getLiftValue = (houseType: HouseType | null, liftType: string) => {
     if (!houseType) return 0;
     const lift = houseType.lift_values.find(lv => lv.lift_type === liftType);
     return lift ? lift.value : 0;
   };
-
   const getTotalBooked = (plot: Plot, liftType: string): number => {
     if (!plot.house_types) return 0;
-    
     const liftValue = plot.house_types.lift_values.find(lv => lv.lift_type === liftType);
     if (!liftValue) return 0;
 
     // Count confirmed bookings
-    const liftBookings = bookings.filter(b => 
-      b.plot_id === plot.id && b.lift_value_id === liftValue.id
-    );
+    const liftBookings = bookings.filter(b => b.plot_id === plot.id && b.lift_value_id === liftValue.id);
     const confirmedTotal = liftBookings.reduce((sum, b) => sum + b.percentage, 0);
 
     // Count pending invoice items
-    const pendingTotal = invoiceItems
-      .filter(item => item.plot.id === plot.id && item.liftType === liftType)
-      .reduce((sum, item) => sum + item.percentage, 0);
-
+    const pendingTotal = invoiceItems.filter(item => item.plot.id === plot.id && item.liftType === liftType).reduce((sum, item) => sum + item.percentage, 0);
     return confirmedTotal + pendingTotal;
   };
-
   const isPendingInInvoice = (plot: Plot, liftType: string): boolean => {
     return invoiceItems.some(item => item.plot.id === plot.id && item.liftType === liftType);
   };
-
   const getCellColor = (totalBooked: number, isPending: boolean): string => {
     if (isPending) return "bg-blue-200 hover:bg-blue-300 dark:bg-blue-900/40 dark:hover:bg-blue-900/50 cursor-pointer";
     if (totalBooked === 0) return "bg-red-100 hover:bg-red-200 dark:bg-red-900/20 dark:hover:bg-red-900/30 cursor-pointer";
@@ -1131,7 +1043,6 @@ const SiteDetail = () => {
     if (totalBooked < 100) return "bg-green-100 hover:bg-green-200 dark:bg-green-900/20 dark:hover:bg-green-900/30 cursor-pointer";
     return "bg-green-100 hover:bg-green-200 dark:bg-green-900/20 dark:hover:bg-green-900/30 cursor-pointer";
   };
-
   const handleLiftCellClick = (plot: Plot, liftType: string) => {
     if (!plot.house_types) {
       toast.error("Please assign a house type to this plot first");
@@ -1144,7 +1055,6 @@ const SiteDetail = () => {
       toast.error("No price set for this lift");
       return;
     }
-
     const totalBooked = getTotalBooked(plot, liftType);
 
     // Open booking dialog for all users
@@ -1154,14 +1064,10 @@ const SiteDetail = () => {
     setBookingPercentage(Math.min(100, remaining));
     setBookingDialogOpen(true);
   };
-
   const handleGarageCellClick = (plot: Plot, garage: Garage, liftType: string) => {
     // Map lift_1, lift_2, cut_ups to their values
     let garageValue = 0;
-    if (liftType === 'lift_1') garageValue = garage.lift_1_value;
-    else if (liftType === 'lift_2') garageValue = garage.lift_2_value;
-    else if (liftType === 'cut_ups') garageValue = garage.cut_ups_value;
-
+    if (liftType === 'lift_1') garageValue = garage.lift_1_value;else if (liftType === 'lift_2') garageValue = garage.lift_2_value;else if (liftType === 'cut_ups') garageValue = garage.cut_ups_value;
     if (garageValue === 0) {
       toast.error("No price set for this garage lift");
       return;
@@ -1178,19 +1084,16 @@ const SiteDetail = () => {
     setBookingPercentage(Math.min(100, remaining));
     setBookingDialogOpen(true);
   };
-
   const handleAddToInvoice = () => {
     if (!selectedBookingPlot || !selectedBookingLiftType) return;
 
     // Check if this is a garage booking
     const isGarageBooking = selectedBookingLiftType.startsWith('garage_');
-    
     if (isGarageBooking) {
       // Parse garage info from encoded lift type
       const parts = selectedBookingLiftType.split('_');
       const garageId = parts[1];
       const garageLiftType = parts[2];
-      
       const garage = garages.find(g => g.id === garageId);
       if (!garage) {
         toast.error("Garage not found");
@@ -1199,24 +1102,17 @@ const SiteDetail = () => {
 
       // Get garage value
       let garageValue = 0;
-      if (garageLiftType === 'lift_1') garageValue = garage.lift_1_value;
-      else if (garageLiftType === 'lift_2') garageValue = garage.lift_2_value;
-      else if (garageLiftType === 'cut_ups') garageValue = garage.cut_ups_value;
-      else if (garageLiftType === 'snag_patch_int') garageValue = garage.snag_patch_int_value;
-      else if (garageLiftType === 'snag_patch_ext') garageValue = garage.snag_patch_ext_value;
+      if (garageLiftType === 'lift_1') garageValue = garage.lift_1_value;else if (garageLiftType === 'lift_2') garageValue = garage.lift_2_value;else if (garageLiftType === 'cut_ups') garageValue = garage.cut_ups_value;else if (garageLiftType === 'snag_patch_int') garageValue = garage.snag_patch_int_value;else if (garageLiftType === 'snag_patch_ext') garageValue = garage.snag_patch_ext_value;
 
       // Check remaining percentage
       const liftBookings = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === garageLiftType);
       const totalBooked = liftBookings.reduce((sum, b) => sum + b.percentage, 0);
       const remaining = 100 - totalBooked;
-
       if (bookingPercentage > remaining) {
         toast.error(`Only ${remaining}% remaining for this garage lift`);
         return;
       }
-
-      const bookedValue = (garageValue * bookingPercentage) / 100;
-
+      const bookedValue = garageValue * bookingPercentage / 100;
       const newItem: InvoiceItem = {
         plot: selectedBookingPlot,
         liftType: garageLiftType,
@@ -1226,7 +1122,6 @@ const SiteDetail = () => {
         garageId,
         garageLiftType
       };
-
       setInvoiceItems([...invoiceItems, newItem]);
       toast.success("Added to invoice");
       setBookingDialogOpen(false);
@@ -1234,19 +1129,13 @@ const SiteDetail = () => {
       // Regular plot lift booking
       const totalBooked = getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
       const remaining = 100 - totalBooked;
-
       if (bookingPercentage > remaining) {
         toast.error(`Only ${remaining}% remaining for this lift`);
         return;
       }
-
       const liftValue = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType);
-      const liftValueId = selectedBookingPlot.house_types!.lift_values.find(
-        lv => lv.lift_type === selectedBookingLiftType
-      )?.id || "";
-
-      const bookedValue = (liftValue * bookingPercentage) / 100;
-
+      const liftValueId = selectedBookingPlot.house_types!.lift_values.find(lv => lv.lift_type === selectedBookingLiftType)?.id || "";
+      const bookedValue = liftValue * bookingPercentage / 100;
       const newItem: InvoiceItem = {
         plot: selectedBookingPlot,
         liftType: selectedBookingLiftType,
@@ -1255,48 +1144,39 @@ const SiteDetail = () => {
         percentage: bookingPercentage,
         bookedValue
       };
-
       setInvoiceItems([...invoiceItems, newItem]);
       toast.success("Added to invoice");
       setBookingDialogOpen(false);
     }
   };
-
   const handleRemoveFromInvoice = (index: number) => {
     setInvoiceItems(invoiceItems.filter((_, i) => i !== index));
   };
-
   const handleAddGangMember = async () => {
     if (!memberName.trim() || !user) {
       toast.error("Name required");
       return;
     }
-
     try {
-      const { data, error } = await supabase
-        .from("saved_gang_members")
-        .insert({
-          user_id: user.id,
-          name: memberName.trim(),
-          type: memberType,
-          email: memberEmail.trim() || null,
-        })
-        .select()
-        .single();
-
+      const {
+        data,
+        error
+      } = await supabase.from("saved_gang_members").insert({
+        user_id: user.id,
+        name: memberName.trim(),
+        type: memberType,
+        email: memberEmail.trim() || null
+      }).select().single();
       if (error) throw error;
-
       await fetchSavedMembers();
-      
       setGangMembers([...gangMembers, {
         id: data.id,
         name: data.name,
         type: data.type,
         email: data.email,
         amount: 0,
-        editing: false,
+        editing: false
       }]);
-
       setMemberName("");
       setMemberEmail("");
       setMemberType("bricklayer");
@@ -1307,28 +1187,25 @@ const SiteDetail = () => {
       toast.error("Failed to save gang member");
     }
   };
-
   const handleAddExistingMember = (member: any) => {
-    if (gangMembers.some((m) => m.id === member.id)) {
+    if (gangMembers.some(m => m.id === member.id)) {
       toast.error("Already added");
       return;
     }
-    setGangMembers([...gangMembers, { ...member, amount: 0, editing: false }]);
+    setGangMembers([...gangMembers, {
+      ...member,
+      amount: 0,
+      editing: false
+    }]);
     toast.success(`${member.name} added`);
   };
-
   const handleDeletePermanently = async (memberId: string, index: number) => {
     if (!confirm("Delete this member permanently from your saved gang members?")) return;
-    
     try {
-      const { error } = await supabase
-        .from("saved_gang_members")
-        .delete()
-        .eq("id", memberId)
-        .eq("user_id", user?.id);
-
+      const {
+        error
+      } = await supabase.from("saved_gang_members").delete().eq("id", memberId).eq("user_id", user?.id);
       if (error) throw error;
-      
       await fetchSavedMembers();
       setGangMembers(gangMembers.filter((_, i) => i !== index));
       toast.success("Member deleted permanently");
@@ -1337,42 +1214,34 @@ const SiteDetail = () => {
       toast.error("Failed to delete member");
     }
   };
-
   const handleRemoveGangMember = (index: number) => {
     setGangMembers(gangMembers.filter((_, i) => i !== index));
   };
-
   const handleStartEditing = (index: number) => {
     const updated = [...gangMembers];
     updated[index].editing = true;
     setGangMembers(updated);
   };
-
   const handleStopEditing = (index: number) => {
     const updated = [...gangMembers];
     updated[index].editing = false;
     setGangMembers(updated);
   };
-
   const handleUpdateMemberAmount = (index: number, newAmount: number) => {
     const updated = [...gangMembers];
     updated[index].amount = newAmount;
     setGangMembers(updated);
   };
-
   const totalInvoiceValue = invoiceItems.reduce((sum, item) => sum + item.bookedValue, 0) + notesAmount;
   const totalGangAllocated = gangMembers.reduce((sum, m) => sum + m.amount, 0);
   const remainingToAllocate = totalInvoiceValue - totalGangAllocated;
-  
   const handleSearchPlot = () => {
     if (!searchPlotNumber) {
       toast.error("Please enter a plot number");
       return;
     }
-
     const plotNumber = parseInt(searchPlotNumber);
     const plotElement = document.querySelector(`[data-plot-number="${plotNumber}"]`);
-    
     if (!plotElement) {
       toast.error(`Plot ${plotNumber} not found`);
       return;
@@ -1381,7 +1250,10 @@ const SiteDetail = () => {
     // Scroll to the plot with offset for sticky header
     const yOffset = -180;
     const y = plotElement.getBoundingClientRect().top + window.pageYOffset + yOffset;
-    window.scrollTo({ top: y, behavior: 'smooth' });
+    window.scrollTo({
+      top: y,
+      behavior: 'smooth'
+    });
 
     // Highlight the row briefly
     plotElement.classList.add('bg-primary/20');
@@ -1404,47 +1276,43 @@ const SiteDetail = () => {
       }
     }
   };
-  
   const handlePlotNumberClick = async (plot: Plot) => {
     // Clear all highlights when opening plot summary
     clearHighlights();
     setHighlightedPlotId(null);
     searchParams.delete('plot');
     setSearchParams(searchParams);
-    
     setSelectedPlotForSummary(plot);
     setPlotSummaryDialogOpen(true);
-    
+
     // Fetch assignment history for this plot
     if (isAdmin) {
       try {
-        const { data, error } = await supabase
-          .from('plot_assignment_history')
-          .select(`
+        const {
+          data,
+          error
+        } = await supabase.from('plot_assignment_history').select(`
             id,
             user_id,
             assigned_at,
             removed_at
-          `)
-          .eq('plot_id', plot.id)
-          .order('assigned_at', { ascending: false });
-        
+          `).eq('plot_id', plot.id).order('assigned_at', {
+          ascending: false
+        });
         if (error) throw error;
-        
+
         // Fetch profiles for all users in history
         if (data && data.length > 0) {
           const userIds = [...new Set(data.map(h => h.user_id))];
-          const { data: profilesData } = await supabase
-            .from('profiles')
-            .select('id, email, full_name')
-            .in('id', userIds);
-          
+          const {
+            data: profilesData
+          } = await supabase.from('profiles').select('id, email, full_name').in('id', userIds);
+
           // Merge profiles with history
           const historyWithProfiles = data.map(h => ({
             ...h,
             profiles: profilesData?.find(p => p.id === h.user_id) || null
           }));
-          
           setPlotAssignmentHistory(historyWithProfiles);
         } else {
           setPlotAssignmentHistory([]);
@@ -1455,51 +1323,41 @@ const SiteDetail = () => {
       }
     }
   };
-
   const handleTableMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
     // Don't start dragging if clicking on interactive elements
     if (target.tagName === 'BUTTON' || target.closest('button')) return;
-    
     setIsTableDragging(true);
     setTableScrollStart({
       scrollLeft: mainScrollRef.current?.scrollLeft || 0,
-      clientX: e.clientX,
+      clientX: e.clientX
     });
   };
-
   const handleTableMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isTableDragging || !mainScrollRef.current) return;
-    
     e.preventDefault();
     const dx = e.clientX - tableScrollStart.clientX;
     mainScrollRef.current.scrollLeft = tableScrollStart.scrollLeft - dx;
   };
-
   const handleTableMouseUp = () => {
     setIsTableDragging(false);
   };
-
   const handleTableMouseLeave = () => {
     setIsTableDragging(false);
   };
-
   const clearHighlights = () => {
     setHighlightedPlots([]);
     setSelectedUserForHighlight(null);
     setShowScrollUpIndicator(false);
     setShowScrollDownIndicator(false);
   };
-
   const handleUserSelect = (userId: string) => {
     // Clear previous highlights
     clearHighlights();
-    
     setSelectedUserForHighlight(userId);
-    
+
     // Find all plots assigned to this user
     const userPlots = plots.filter(p => p.assigned_to === userId);
-    
     if (userPlots.length === 0) {
       toast.info("No plots assigned to this bricklayer");
       return;
@@ -1510,36 +1368,38 @@ const SiteDetail = () => {
     if (firstPlotElement) {
       const yOffset = -180;
       const y = firstPlotElement.getBoundingClientRect().top + window.pageYOffset + yOffset;
-      window.scrollTo({ top: y, behavior: 'smooth' });
+      window.scrollTo({
+        top: y,
+        behavior: 'smooth'
+      });
     }
 
     // Highlight all user's plots persistently (state will trigger re-render)
     const plotNumbers = userPlots.map(p => p.plot_number);
     setHighlightedPlots(plotNumbers);
-
     toast.success(`Highlighting ${userPlots.length} plot(s). Click a plot to clear.`);
   };
-
   const handleUserClick = (user: User) => {
     setSelectedUserForDialog(user);
     setUserPlotsDialogOpen(true);
     setDropdownOpen(false);
   };
-
   const scrollToPlot = (plotNumber: number) => {
     // Clear any existing highlights first
     clearHighlights();
-    
     const plotElement = document.querySelector(`[data-plot-number="${plotNumber}"]`);
     if (plotElement) {
       const yOffset = -180;
       const y = plotElement.getBoundingClientRect().top + window.pageYOffset + yOffset;
-      window.scrollTo({ top: y, behavior: 'smooth' });
-      
+      window.scrollTo({
+        top: y,
+        behavior: 'smooth'
+      });
+
       // Highlight only this plot (state will trigger re-render with highlight)
       setHighlightedPlots([plotNumber]);
     }
-    
+
     // Close dialog when plot is clicked
     setUserPlotsDialogOpen(false);
   };
@@ -1547,21 +1407,17 @@ const SiteDetail = () => {
   // Scroll indicator handler
   useEffect(() => {
     if (highlightedPlots.length === 0) return;
-
     const checkScrollIndicators = () => {
       const viewportTop = window.scrollY;
       const viewportBottom = window.scrollY + window.innerHeight;
-
       let hasPlotAbove = false;
       let hasPlotBelow = false;
-
       highlightedPlots.forEach(plotNumber => {
         const plotElement = document.querySelector(`[data-plot-number="${plotNumber}"]`);
         if (plotElement) {
           const rect = plotElement.getBoundingClientRect();
           const elementTop = rect.top + window.scrollY;
           const elementBottom = elementTop + rect.height;
-
           if (elementBottom < viewportTop) {
             hasPlotAbove = true;
           }
@@ -1570,25 +1426,23 @@ const SiteDetail = () => {
           }
         }
       });
-
       setShowScrollUpIndicator(hasPlotAbove);
       setShowScrollDownIndicator(hasPlotBelow);
     };
-
     checkScrollIndicators();
     window.addEventListener('scroll', checkScrollIndicators);
     window.addEventListener('resize', checkScrollIndicators);
-
     return () => {
       window.removeEventListener('scroll', checkScrollIndicators);
       window.removeEventListener('resize', checkScrollIndicators);
     };
   }, [highlightedPlots]);
-
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
   };
-
   const scrollToNextHighlightedPlotDown = () => {
     const currentScrollY = window.scrollY;
     const viewportBottom = currentScrollY + window.innerHeight;
@@ -1596,13 +1450,11 @@ const SiteDetail = () => {
     // Find the first highlighted plot below the current viewport
     let nextPlot: number | null = null;
     let minDistance = Infinity;
-
     highlightedPlots.forEach(plotNumber => {
       const plotElement = document.querySelector(`[data-plot-number="${plotNumber}"]`);
       if (plotElement) {
         const rect = plotElement.getBoundingClientRect();
         const elementTop = rect.top + currentScrollY;
-        
         if (elementTop > viewportBottom) {
           const distance = elementTop - viewportBottom;
           if (distance < minDistance) {
@@ -1612,17 +1464,18 @@ const SiteDetail = () => {
         }
       }
     });
-
     if (nextPlot !== null) {
       const plotElement = document.querySelector(`[data-plot-number="${nextPlot}"]`);
       if (plotElement) {
         const yOffset = -180;
         const y = plotElement.getBoundingClientRect().top + window.pageYOffset + yOffset;
-        window.scrollTo({ top: y, behavior: 'smooth' });
+        window.scrollTo({
+          top: y,
+          behavior: 'smooth'
+        });
       }
     }
   };
-
   const scrollToNextHighlightedPlotUp = () => {
     const currentScrollY = window.scrollY;
     const viewportTop = currentScrollY;
@@ -1630,13 +1483,11 @@ const SiteDetail = () => {
     // Find the last highlighted plot above the current viewport
     let previousPlot: number | null = null;
     let minDistance = Infinity;
-
     highlightedPlots.forEach(plotNumber => {
       const plotElement = document.querySelector(`[data-plot-number="${plotNumber}"]`);
       if (plotElement) {
         const rect = plotElement.getBoundingClientRect();
         const elementBottom = rect.bottom + currentScrollY;
-        
         if (elementBottom < viewportTop) {
           const distance = viewportTop - elementBottom;
           if (distance < minDistance) {
@@ -1646,17 +1497,18 @@ const SiteDetail = () => {
         }
       }
     });
-
     if (previousPlot !== null) {
       const plotElement = document.querySelector(`[data-plot-number="${previousPlot}"]`);
       if (plotElement) {
         const yOffset = -180;
         const y = plotElement.getBoundingClientRect().top + window.pageYOffset + yOffset;
-        window.scrollTo({ top: y, behavior: 'smooth' });
+        window.scrollTo({
+          top: y,
+          behavior: 'smooth'
+        });
       }
     }
   };
-
   const handleInvoiceImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1673,14 +1525,12 @@ const SiteDetail = () => {
       toast.error("Image size must be less than 5MB");
       return;
     }
-
     setUploadedInvoiceImage(file);
-    
+
     // Create preview URL
     const previewUrl = URL.createObjectURL(file);
     setInvoiceImagePreviewUrl(previewUrl);
   };
-
   const handleRemoveInvoiceImage = () => {
     if (invoiceImagePreviewUrl) {
       URL.revokeObjectURL(invoiceImagePreviewUrl);
@@ -1688,25 +1538,22 @@ const SiteDetail = () => {
     setUploadedInvoiceImage(null);
     setInvoiceImagePreviewUrl(null);
   };
-
   const uploadInvoiceImageToStorage = async (): Promise<string | null> => {
     if (!uploadedInvoiceImage || !user) return null;
-
     setUploadingInvoiceImage(true);
     try {
       const fileExt = uploadedInvoiceImage.name.split('.').pop();
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-      
-      const { error: uploadError, data } = await supabase.storage
-        .from('invoice-images')
-        .upload(fileName, uploadedInvoiceImage);
-
+      const {
+        error: uploadError,
+        data
+      } = await supabase.storage.from('invoice-images').upload(fileName, uploadedInvoiceImage);
       if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('invoice-images')
-        .getPublicUrl(fileName);
-
+      const {
+        data: {
+          publicUrl
+        }
+      } = supabase.storage.from('invoice-images').getPublicUrl(fileName);
       return publicUrl;
     } catch (error) {
       console.error("Error uploading image:", error);
@@ -1716,20 +1563,16 @@ const SiteDetail = () => {
       setUploadingInvoiceImage(false);
     }
   };
-
   const handleConfirmInvoice = async () => {
     if (!user) return;
-
     if (gangMembers.length === 0) {
       toast.error("Please add at least one gang member");
       return;
     }
-
     if (Math.abs(remainingToAllocate) > 0.01) {
       toast.error("Please allocate the full invoice value to gang members");
       return;
     }
-
     try {
       // If offline, queue and exit early
       if (!isOnline()) {
@@ -1743,16 +1586,22 @@ const SiteDetail = () => {
             name: m.name,
             type: m.type,
             amount: m.amount,
-            email: m.email || null,
-          })),
+            email: m.email || null
+          }))
         };
-        const { sendInvoiceWithOfflineSupport } = await import("@/lib/invoiceUtilsWithOffline");
+        const {
+          sendInvoiceWithOfflineSupport
+        } = await import("@/lib/invoiceUtilsWithOffline");
         await sendInvoiceWithOfflineSupport(payload, user.email || "User");
         playSuccessSound();
-        toast.info("Invoice saved and queued for sending when online", { duration: 5000 });
-
+        toast.info("Invoice saved and queued for sending when online", {
+          duration: 5000
+        });
         setInvoiceItems([]);
-        setGangMembers(gangMembers.map(m => ({ ...m, amount: 0 })));
+        setGangMembers(gangMembers.map(m => ({
+          ...m,
+          amount: 0
+        })));
         setInvoiceNotes("");
         setNotesAmount(0);
         handleRemoveInvoiceImage();
@@ -1768,9 +1617,8 @@ const SiteDetail = () => {
           return;
         }
       }
-
       const invoiceNumber = `INV-${Date.now()}`;
-      
+
       // Generate PDF for email
       const doc = new jsPDF();
       const blueColor: [number, number, number] = [37, 99, 235];
@@ -1778,7 +1626,7 @@ const SiteDetail = () => {
       // Add logo
       const img = new Image();
       img.src = logo;
-      await new Promise<void>((resolve) => {
+      await new Promise<void>(resolve => {
         img.onload = () => {
           const canvas = document.createElement("canvas");
           const ctx = canvas.getContext("2d");
@@ -1787,7 +1635,6 @@ const SiteDetail = () => {
           const radius = 10;
           canvas.width = width;
           canvas.height = height;
-
           if (ctx) {
             ctx.beginPath();
             ctx.moveTo(radius, 0);
@@ -1802,7 +1649,6 @@ const SiteDetail = () => {
             ctx.closePath();
             ctx.clip();
             ctx.drawImage(img, 0, 0, width, height);
-
             const roundedLogo = canvas.toDataURL("image/png");
             try {
               doc.addImage(roundedLogo, "PNG", 90, 10, 30, 20);
@@ -1818,23 +1664,23 @@ const SiteDetail = () => {
       doc.setTextColor(0, 0, 0);
       doc.setFontSize(14);
       doc.setFont("helvetica", "normal");
-      doc.text("Brickwork Manager", 105, 38, { align: "center" });
-
+      doc.text("Brickwork Manager", 105, 38, {
+        align: "center"
+      });
       doc.setFillColor(...blueColor);
       doc.rect(10, 45, 190, 12, "F");
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
-      doc.text(`INVOICE: ${invoiceNumber}`, 105, 53, { align: "center" });
-
+      doc.text(`INVOICE: ${invoiceNumber}`, 105, 53, {
+        align: "center"
+      });
       doc.setTextColor(0, 0, 0);
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
-
       let yPos = 68;
       doc.text(`Date: ${new Date().toLocaleDateString()}`, 15, yPos);
       yPos += 10;
-
       if (site) {
         doc.setTextColor(...blueColor);
         doc.setFont("helvetica", "bold");
@@ -1845,15 +1691,13 @@ const SiteDetail = () => {
         doc.text(`${site.name}`, 15, yPos);
         yPos += 12;
       }
-
       doc.setTextColor(...blueColor);
       doc.setFont("helvetica", "bold");
       doc.text("ITEMS:", 15, yPos);
       doc.setTextColor(0, 0, 0);
       doc.setFont("helvetica", "normal");
       yPos += 7;
-
-      invoiceItems.forEach((item) => {
+      invoiceItems.forEach(item => {
         if (yPos > 270) {
           doc.addPage();
           yPos = 20;
@@ -1869,9 +1713,7 @@ const SiteDetail = () => {
         doc.text(text, 15, yPos);
         yPos += 6;
       });
-
       yPos += 6;
-
       if (invoiceNotes) {
         doc.setTextColor(...blueColor);
         doc.setFont("helvetica", "bold");
@@ -1883,14 +1725,14 @@ const SiteDetail = () => {
         doc.text(noteLines, 15, yPos);
         yPos += noteLines.length * 6 + 6;
       }
-
       doc.setFillColor(...blueColor);
       doc.rect(10, yPos, 190, 10, "F");
       doc.setTextColor(255, 255, 255);
       doc.setFont("helvetica", "bold");
-      doc.text(`Total Value: £${totalInvoiceValue.toFixed(2)}`, 105, yPos + 7, { align: "center" });
+      doc.text(`Total Value: £${totalInvoiceValue.toFixed(2)}`, 105, yPos + 7, {
+        align: "center"
+      });
       yPos += 18;
-
       if (gangMembers.length > 0) {
         doc.setTextColor(...blueColor);
         doc.setFont("helvetica", "bold");
@@ -1898,8 +1740,7 @@ const SiteDetail = () => {
         doc.setTextColor(0, 0, 0);
         doc.setFont("helvetica", "normal");
         yPos += 7;
-
-        gangMembers.forEach((member) => {
+        gangMembers.forEach(member => {
           if (yPos > 270) {
             doc.addPage();
             yPos = 20;
@@ -1907,7 +1748,6 @@ const SiteDetail = () => {
           doc.text(`${member.name} (${member.type}): £${member.amount.toFixed(2)}`, 15, yPos);
           yPos += 6;
         });
-
         yPos += 4;
         doc.setFont("helvetica", "bold");
         doc.text(`Total Allocated: £${totalGangAllocated.toFixed(2)}`, 15, yPos);
@@ -1917,32 +1757,27 @@ const SiteDetail = () => {
       const pdfBase64 = doc.output("dataurlstring").split(",")[1];
 
       // Get user profile
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("full_name")
-        .eq("id", user.id)
-        .single();
+      const {
+        data: profile
+      } = await supabase.from("profiles").select("full_name").eq("id", user.id).single();
 
       // Create bookings and send email in parallel
       for (const item of invoiceItems) {
-        const { data: booking, error: bookingError } = await supabase
-          .from("bookings")
-          .insert({
-            lift_value_id: item.liftValueId,
-            plot_id: item.plot.id,
-            booked_by: user.id,
-            percentage: item.percentage,
-            booked_value: item.bookedValue,
-            invoice_number: invoiceNumber,
-            status: "confirmed",
-            notes: invoiceNotes,
-            image_url: imageUrl
-          })
-          .select()
-          .single();
-
+        const {
+          data: booking,
+          error: bookingError
+        } = await supabase.from("bookings").insert({
+          lift_value_id: item.liftValueId,
+          plot_id: item.plot.id,
+          booked_by: user.id,
+          percentage: item.percentage,
+          booked_value: item.bookedValue,
+          invoice_number: invoiceNumber,
+          status: "confirmed",
+          notes: invoiceNotes,
+          image_url: imageUrl
+        }).select().single();
         if (bookingError) throw bookingError;
-
         const gangDivisions = gangMembers.map(m => ({
           booking_id: booking.id,
           member_name: m.name,
@@ -1950,16 +1785,16 @@ const SiteDetail = () => {
           email: m.email || null,
           amount: m.amount
         }));
-
-        const { error: gangError } = await supabase
-          .from("gang_divisions")
-          .insert(gangDivisions);
-
+        const {
+          error: gangError
+        } = await supabase.from("gang_divisions").insert(gangDivisions);
         if (gangError) throw gangError;
       }
 
       // Send email to admins and gang members AND insert into bookings
-      const { error: emailError } = await supabase.functions.invoke("send-invoice-to-admin", {
+      const {
+        error: emailError
+      } = await supabase.functions.invoke("send-invoice-to-admin", {
         body: {
           invoiceNumber,
           pdfBase64,
@@ -1967,17 +1802,16 @@ const SiteDetail = () => {
             bookedBy: profile?.full_name || user.email || "User",
             bookedByEmail: user.email || "",
             totalValue: totalInvoiceValue,
-            createdAt: new Date().toISOString(),
+            createdAt: new Date().toISOString()
           },
           gangMembers: gangMembers.map(m => ({
             name: m.name,
             type: m.type,
             amount: m.amount,
-            email: m.email || null,
-          })),
-        },
+            email: m.email || null
+          }))
+        }
       });
-
       if (emailError) {
         console.error("Email error:", emailError);
         toast.success("Invoice created! (Email notification may be delayed)");
@@ -1986,9 +1820,11 @@ const SiteDetail = () => {
         playSuccessSound();
         toast.success("Invoice sent to admin successfully");
       }
-
       setInvoiceItems([]);
-      setGangMembers(gangMembers.map(m => ({ ...m, amount: 0 })));
+      setGangMembers(gangMembers.map(m => ({
+        ...m,
+        amount: 0
+      })));
       setInvoiceNotes("");
       setNotesAmount(0);
       handleRemoveInvoiceImage();
@@ -1999,7 +1835,6 @@ const SiteDetail = () => {
       console.error("Error:", error);
     }
   };
-
   const handleExportPDF = async () => {
     // If there's an image, ask user if they want to include it
     let includeImage = true;
@@ -2010,21 +1845,18 @@ const SiteDetail = () => {
     // Get user's full name
     let userName = user?.email || "Unknown";
     if (user) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("full_name")
-        .eq("id", user.id)
-        .single();
+      const {
+        data: profile
+      } = await supabase.from("profiles").select("full_name").eq("id", user.id).single();
       if (profile?.full_name) {
         userName = profile.full_name;
       }
     }
-    
     const doc = new jsPDF();
-    
+
     // Blue color for styling
     const blueColor: [number, number, number] = [37, 99, 235]; // #2563EB
-    
+
     // Create rounded logo
     const img = new Image();
     img.src = logo;
@@ -2035,10 +1867,8 @@ const SiteDetail = () => {
       const width = 300;
       const height = 200;
       const radius = 20;
-      
       canvas.width = width;
       canvas.height = height;
-      
       if (ctx) {
         // Draw rounded rectangle
         ctx.beginPath();
@@ -2053,10 +1883,10 @@ const SiteDetail = () => {
         ctx.quadraticCurveTo(0, 0, radius, 0);
         ctx.closePath();
         ctx.clip();
-        
+
         // Draw image
         ctx.drawImage(img, 0, 0, width, height);
-        
+
         // Add rounded logo to PDF
         const roundedLogo = canvas.toDataURL('image/png');
         try {
@@ -2064,161 +1894,155 @@ const SiteDetail = () => {
         } catch (e) {
           console.error('Failed to add logo to PDF', e);
         }
-        
         generateRestOfPDF();
       }
     };
-    
     const generateRestOfPDF = () => {
       // Black text for Brickwork Manager
       doc.setTextColor(0, 0, 0);
       doc.setFontSize(14);
       doc.setFont("helvetica", "normal");
-      doc.text("Brickwork Manager", 105, 38, { align: "center" });
-    
-    // Invoice number with blue background
-    doc.setFillColor(...blueColor);
-    doc.rect(10, 45, 190, 12, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
-    doc.text(`INVOICE: INV-${Date.now()}`, 105, 53, { align: "center" });
-    
-    // Reset to black text for content
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    
-    let yPos = 68;
-    
-    // User name
-    doc.text(`Booked by: ${userName}`, 15, yPos);
-    yPos += 7;
-    
-    // Date
-    doc.text(`Date: ${new Date().toLocaleDateString()}`, 15, yPos);
-    yPos += 10;
-    
-    // Site section with blue title
-    if (site) {
-      doc.setTextColor(...blueColor);
-      doc.setFont("helvetica", "bold");
-      doc.text("SITE:", 15, yPos);
-      doc.setTextColor(0, 0, 0);
-      doc.setFont("helvetica", "normal");
-      yPos += 7;
-      doc.text(`${site.name}`, 15, yPos);
-      yPos += 12;
-    }
-    
-    // Items section with blue title
-    doc.setTextColor(...blueColor);
-    doc.setFont("helvetica", "bold");
-    doc.text("ITEMS:", 15, yPos);
-    doc.setTextColor(0, 0, 0);
-    doc.setFont("helvetica", "normal");
-    yPos += 7;
-    
-    invoiceItems.forEach((item) => {
-      if (yPos > 270) {
-        doc.addPage();
-        yPos = 20;
-      }
-      let itemLabel = LIFT_LABELS[item.liftType as keyof typeof LIFT_LABELS];
-      if (item.garageId && item.garageLiftType) {
-        const garage = garages.find(g => g.id === item.garageId);
-        if (garage) {
-          itemLabel = `${getGarageLabel(garage.garage_type)} - ${LIFT_LABELS[item.garageLiftType as keyof typeof LIFT_LABELS]}`;
-        }
-      }
-      const text = `Plot ${item.plot.plot_number} - ${itemLabel}: ${item.percentage}% = £${item.bookedValue.toFixed(2)}`;
-      doc.text(text, 15, yPos);
-      yPos += 6;
-    });
-    
-    yPos += 6;
-    
-    // Notes section if exists
-    if (invoiceNotes) {
-      doc.setTextColor(...blueColor);
-      doc.setFont("helvetica", "bold");
-      doc.text("NOTES:", 15, yPos);
-      doc.setTextColor(0, 0, 0);
-      doc.setFont("helvetica", "normal");
-      yPos += 7;
-      const noteLines = doc.splitTextToSize(invoiceNotes, 180);
-      doc.text(noteLines, 15, yPos);
-      yPos += noteLines.length * 6 + 6;
-    }
+      doc.text("Brickwork Manager", 105, 38, {
+        align: "center"
+      });
 
-    // Add image if user chose to include it
-    if (includeImage && invoiceImagePreviewUrl) {
-      if (yPos > 220) {
-        doc.addPage();
-        yPos = 20;
-      }
-      doc.setTextColor(...blueColor);
+      // Invoice number with blue background
+      doc.setFillColor(...blueColor);
+      doc.rect(10, 45, 190, 12, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
-      doc.text("ATTACHED IMAGE:", 15, yPos);
+      doc.text(`INVOICE: INV-${Date.now()}`, 105, 53, {
+        align: "center"
+      });
+
+      // Reset to black text for content
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      let yPos = 68;
+
+      // User name
+      doc.text(`Booked by: ${userName}`, 15, yPos);
       yPos += 7;
-      
-      try {
-        doc.addImage(invoiceImagePreviewUrl, 'JPEG', 15, yPos, 180, 100);
-        yPos += 105;
-      } catch (e) {
-        console.error('Failed to add image to PDF', e);
+
+      // Date
+      doc.text(`Date: ${new Date().toLocaleDateString()}`, 15, yPos);
+      yPos += 10;
+
+      // Site section with blue title
+      if (site) {
+        doc.setTextColor(...blueColor);
+        doc.setFont("helvetica", "bold");
+        doc.text("SITE:", 15, yPos);
+        doc.setTextColor(0, 0, 0);
+        doc.setFont("helvetica", "normal");
+        yPos += 7;
+        doc.text(`${site.name}`, 15, yPos);
+        yPos += 12;
       }
-    }
-    
-    // Total value with blue box
-    doc.setFillColor(...blueColor);
-    doc.rect(10, yPos, 190, 10, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
-    doc.text(`Total Value: £${totalInvoiceValue.toFixed(2)}`, 105, yPos + 7, { align: "center" });
-    yPos += 18;
-    
-    // Gang division section
-    if (gangMembers.length > 0) {
+
+      // Items section with blue title
       doc.setTextColor(...blueColor);
       doc.setFont("helvetica", "bold");
-      doc.text("GANG DIVISION:", 15, yPos);
+      doc.text("ITEMS:", 15, yPos);
       doc.setTextColor(0, 0, 0);
       doc.setFont("helvetica", "normal");
       yPos += 7;
-      
-      gangMembers.forEach((member) => {
+      invoiceItems.forEach(item => {
         if (yPos > 270) {
           doc.addPage();
           yPos = 20;
         }
-        doc.text(`${member.name} (${member.type}): £${member.amount.toFixed(2)}`, 15, yPos);
+        let itemLabel = LIFT_LABELS[item.liftType as keyof typeof LIFT_LABELS];
+        if (item.garageId && item.garageLiftType) {
+          const garage = garages.find(g => g.id === item.garageId);
+          if (garage) {
+            itemLabel = `${getGarageLabel(garage.garage_type)} - ${LIFT_LABELS[item.garageLiftType as keyof typeof LIFT_LABELS]}`;
+          }
+        }
+        const text = `Plot ${item.plot.plot_number} - ${itemLabel}: ${item.percentage}% = £${item.bookedValue.toFixed(2)}`;
+        doc.text(text, 15, yPos);
         yPos += 6;
       });
-      
-      yPos += 4;
+      yPos += 6;
+
+      // Notes section if exists
+      if (invoiceNotes) {
+        doc.setTextColor(...blueColor);
+        doc.setFont("helvetica", "bold");
+        doc.text("NOTES:", 15, yPos);
+        doc.setTextColor(0, 0, 0);
+        doc.setFont("helvetica", "normal");
+        yPos += 7;
+        const noteLines = doc.splitTextToSize(invoiceNotes, 180);
+        doc.text(noteLines, 15, yPos);
+        yPos += noteLines.length * 6 + 6;
+      }
+
+      // Add image if user chose to include it
+      if (includeImage && invoiceImagePreviewUrl) {
+        if (yPos > 220) {
+          doc.addPage();
+          yPos = 20;
+        }
+        doc.setTextColor(...blueColor);
+        doc.setFont("helvetica", "bold");
+        doc.text("ATTACHED IMAGE:", 15, yPos);
+        yPos += 7;
+        try {
+          doc.addImage(invoiceImagePreviewUrl, 'JPEG', 15, yPos, 180, 100);
+          yPos += 105;
+        } catch (e) {
+          console.error('Failed to add image to PDF', e);
+        }
+      }
+
+      // Total value with blue box
+      doc.setFillColor(...blueColor);
+      doc.rect(10, yPos, 190, 10, 'F');
+      doc.setTextColor(255, 255, 255);
       doc.setFont("helvetica", "bold");
-      doc.text(`Total Allocated: £${totalGangAllocated.toFixed(2)}`, 15, yPos);
-    }
-    
-    doc.save(`invoice-${Date.now()}.pdf`);
-    toast.success("PDF exported");
+      doc.text(`Total Value: £${totalInvoiceValue.toFixed(2)}`, 105, yPos + 7, {
+        align: "center"
+      });
+      yPos += 18;
+
+      // Gang division section
+      if (gangMembers.length > 0) {
+        doc.setTextColor(...blueColor);
+        doc.setFont("helvetica", "bold");
+        doc.text("GANG DIVISION:", 15, yPos);
+        doc.setTextColor(0, 0, 0);
+        doc.setFont("helvetica", "normal");
+        yPos += 7;
+        gangMembers.forEach(member => {
+          if (yPos > 270) {
+            doc.addPage();
+            yPos = 20;
+          }
+          doc.text(`${member.name} (${member.type}): £${member.amount.toFixed(2)}`, 15, yPos);
+          yPos += 6;
+        });
+        yPos += 4;
+        doc.setFont("helvetica", "bold");
+        doc.text(`Total Allocated: £${totalGangAllocated.toFixed(2)}`, 15, yPos);
+      }
+      doc.save(`invoice-${Date.now()}.pdf`);
+      toast.success("PDF exported");
     };
   };
-
   const handleInviteUser = async () => {
     if (!site || !inviteEmail.trim() || !user) return;
-
     try {
       // Create an invitation record
-      const { error: inviteError } = await supabase
-        .from("invitations")
-        .insert({
-          email: inviteEmail.trim().toLowerCase(),
-          site_id: site.id,
-          invited_by: user.id
-        });
-
+      const {
+        error: inviteError
+      } = await supabase.from("invitations").insert({
+        email: inviteEmail.trim().toLowerCase(),
+        site_id: site.id,
+        invited_by: user.id
+      });
       if (inviteError) {
         if (inviteError.code === '23505') {
           toast.error("This user has already been invited to this site");
@@ -2229,14 +2053,15 @@ const SiteDetail = () => {
       }
 
       // Get user's full name
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("full_name")
-        .eq("id", user.id)
-        .single();
+      const {
+        data: profile
+      } = await supabase.from("profiles").select("full_name").eq("id", user.id).single();
 
       // Send invitation email
-      const { data, error: emailError } = await supabase.functions.invoke('send-invitation-email', {
+      const {
+        data,
+        error: emailError
+      } = await supabase.functions.invoke('send-invitation-email', {
         body: {
           email: inviteEmail.trim().toLowerCase(),
           siteName: site.name,
@@ -2244,14 +2069,12 @@ const SiteDetail = () => {
           customDomain: window.location.origin
         }
       });
-
       if (emailError) {
         console.error("Email error:", emailError);
         toast.success("Invitation created! (Email notification may be delayed)");
       } else {
         toast.success("Invitation sent! User will receive an email and automatically get access when they sign up.");
       }
-
       setInviteUserDialogOpen(false);
       setInviteEmail("");
       fetchSiteData();
@@ -2260,19 +2083,13 @@ const SiteDetail = () => {
       console.error("Error:", error);
     }
   };
-
   const handleRemoveUser = async (userId: string) => {
     if (!site || !confirm("Remove this user from the site?")) return;
-
     try {
-      const { error } = await supabase
-        .from("user_site_assignments")
-        .delete()
-        .eq("user_id", userId)
-        .eq("site_id", site.id);
-
+      const {
+        error
+      } = await supabase.from("user_site_assignments").delete().eq("user_id", userId).eq("site_id", site.id);
       if (error) throw error;
-
       toast.success("Bricklayer removed from site");
       fetchSiteData();
     } catch (error: any) {
@@ -2280,76 +2097,49 @@ const SiteDetail = () => {
       console.error("Error:", error);
     }
   };
-
   if (loading) {
-    return (
-      <div className="min-h-screen bg-secondary/30">
+    return <div className="min-h-screen bg-secondary/30">
         <Header showBackButton />
         <main className="container py-8">
           <p className="text-center text-muted-foreground">Loading...</p>
         </main>
-      </div>
-    );
+      </div>;
   }
-
   if (!site) {
-    return (
-      <div className="min-h-screen bg-secondary/30">
+    return <div className="min-h-screen bg-secondary/30">
         <Header showBackButton />
         <main className="container py-8">
           <p className="text-center text-muted-foreground">Site not found</p>
         </main>
-      </div>
-    );
+      </div>;
   }
-
   const developerLogo = developer ? developerLogos[developer.name] : undefined;
-
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-secondary/20 to-background">
+  return <div className="min-h-screen bg-gradient-to-b from-background via-secondary/20 to-background">
       {/* Sticky Header with Column Titles */}
-      {showStickyHeader && site && (
-        <div className="fixed top-16 left-0 right-0 z-40 bg-background/95 backdrop-blur border-b shadow-md">
+      {showStickyHeader && site && <div className="fixed top-16 left-0 right-0 z-40 bg-background/95 backdrop-blur border-b shadow-md">
           <div ref={stickyScrollRef} className="container py-2 overflow-x-auto">
             <table className="w-full border-collapse min-w-[800px]">
               <thead>
                 <tr className="border-b">
                   <th className="p-2 text-left font-medium text-sm w-20 bg-background">Plot</th>
                   <th className="p-2 text-left font-medium text-sm w-32 bg-background">House Type</th>
-                  {Object.keys(LIFT_LABELS).map(liftType => (
-                    <th key={liftType} className="p-2 text-center font-medium whitespace-nowrap text-sm min-w-[80px]">
+                  {Object.keys(LIFT_LABELS).map(liftType => <th key={liftType} className="p-2 text-center font-medium whitespace-nowrap text-sm min-w-[80px]">
                       <LiftTypeLabel liftType={liftType} />
-                    </th>
-                  ))}
+                    </th>)}
                   {isAdmin && <th className="p-2 text-center font-medium text-sm w-24">Actions</th>}
                 </tr>
               </thead>
             </table>
           </div>
-        </div>
-      )}
+        </div>}
       
-      <Header 
-        showBackButton
-        hideTitle
-        leftContent={
-          <div className="hidden md:flex items-center gap-2">
-            {developerLogo && (
-              <img 
-                src={developerLogo} 
-                alt={developer?.name || "Developer"}
-                className="h-10 w-auto object-contain rounded-lg"
-              />
-            )}
+      <Header showBackButton hideTitle leftContent={<div className="hidden md:flex items-center gap-2">
+            {developerLogo && <img src={developerLogo} alt={developer?.name || "Developer"} className="h-10 w-auto object-contain rounded-lg" />}
             <span className="text-sm text-black dark:text-white font-medium">
               {site.name}
             </span>
-          </div>
-        }
-        actions={
-          <>
-            {isAdmin && (users.length > 0 || pendingInvitations.length > 0) && (
-              <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+          </div>} actions={<>
+            {isAdmin && (users.length > 0 || pendingInvitations.length > 0) && <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="gap-1" title="View Invited Bricklayers">
                     <Users className="h-4 w-4" />
@@ -2358,64 +2148,38 @@ const SiteDetail = () => {
                     <ChevronDown className="h-4 w-4 hidden lg:inline" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent 
-                  align="end" 
-                  className="w-80 max-h-96 overflow-y-auto bg-background z-50"
-                >
-                  {users.map((u) => (
-                    <DropdownMenuItem 
-                      key={u.user_id} 
-                      className="flex items-center justify-between p-3 cursor-pointer hover:bg-muted"
-                      onClick={() => handleUserClick(u)}
-                      onSelect={(e) => e.preventDefault()}
-                    >
+                <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto bg-background z-50">
+                  {users.map(u => <DropdownMenuItem key={u.user_id} className="flex items-center justify-between p-3 cursor-pointer hover:bg-muted" onClick={() => handleUserClick(u)} onSelect={e => e.preventDefault()}>
                       <div className="flex-1 flex items-center gap-2">
                         <p className="font-medium">{u.profiles.full_name}</p>
                         <Badge variant="secondary" className="text-xs">
                           {plots.filter(p => p.assigned_to === u.user_id).length} plots
                         </Badge>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRemoveUser(u.user_id);
-                        }}
-                      >
+                      <Button variant="ghost" size="sm" onClick={e => {
+              e.stopPropagation();
+              handleRemoveUser(u.user_id);
+            }}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
-                    </DropdownMenuItem>
-                  ))}
+                    </DropdownMenuItem>)}
                   
-                  {pendingInvitations.length > 0 && (
-                    <>
-                      {users.length > 0 && (
-                        <div className="px-3 py-2 text-xs text-muted-foreground font-semibold border-t">
+                  {pendingInvitations.length > 0 && <>
+                      {users.length > 0 && <div className="px-3 py-2 text-xs text-muted-foreground font-semibold border-t">
                           Pending Invitations
-                        </div>
-                      )}
-                      {pendingInvitations.map((inv) => (
-                        <DropdownMenuItem 
-                          key={inv.id} 
-                          className="flex items-center justify-between p-3"
-                          onSelect={(e) => e.preventDefault()}
-                        >
+                        </div>}
+                      {pendingInvitations.map(inv => <DropdownMenuItem key={inv.id} className="flex items-center justify-between p-3" onSelect={e => e.preventDefault()}>
                           <div className="flex-1 flex items-center gap-2">
                             <p className="text-muted-foreground">{maskEmail(inv.email)}</p>
                             <Badge variant="outline" className="text-xs">
                               Pending
                             </Badge>
                           </div>
-                        </DropdownMenuItem>
-                      ))}
-                    </>
-                  )}
+                        </DropdownMenuItem>)}
+                    </>}
                 </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-            {isAdmin && (
-              <>
+              </DropdownMenu>}
+            {isAdmin && <>
                 <Button onClick={() => setTypeSelectionDialogOpen(true)} size="sm" title="Add Type">
                   <Plus className="h-4 w-4" />
                   <span className="hidden lg:inline ml-2">Add House Type</span>
@@ -2425,103 +2189,63 @@ const SiteDetail = () => {
                   <Users className="h-4 w-4" />
                   <span className="hidden lg:inline ml-1">Invite Bricklayers</span>
                 </Button>
-              </>
-            )}
-            {!isAdmin && (
-              <Button 
-                onClick={() => {
-                  if (invoiceItems.length > 0) {
-                    setInvoiceDialogOpen(true);
-                  } else {
-                    setNonPlotInvoiceDialogOpen(true);
-                  }
-                }}
-                size="sm"
-                title={invoiceItems.length > 0 ? "View Invoice" : "Create Non-Plot Invoice"}
-                className="gap-1.5"
-              >
+              </>}
+            {!isAdmin && <Button onClick={() => {
+        if (invoiceItems.length > 0) {
+          setInvoiceDialogOpen(true);
+        } else {
+          setNonPlotInvoiceDialogOpen(true);
+        }
+      }} size="sm" title={invoiceItems.length > 0 ? "View Invoice" : "Create Non-Plot Invoice"} className="gap-1.5">
                 <Plus className="h-4 w-4" />
                 <FileText className="h-4 w-4" />
                 <span className="hidden lg:inline">
                   {invoiceItems.length > 0 ? "View Invoice" : "Non-Plot Invoice"}
                 </span>
-              </Button>
-            )}
-          </>
-        }
-      />
+              </Button>}
+          </>} />
       
       <main className="container py-12 space-y-8">
         {/* Sticky Scroll Indicators */}
-        {showScrollUpIndicator && (
-          <div 
-            className="fixed left-4 top-1/3 z-50 animate-pulse cursor-pointer"
-            onClick={scrollToNextHighlightedPlotUp}
-          >
+        {showScrollUpIndicator && <div className="fixed left-4 top-1/3 z-50 animate-pulse cursor-pointer" onClick={scrollToNextHighlightedPlotUp}>
             <ArrowUp className="h-8 w-8 text-primary fill-primary" strokeWidth={0} />
-          </div>
-        )}
-        {showScrollDownIndicator && (
-          <div 
-            className="fixed left-4 top-2/3 z-50 animate-pulse cursor-pointer"
-            onClick={scrollToNextHighlightedPlotDown}
-          >
+          </div>}
+        {showScrollDownIndicator && <div className="fixed left-4 top-2/3 z-50 animate-pulse cursor-pointer" onClick={scrollToNextHighlightedPlotDown}>
             <ChevronDown className="h-8 w-8 text-primary fill-primary" strokeWidth={0} />
-          </div>
-        )}
+          </div>}
         
         {/* House Types Section */}
-        {houseTypes.length > 0 && isAdmin && (
-          <div>
+        {houseTypes.length > 0 && isAdmin && <div>
             <h3 className="text-2xl font-bold mb-4">House Types</h3>
             <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {houseTypes.map(ht => (
-                <Button
-                  key={ht.id}
-                  variant="outline"
-                  size="lg"
-                  className="h-auto py-4 justify-start hover:bg-primary/10 hover:border-primary transition-all"
-                  onClick={() => openHouseTypeDialog(ht)}
-                >
+              {houseTypes.map(ht => <Button key={ht.id} variant="outline" size="lg" className="h-auto py-4 justify-start hover:bg-primary/10 hover:border-primary transition-all" onClick={() => openHouseTypeDialog(ht)}>
                   <div className="flex items-center gap-2">
                     <div className="p-2 rounded-lg bg-primary/10">
                       <Building2 className="h-4 w-4 text-primary" />
                     </div>
                     <span className="font-semibold">{ht.name}</span>
                   </div>
-                </Button>
-              ))}
+                </Button>)}
             </div>
-          </div>
-        )}
+          </div>}
 
         {/* Garage Types Section */}
-        {garageTypes.length > 0 && isAdmin && (
-          <div>
+        {garageTypes.length > 0 && isAdmin && <div>
             <h3 className="text-2xl font-bold mb-4">Garage Types</h3>
             <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {garageTypes.map(gt => (
-                <Button
-                  key={gt.id}
-                  variant="outline"
-                  size="lg"
-                  className="h-auto py-4 justify-start hover:bg-primary/10 hover:border-primary transition-all"
-                  onClick={() => {
-                    setEditingGarageType(gt);
-                    setAddGarageTypeDialogOpen(true);
-                  }}
-                >
+              {garageTypes.map(gt => <Button key={gt.id} variant="outline" size="lg" className="h-auto py-4 justify-start hover:bg-primary/10 hover:border-primary transition-all" onClick={() => {
+            setEditingGarageType(gt);
+            setAddGarageTypeDialogOpen(true);
+          }}>
                   <div className="flex items-center gap-2">
-                    <div className="p-1 rounded-lg bg-primary/10">
+                    <div className="p-1 rounded-lg bg-primary/10 mx-[4px] px-0 py-0">
                       <img src={getGarageIcon(gt.garage_type)} alt={gt.garage_type} className="h-8 w-8 object-contain" />
                     </div>
                     <span className="font-semibold">{getGarageLabel(gt.garage_type)}</span>
                   </div>
-                </Button>
-              ))}
+                </Button>)}
             </div>
-          </div>
-        )}
+          </div>}
 
 
         {/* Search Section */}
@@ -2533,14 +2257,7 @@ const SiteDetail = () => {
             <div className="flex gap-3 items-end flex-wrap">
               <div className="flex-1 min-w-[200px]">
                 <Label htmlFor="searchPlot">Plot Number</Label>
-                <Input
-                  id="searchPlot"
-                  type="number"
-                  placeholder="Enter plot number"
-                  value={searchPlotNumber}
-                  onChange={(e) => setSearchPlotNumber(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSearchPlot()}
-                />
+                <Input id="searchPlot" type="number" placeholder="Enter plot number" value={searchPlotNumber} onChange={e => setSearchPlotNumber(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleSearchPlot()} />
               </div>
               <div className="flex-1 min-w-[200px]">
                 <Label htmlFor="searchPhase">Phase (Optional)</Label>
@@ -2549,20 +2266,15 @@ const SiteDetail = () => {
                     <SelectValue placeholder="All Phases" />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(LIFT_LABELS).map(([key, label]) => (
-                      <SelectItem key={key} value={key}>{label}</SelectItem>
-                    ))}
+                    {Object.entries(LIFT_LABELS).map(([key, label]) => <SelectItem key={key} value={key}>{label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
-              <Button 
-                onClick={() => {
-                  handleSearchPlot();
-                  setSearchPlotNumber("");
-                  setSearchPhase("");
-                }}
-                className="shadow-md"
-              >
+              <Button onClick={() => {
+              handleSearchPlot();
+              setSearchPlotNumber("");
+              setSearchPhase("");
+            }} className="shadow-md">
                 Search
               </Button>
             </div>
@@ -2576,8 +2288,7 @@ const SiteDetail = () => {
               <p className="text-muted-foreground mt-1">View and manage plot bookings</p>
             </div>
           </div>
-          {plots.length === 0 ? (
-            <Card className="border-2 border-dashed">
+          {plots.length === 0 ? <Card className="border-2 border-dashed">
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <div className="p-4 rounded-full bg-muted mb-4">
                   <Building2 className="h-12 w-12 text-muted-foreground" />
@@ -2589,28 +2300,16 @@ const SiteDetail = () => {
                   {isAdmin ? "Create plots to get started" : "Contact an administrator for plot assignments"}
                 </p>
               </CardContent>
-            </Card>
-          ) : (
-            <div ref={pinchZoomContainerRef} className="overflow-hidden border rounded-lg touch-none">
-              <div 
-                ref={mainScrollRef} 
-                className="overflow-x-auto cursor-grab active:cursor-grabbing" 
-                style={zoomStyle}
-                onMouseDown={handleTableMouseDown}
-                onMouseMove={handleTableMouseMove}
-                onMouseUp={handleTableMouseUp}
-                onMouseLeave={handleTableMouseLeave}
-              >
+            </Card> : <div ref={pinchZoomContainerRef} className="overflow-hidden border rounded-lg touch-none">
+              <div ref={mainScrollRef} className="overflow-x-auto cursor-grab active:cursor-grabbing" style={zoomStyle} onMouseDown={handleTableMouseDown} onMouseMove={handleTableMouseMove} onMouseUp={handleTableMouseUp} onMouseLeave={handleTableMouseLeave}>
                 <table className="w-full border-collapse min-w-[800px]">
               <thead className="sticky top-0 z-30">
                 <tr className="border-b bg-muted/50">
                   <th className="p-2 text-left font-medium w-20 sticky left-0 bg-muted z-40 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Plot</th>
                   <th className="p-2 text-left font-medium w-32 bg-muted/50">House Type</th>
-                  {Object.keys(LIFT_LABELS).map(liftType => (
-                    <th key={liftType} className="p-2 text-center font-medium whitespace-nowrap text-sm min-w-[80px] bg-muted/50">
+                  {Object.keys(LIFT_LABELS).map(liftType => <th key={liftType} className="p-2 text-center font-medium whitespace-nowrap text-sm min-w-[80px] bg-muted/50">
                       <LiftTypeLabel liftType={liftType} />
-                    </th>
-                  ))}
+                    </th>)}
                   {isAdmin && <th className="p-2 text-center font-medium w-24 bg-muted/50">Actions</th>}
                 </tr>
               </thead>
@@ -2618,106 +2317,70 @@ const SiteDetail = () => {
                 {plots.map(plot => {
                   const isHighlighted = highlightedPlotId === plot.id || highlightedPlots.includes(plot.plot_number);
                   const garage = garages.find(g => g.plot_id === plot.id);
-                  
+
                   // Helper function to get garage booking percentage for a specific lift type
                   const getGarageLiftBooked = (garageId: string, liftType: string) => {
                     const liftBookings = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === liftType);
                     return liftBookings.reduce((sum, b) => sum + b.percentage, 0);
                   };
-                  
+
                   // Helper function to check if garage lift is pending in invoice
                   const isGarageLiftPendingInInvoice = (garageId: string, liftType: string) => {
-                    return invoiceItems.some(
-                      item => item.garageId === garageId && item.garageLiftType === liftType
-                    );
+                    return invoiceItems.some(item => item.garageId === garageId && item.garageLiftType === liftType);
                   };
-                  
-                  return (
-                    <React.Fragment key={plot.id}>
+                  return <React.Fragment key={plot.id}>
                       {/* Plot Row */}
-                      <tr 
-                        className={`border-b transition-colors ${isHighlighted ? 'bg-primary/20' : ''}`}
-                        data-plot-number={plot.plot_number}
-                        data-plot-id={plot.id}
-                        onClick={() => {
-                          if (isHighlighted) {
-                            setHighlightedPlotId(null);
-                            searchParams.delete('plot');
-                            setSearchParams(searchParams);
-                          }
-                        }}
-                      >
-                        <td 
-                          className={`p-2 font-medium cursor-pointer hover:bg-primary/10 sticky left-0 z-20 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${isHighlighted ? 'bg-primary/20' : 'bg-card'}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handlePlotNumberClick(plot);
-                          }}
-                        >
+                      <tr className={`border-b transition-colors ${isHighlighted ? 'bg-primary/20' : ''}`} data-plot-number={plot.plot_number} data-plot-id={plot.id} onClick={() => {
+                      if (isHighlighted) {
+                        setHighlightedPlotId(null);
+                        searchParams.delete('plot');
+                        setSearchParams(searchParams);
+                      }
+                    }}>
+                        <td className={`p-2 font-medium cursor-pointer hover:bg-primary/10 sticky left-0 z-20 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${isHighlighted ? 'bg-primary/20' : 'bg-card'}`} onClick={e => {
+                        e.stopPropagation();
+                        handlePlotNumberClick(plot);
+                      }}>
                           {plot.plot_number}
                         </td>
-                        <td 
-                          className={`p-2 ${(isAdmin || plot.house_types) ? 'cursor-pointer hover:bg-primary/10' : ''}`}
-                          onClick={() => {
-                            if (isAdmin) {
-                              handlePlotClick(plot);
-                            } else if (plot.house_types) {
-                              openDrawingsDialog(plot.house_types);
-                            }
-                          }}
-                        >
+                        <td className={`p-2 ${isAdmin || plot.house_types ? 'cursor-pointer hover:bg-primary/10' : ''}`} onClick={() => {
+                        if (isAdmin) {
+                          handlePlotClick(plot);
+                        } else if (plot.house_types) {
+                          openDrawingsDialog(plot.house_types);
+                        }
+                      }}>
                           {plot.house_types?.name || "-"}
                         </td>
                         {Object.keys(LIFT_LABELS).map(liftType => {
-                          const totalBooked = getTotalBooked(plot, liftType);
-                          const isPending = isPendingInInvoice(plot, liftType);
-                          
-                          return (
-                            <td 
-                              key={liftType}
-                              data-lift-type={liftType}
-                              className={`p-4 text-center transition-all ${getCellColor(totalBooked, isPending)}`}
-                              onClick={() => handleLiftCellClick(plot, liftType)}
-                            >
+                        const totalBooked = getTotalBooked(plot, liftType);
+                        const isPending = isPendingInInvoice(plot, liftType);
+                        return <td key={liftType} data-lift-type={liftType} className={`p-4 text-center transition-all ${getCellColor(totalBooked, isPending)}`} onClick={() => handleLiftCellClick(plot, liftType)}>
                               <div className="flex items-center justify-center min-h-[50px]">
                                 <span className="text-xl font-bold text-foreground">{totalBooked}%</span>
                               </div>
-                            </td>
-                          );
-                        })}
-                        {isAdmin && (
-                          <td className="p-2 text-center">
-                            <Button
-                              size="icon"
-                              variant="outline"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedPlotForSettings(plot);
-                                setPlotSettingsDialogOpen(true);
-                              }}
-                            >
+                            </td>;
+                      })}
+                        {isAdmin && <td className="p-2 text-center">
+                            <Button size="icon" variant="outline" onClick={e => {
+                          e.stopPropagation();
+                          setSelectedPlotForSettings(plot);
+                          setPlotSettingsDialogOpen(true);
+                        }}>
                               <Settings className="h-4 w-4" />
                             </Button>
-                          </td>
-                        )}
+                          </td>}
                       </tr>
                       
                       {/* Garage Row (if exists) */}
                       {garage && (() => {
-                        // Find the garage type configuration
-                        const garageTypeConfig = garage.garage_type_id 
-                          ? garageTypes.find(gt => gt.id === garage.garage_type_id)
-                          : null;
-                        
-                        return (
-                        <tr className={`border-b transition-colors bg-muted/30 ${isHighlighted ? 'bg-primary/10' : ''}`}>
-                          <td 
-                            className={`p-2 cursor-pointer hover:bg-primary/10 sticky left-0 z-20 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${isHighlighted ? 'bg-primary/10' : 'bg-card'}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handlePlotNumberClick(plot);
-                            }}
-                          >
+                      // Find the garage type configuration
+                      const garageTypeConfig = garage.garage_type_id ? garageTypes.find(gt => gt.id === garage.garage_type_id) : null;
+                      return <tr className={`border-b transition-colors bg-muted/30 ${isHighlighted ? 'bg-primary/10' : ''}`}>
+                          <td className={`p-2 cursor-pointer hover:bg-primary/10 sticky left-0 z-20 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${isHighlighted ? 'bg-primary/10' : 'bg-card'}`} onClick={e => {
+                          e.stopPropagation();
+                          handlePlotNumberClick(plot);
+                        }}>
                             <div className="flex items-center justify-center">
                               <img src={getGarageIcon(garageTypeConfig?.garage_type || garage.garage_type)} alt={garage.garage_type} className="w-8 h-8 object-contain" />
                             </div>
@@ -2726,141 +2389,99 @@ const SiteDetail = () => {
                             {getGarageLabel(garageTypeConfig?.garage_type || garage.garage_type)}
                           </td>
                           {Object.entries(LIFT_LABELS).map(([liftType]) => {
-                            // Map lift types to garage columns using garage type configuration
-                            let garageValue = 0;
-                            let garageLiftType = '';
-                            
-                            if (garageTypeConfig) {
-                              if (liftType === 'lift_1') {
-                                garageValue = garageTypeConfig.lift_1_value;
-                                garageLiftType = 'lift_1';
-                              } else if (liftType === 'lift_2') {
-                                garageValue = garageTypeConfig.lift_2_value;
-                                garageLiftType = 'lift_2';
-                              } else if (liftType === 'cut_ups') {
-                                garageValue = garageTypeConfig.cut_ups_value;
-                                garageLiftType = 'cut_ups';
-                              } else if (liftType === 'snag_patch_int') {
-                                garageValue = garageTypeConfig.snag_patch_int_value;
-                                garageLiftType = 'snag_patch_int';
-                              } else if (liftType === 'snag_patch_ext') {
-                                garageValue = garageTypeConfig.snag_patch_ext_value;
-                                garageLiftType = 'snag_patch_ext';
-                              }
+                          // Map lift types to garage columns using garage type configuration
+                          let garageValue = 0;
+                          let garageLiftType = '';
+                          if (garageTypeConfig) {
+                            if (liftType === 'lift_1') {
+                              garageValue = garageTypeConfig.lift_1_value;
+                              garageLiftType = 'lift_1';
+                            } else if (liftType === 'lift_2') {
+                              garageValue = garageTypeConfig.lift_2_value;
+                              garageLiftType = 'lift_2';
+                            } else if (liftType === 'cut_ups') {
+                              garageValue = garageTypeConfig.cut_ups_value;
+                              garageLiftType = 'cut_ups';
+                            } else if (liftType === 'snag_patch_int') {
+                              garageValue = garageTypeConfig.snag_patch_int_value;
+                              garageLiftType = 'snag_patch_int';
+                            } else if (liftType === 'snag_patch_ext') {
+                              garageValue = garageTypeConfig.snag_patch_ext_value;
+                              garageLiftType = 'snag_patch_ext';
                             }
-                            
-                            const totalBooked = garageValue > 0 ? getGarageLiftBooked(garage.id, garageLiftType) : 0;
-                            const isPending = garageValue > 0 ? isGarageLiftPendingInInvoice(garage.id, garageLiftType) : false;
-                            
-                            return (
-                              <td 
-                                key={liftType}
-                                className={`p-4 text-center transition-all ${garageValue > 0 ? getCellColor(totalBooked, isPending) : 'bg-muted/50'}`}
-                                onClick={() => {
-                                  if (garageValue > 0) {
-                                    handleGarageCellClick(plot, garage, garageLiftType);
-                                  }
-                                }}
-                              >
-                                {garageValue > 0 ? (
-                                  <div className="flex items-center justify-center min-h-[50px]">
+                          }
+                          const totalBooked = garageValue > 0 ? getGarageLiftBooked(garage.id, garageLiftType) : 0;
+                          const isPending = garageValue > 0 ? isGarageLiftPendingInInvoice(garage.id, garageLiftType) : false;
+                          return <td key={liftType} className={`p-4 text-center transition-all ${garageValue > 0 ? getCellColor(totalBooked, isPending) : 'bg-muted/50'}`} onClick={() => {
+                            if (garageValue > 0) {
+                              handleGarageCellClick(plot, garage, garageLiftType);
+                            }
+                          }}>
+                                {garageValue > 0 ? <div className="flex items-center justify-center min-h-[50px]">
                                     <span className="text-xl font-bold text-foreground">{totalBooked}%</span>
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center justify-center min-h-[50px]">
+                                  </div> : <div className="flex items-center justify-center min-h-[50px]">
                                     <span className="text-sm text-muted-foreground">-</span>
-                                  </div>
-                                )}
-                              </td>
-                            );
-                          })}
-                          {isAdmin && (
-                            <td className="p-2 text-center">
-                            </td>
-                          )}
-                        </tr>
-                        );
-                      })()}
-                    </React.Fragment>
-                  );
+                                  </div>}
+                              </td>;
+                        })}
+                          {isAdmin && <td className="p-2 text-center">
+                            </td>}
+                        </tr>;
+                    })()}
+                    </React.Fragment>;
                 })}
               </tbody>
             </table>
               </div>
-            </div>
-          )}
+            </div>}
         </div>
 
         {/* House Type Dialog */}
         <Dialog open={houseTypeDialogOpen} onOpenChange={setHouseTypeDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto" onOpenAutoFocus={e => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>
                 {editingHouseType ? "Edit House Type" : "Add House Type"}
               </DialogTitle>
-              {editingHouseType && editingHouseType.created_at && (
-                <div className="text-sm text-muted-foreground space-y-1 pt-2">
+              {editingHouseType && editingHouseType.created_at && <div className="text-sm text-muted-foreground space-y-1 pt-2">
                   <p>Created: {new Date(editingHouseType.created_at).toLocaleDateString()}</p>
-                  {editingHouseType.price_last_updated && (
-                    <p>Prices Updated: {new Date(editingHouseType.price_last_updated).toLocaleDateString()}</p>
-                  )}
-                </div>
-              )}
+                  {editingHouseType.price_last_updated && <p>Prices Updated: {new Date(editingHouseType.price_last_updated).toLocaleDateString()}</p>}
+                </div>}
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label>House Type Name</Label>
-                <Input
-                  value={houseTypeName}
-                  onChange={(e) => setHouseTypeName(e.target.value)}
-                  placeholder="e.g., Type A"
-                  autoFocus={false}
-                />
+                <Input value={houseTypeName} onChange={e => setHouseTypeName(e.target.value)} placeholder="e.g., Type A" autoFocus={false} />
               </div>
               <div className="grid grid-cols-2 gap-4">
-                {Object.entries(LIFT_LABELS).map(([key, label]) => (
-                  <div key={key} className="space-y-2">
+                {Object.entries(LIFT_LABELS).map(([key, label]) => <div key={key} className="space-y-2">
                     <LiftTypeLabel liftType={key} className="text-sm font-medium" />
-                    <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={liftValues[key] === 0 ? "" : liftValues[key]}
-                      onChange={(e) => setLiftValues({ ...liftValues, [key]: parseFloat(e.target.value) || 0 })}
-                      autoFocus={false}
-                    />
-                  </div>
-                ))}
+                    <Input type="number" step="0.01" placeholder="0.00" value={liftValues[key] === 0 ? "" : liftValues[key]} onChange={e => setLiftValues({
+                  ...liftValues,
+                  [key]: parseFloat(e.target.value) || 0
+                })} autoFocus={false} />
+                  </div>)}
               </div>
 
               {/* Price History Button */}
-              {editingHouseType && isAdmin && (
-                <Button 
-                  variant="outline" 
-                  onClick={async () => {
-                    const { data } = await supabase
-                      .from("house_type_price_history")
-                      .select("*")
-                      .eq("house_type_id", editingHouseType.id)
-                      .order("changed_at", { ascending: false });
-                    
-                    if (data && data.length > 0) {
-                      const historyMsg = data.map(h => 
-                        `${LIFT_LABELS[h.lift_type]}: £${h.old_value} → £${h.new_value} (${new Date(h.changed_at).toLocaleDateString()})`
-                      ).join('\n');
-                      alert(`Price History:\n\n${historyMsg}`);
-                    } else {
-                      toast.info("No price changes recorded");
-                    }
-                  }}
-                >
+              {editingHouseType && isAdmin && <Button variant="outline" onClick={async () => {
+              const {
+                data
+              } = await supabase.from("house_type_price_history").select("*").eq("house_type_id", editingHouseType.id).order("changed_at", {
+                ascending: false
+              });
+              if (data && data.length > 0) {
+                const historyMsg = data.map(h => `${LIFT_LABELS[h.lift_type]}: £${h.old_value} → £${h.new_value} (${new Date(h.changed_at).toLocaleDateString()})`).join('\n');
+                alert(`Price History:\n\n${historyMsg}`);
+              } else {
+                toast.info("No price changes recorded");
+              }
+            }}>
                   View Price History
-                </Button>
-              )}
+                </Button>}
               
               {/* File Upload Section */}
-              {isAdmin && (
-                <div className="space-y-2">
+              {isAdmin && <div className="space-y-2">
                   <Label>Drawings (PDF/PNG, up to 50MB each)</Label>
                   <p className="text-sm text-muted-foreground mb-2">
                     Multi-page PDFs will be automatically split into individual pages.
@@ -2870,71 +2491,46 @@ const SiteDetail = () => {
                       <div className="flex items-center gap-2 p-3 border-2 border-dashed rounded-lg hover:border-primary transition-colors bg-muted/50">
                         <Plus className="h-5 w-5" />
                         <div className="flex-1">
-                          {uploadedDrawings.length > 0 || existingDrawings.length > 0 ? (
-                            <p className="text-sm font-medium text-success">
-                              ✓ {uploadedDrawings.length > 0 
-                                ? `${uploadedDrawings.length} file${uploadedDrawings.length > 1 ? 's' : ''} selected`
-                                : `${existingDrawings.length} file${existingDrawings.length > 1 ? 's' : ''} uploaded`}
-                            </p>
-                          ) : (
-                            <p className="text-sm font-medium">Choose files or drag here</p>
-                          )}
+                          {uploadedDrawings.length > 0 || existingDrawings.length > 0 ? <p className="text-sm font-medium text-success">
+                              ✓ {uploadedDrawings.length > 0 ? `${uploadedDrawings.length} file${uploadedDrawings.length > 1 ? 's' : ''} selected` : `${existingDrawings.length} file${existingDrawings.length > 1 ? 's' : ''} uploaded`}
+                            </p> : <p className="text-sm font-medium">Choose files or drag here</p>}
                           <p className="text-xs text-muted-foreground">
                             PDF, PNG, JPG - up to 50MB each
                           </p>
                         </div>
                       </div>
                     </Label>
-                    <Input
-                      id="drawing-upload-hidden"
-                      type="file"
-                      accept=".pdf,.png,.jpg,.jpeg"
-                      multiple
-                      onChange={handleFileSelect}
-                      className="hidden"
-                    />
+                    <Input id="drawing-upload-hidden" type="file" accept=".pdf,.png,.jpg,.jpeg" multiple onChange={handleFileSelect} className="hidden" />
                   </div>
-                </div>
-              )}
+                </div>}
               
               <div className="flex gap-2">
                 <Button onClick={handleSaveHouseType} className="flex-1">
                   Save House Type
                 </Button>
-                {editingHouseType && (
-                  <>
-                    <Button 
-                      variant="outline"
-                      onClick={() => {
-                        setHouseTypeDialogOpen(false);
-                        openDrawingsDialog(editingHouseType);
-                      }}
-                    >
+                {editingHouseType && <>
+                    <Button variant="outline" onClick={() => {
+                  setHouseTypeDialogOpen(false);
+                  openDrawingsDialog(editingHouseType);
+                }}>
                       <FileText className="h-4 w-4 mr-2" />
                       View Drawings
                     </Button>
-                    <Button 
-                      variant="destructive" 
-                      onClick={async () => {
-                        if (!confirm("Delete this house type?")) return;
-                        try {
-                          await supabase
-                            .from("house_types")
-                            .delete()
-                            .eq("id", editingHouseType.id);
-                          toast.success("House type deleted");
-                          setHouseTypeDialogOpen(false);
-                          fetchSiteData();
-                        } catch (error: any) {
-                          toast.error("Failed to delete house type");
-                          console.error("Error:", error);
-                        }
-                      }}
-                    >
+                    <Button variant="destructive" onClick={async () => {
+                  if (!confirm("Delete this house type?")) return;
+                  try {
+                    await supabase.from("house_types").delete().eq("id", editingHouseType.id);
+                    toast.success("House type deleted");
+                    setHouseTypeDialogOpen(false);
+                    fetchSiteData();
+                  } catch (error: any) {
+                    toast.error("Failed to delete house type");
+                    console.error("Error:", error);
+                  }
+                }}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
-                  </>
-                )}
+                  </>}
               </div>
             </div>
           </DialogContent>
@@ -2942,7 +2538,7 @@ const SiteDetail = () => {
 
         {/* Plot Assignment Dialog */}
         <Dialog open={plotDialogOpen} onOpenChange={setPlotDialogOpen}>
-          <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent onOpenAutoFocus={e => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>Manage Plot {selectedPlot?.plot_number}</DialogTitle>
             </DialogHeader>
@@ -2954,9 +2550,7 @@ const SiteDetail = () => {
                     <SelectValue placeholder="Select house type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {houseTypes.map(ht => (
-                      <SelectItem key={ht.id} value={ht.id}>{ht.name}</SelectItem>
-                    ))}
+                    {houseTypes.map(ht => <SelectItem key={ht.id} value={ht.id}>{ht.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -2969,7 +2563,7 @@ const SiteDetail = () => {
 
         {/* Bricklayer Assignment Dialog */}
         <Dialog open={userAssignDialogOpen} onOpenChange={setUserAssignDialogOpen}>
-          <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent onOpenAutoFocus={e => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>Assign Bricklayer to Plot {selectedPlot?.plot_number}</DialogTitle>
             </DialogHeader>
@@ -2981,23 +2575,17 @@ const SiteDetail = () => {
                     <SelectValue placeholder="Select bricklayer" />
                   </SelectTrigger>
                   <SelectContent>
-                    {users.map(u => (
-                      <SelectItem key={u.user_id} value={u.user_id}>
+                    {users.map(u => <SelectItem key={u.user_id} value={u.user_id}>
                         {u.profiles.full_name} ({plots.filter(p => p.assigned_to === u.user_id).length} plots)
-                      </SelectItem>
-                    ))}
-                    {pendingInvitations.length > 0 && (
-                      <>
+                      </SelectItem>)}
+                    {pendingInvitations.length > 0 && <>
                         <SelectItem key="pending-header" value="pending-header" disabled>
                           <span className="text-xs text-muted-foreground font-semibold">--- Pending Invitations ---</span>
                         </SelectItem>
-                        {pendingInvitations.map(inv => (
-                          <SelectItem key={inv.id} value={inv.id} disabled>
+                        {pendingInvitations.map(inv => <SelectItem key={inv.id} value={inv.id} disabled>
                             <span className="text-muted-foreground">{maskEmail(inv.email)} (Pending)</span>
-                          </SelectItem>
-                        ))}
-                      </>
-                    )}
+                          </SelectItem>)}
+                      </>}
                   </SelectContent>
                 </Select>
               </div>
@@ -3010,20 +2598,14 @@ const SiteDetail = () => {
 
         {/* Invite User Dialog */}
         <Dialog open={inviteUserDialogOpen} onOpenChange={setInviteUserDialogOpen}>
-          <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent onOpenAutoFocus={e => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>Invite Bricklayer to Site</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label>Email Address</Label>
-                <Input
-                  type="email"
-                  placeholder="user@example.com"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  autoFocus={false}
-                />
+                <Input type="email" placeholder="user@example.com" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} autoFocus={false} />
               </div>
               <Button onClick={handleInviteUser} className="w-full" disabled={!inviteEmail.trim()}>
                 Send Invitation
@@ -3034,253 +2616,143 @@ const SiteDetail = () => {
 
         {/* User Plots Dialog */}
         <Dialog open={userPlotsDialogOpen} onOpenChange={setUserPlotsDialogOpen}>
-          <DialogContent className="max-w-md max-h-[80vh]" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="max-w-md max-h-[80vh]" onOpenAutoFocus={e => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>
                 {selectedUserForDialog?.profiles.full_name}'s Assigned Plots
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-2 overflow-y-auto max-h-[60vh]">
-              {selectedUserForDialog && plots.filter(p => p.assigned_to === selectedUserForDialog.user_id).length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">No plots assigned</p>
-              ) : (
-                plots
-                  .filter(p => p.assigned_to === selectedUserForDialog?.user_id)
-                  .sort((a, b) => a.plot_number - b.plot_number)
-                  .map(plot => (
-                    <Button
-                      key={plot.id}
-                      variant="outline"
-                      className="w-full justify-between"
-                      onClick={() => scrollToPlot(plot.plot_number)}
-                    >
+              {selectedUserForDialog && plots.filter(p => p.assigned_to === selectedUserForDialog.user_id).length === 0 ? <p className="text-center text-muted-foreground py-8">No plots assigned</p> : plots.filter(p => p.assigned_to === selectedUserForDialog?.user_id).sort((a, b) => a.plot_number - b.plot_number).map(plot => <Button key={plot.id} variant="outline" className="w-full justify-between" onClick={() => scrollToPlot(plot.plot_number)}>
                       <span className="font-medium">Plot {plot.plot_number}</span>
                       <span className="text-sm text-muted-foreground">
                         {plot.house_types?.name || "No house type"}
                       </span>
-                    </Button>
-                  ))
-              )}
+                    </Button>)}
             </div>
           </DialogContent>
         </Dialog>
 
         {/* Drawings Dialog */}
         <Dialog open={drawingsDialogOpen} onOpenChange={setDrawingsDialogOpen}>
-          <DialogContent className="max-w-3xl max-h-[85vh]" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="max-w-3xl max-h-[85vh]" onOpenAutoFocus={e => e.preventDefault()}>
             <DialogHeader>
               <div className="flex items-center gap-4">
                 <DialogTitle className="flex-shrink-0">
                   {selectedHouseTypeForDrawings?.name} - Drawings
                 </DialogTitle>
-                {isAdmin && (existingDrawings.length > 0 || uploadedDrawings.length > 0) && (
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    disabled={selectedDrawingIds.length === 0}
-                    onClick={handleDeleteSelectedDrawings}
-                    title={`Delete Selected${selectedDrawingIds.length > 0 ? ` (${selectedDrawingIds.length})` : ''}`}
-                  >
+                {isAdmin && (existingDrawings.length > 0 || uploadedDrawings.length > 0) && <Button variant="destructive" size="sm" disabled={selectedDrawingIds.length === 0} onClick={handleDeleteSelectedDrawings} title={`Delete Selected${selectedDrawingIds.length > 0 ? ` (${selectedDrawingIds.length})` : ''}`}>
                     <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
+                  </Button>}
               </div>
             </DialogHeader>
             <div className="space-y-4 overflow-y-auto max-h-[70vh]">
-              {existingDrawings.length === 0 && uploadedDrawings.length === 0 && Object.keys(uploadProgress).length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">No drawings available</p>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {existingDrawings.length === 0 && uploadedDrawings.length === 0 && Object.keys(uploadProgress).length === 0 ? <p className="text-center text-muted-foreground py-8">No drawings available</p> : <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Upload Progress Indicators */}
                   {Object.entries(uploadProgress).map(([key, progress]) => {
-                    const fileName = key.split('-')[0];
-                    return (
-                      <Card key={key} className="overflow-hidden border-2 border-primary">
+                const fileName = key.split('-')[0];
+                return <Card key={key} className="overflow-hidden border-2 border-primary">
                         <CardContent className="p-4 space-y-2">
                           <div className="w-full h-48 flex flex-col items-center justify-center bg-muted rounded">
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
                             <p className="text-sm font-medium">Uploading...</p>
                             <div className="w-full max-w-[200px] h-2 bg-muted-foreground/20 rounded-full mt-2 overflow-hidden">
-                              <div 
-                                className="h-full bg-primary transition-all duration-300"
-                                style={{ width: `${progress}%` }}
-                              />
+                              <div className="h-full bg-primary transition-all duration-300" style={{
+                          width: `${progress}%`
+                        }} />
                             </div>
                             <p className="text-xs text-muted-foreground mt-1">{progress}%</p>
                           </div>
                           <p className="text-sm font-medium truncate">{fileName}</p>
                           <p className="text-xs text-muted-foreground">Processing upload...</p>
                         </CardContent>
-                      </Card>
-                    );
-                  })}
+                      </Card>;
+              })}
                   
                   {/* Newly Uploaded Drawings (Not Yet Saved) */}
                   {uploadedDrawings.map((file, index) => {
-                    const progressKey = `${file.name}-${index}`;
-                    const progress = uploadProgress[progressKey];
-                    const fileUrl = URL.createObjectURL(file);
-                    const previewUrl = file.type === 'application/pdf' ? pdfPreviewUrls[file.name] : null;
-                    
-                    return (
-                      <Card 
-                        key={`new-${index}`} 
-                        className="overflow-hidden border-2 border-primary/50 cursor-pointer hover:border-primary transition-colors relative"
-                        onClick={() => !progress && handleViewDrawing(fileUrl, file.type, file.name, previewUrl || undefined)}
-                      >
+                const progressKey = `${file.name}-${index}`;
+                const progress = uploadProgress[progressKey];
+                const fileUrl = URL.createObjectURL(file);
+                const previewUrl = file.type === 'application/pdf' ? pdfPreviewUrls[file.name] : null;
+                return <Card key={`new-${index}`} className="overflow-hidden border-2 border-primary/50 cursor-pointer hover:border-primary transition-colors relative" onClick={() => !progress && handleViewDrawing(fileUrl, file.type, file.name, previewUrl || undefined)}>
                         <CardContent className="p-4 space-y-2">
                           <div className="relative">
-                            {file.type.startsWith('image/') ? (
-                              <img 
-                                src={fileUrl} 
-                                alt={file.name}
-                                className="w-full h-48 object-contain bg-muted rounded"
-                              />
-                            ) : previewUrl ? (
-                              <img 
-                                src={previewUrl} 
-                                alt={file.name}
-                                className="w-full h-48 object-contain bg-muted rounded"
-                              />
-                            ) : (
-                              <div className="w-full h-48 flex items-center justify-center bg-muted rounded">
+                            {file.type.startsWith('image/') ? <img src={fileUrl} alt={file.name} className="w-full h-48 object-contain bg-muted rounded" /> : previewUrl ? <img src={previewUrl} alt={file.name} className="w-full h-48 object-contain bg-muted rounded" /> : <div className="w-full h-48 flex items-center justify-center bg-muted rounded">
                                 <FileText className="h-16 w-16 text-muted-foreground" />
-                              </div>
-                            )}
-                            {progress !== undefined && (
-                              <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+                              </div>}
+                            {progress !== undefined && <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
                                 <div className="text-center">
                                   <div className="text-2xl font-bold text-primary">{progress}%</div>
                                   <div className="text-sm text-muted-foreground mt-1">Uploading...</div>
                                 </div>
-                              </div>
-                            )}
+                              </div>}
                           </div>
                           <div className="flex items-center justify-between">
                             <p className="text-sm font-medium truncate flex-1">{file.name}</p>
-                            {!progress && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRemoveUploadedDrawing(index);
-                                }}
-                                title="Remove"
-                              >
+                            {!progress && <Button variant="ghost" size="sm" onClick={e => {
+                        e.stopPropagation();
+                        handleRemoveUploadedDrawing(index);
+                      }} title="Remove">
                                 <X className="h-4 w-4" />
-                              </Button>
-                            )}
+                              </Button>}
                           </div>
                           <p className="text-xs text-primary font-medium">
                             {progress !== undefined ? `Uploading ${progress}%` : 'New - Not yet saved'}
                           </p>
-                          {!progress && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="w-full"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleExportDrawing(fileUrl, file.name);
-                              }}
-                            >
+                          {!progress && <Button size="sm" variant="outline" className="w-full" onClick={e => {
+                      e.stopPropagation();
+                      handleExportDrawing(fileUrl, file.name);
+                    }}>
                               Export
-                            </Button>
-                          )}
+                            </Button>}
                         </CardContent>
-                      </Card>
-                    );
-                  })}
+                      </Card>;
+              })}
                   
                   {/* Existing Saved Drawings */}
-                  {existingDrawings.map((drawing) => (
-                      <Card 
-                        key={drawing.id} 
-                        className="overflow-hidden cursor-pointer hover:border-primary transition-colors"
-                        onClick={() => handleDrawingCardClick(drawing)}
-                        onMouseDown={isAdmin ? handleLongPressStart : undefined}
-                        onMouseUp={isAdmin ? handleLongPressEnd : undefined}
-                        onMouseLeave={isAdmin ? handleLongPressEnd : undefined}
-                        onTouchStart={isAdmin ? handleLongPressStart : undefined}
-                        onTouchEnd={isAdmin ? handleLongPressEnd : undefined}
-                      >
+                  {existingDrawings.map(drawing => <Card key={drawing.id} className="overflow-hidden cursor-pointer hover:border-primary transition-colors" onClick={() => handleDrawingCardClick(drawing)} onMouseDown={isAdmin ? handleLongPressStart : undefined} onMouseUp={isAdmin ? handleLongPressEnd : undefined} onMouseLeave={isAdmin ? handleLongPressEnd : undefined} onTouchStart={isAdmin ? handleLongPressStart : undefined} onTouchEnd={isAdmin ? handleLongPressEnd : undefined}>
                       <CardContent className="p-4 space-y-2">
-                        {drawing.file_type.startsWith('image/') ? (
-                          <img 
-                            src={drawing.file_url} 
-                            alt={drawing.file_name}
-                            className="w-full h-48 object-contain bg-muted rounded"
-                          />
-                        ) : drawing.file_type === 'application/pdf' && drawing.preview_url ? (
-                          <img 
-                            src={drawing.preview_url} 
-                            alt={drawing.file_name}
-                            className="w-full h-48 object-contain bg-muted rounded"
-                          />
-                        ) : (
-                          <div className="w-full h-48 flex items-center justify-center bg-muted rounded">
+                        {drawing.file_type.startsWith('image/') ? <img src={drawing.file_url} alt={drawing.file_name} className="w-full h-48 object-contain bg-muted rounded" /> : drawing.file_type === 'application/pdf' && drawing.preview_url ? <img src={drawing.preview_url} alt={drawing.file_name} className="w-full h-48 object-contain bg-muted rounded" /> : <div className="w-full h-48 flex items-center justify-center bg-muted rounded">
                             <FileText className="h-16 w-16 text-muted-foreground" />
-                          </div>
-                        )}
+                          </div>}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2 flex-1">
-                            {isAdmin && (
-                              <Checkbox
-                                checked={selectedDrawingIds.includes(drawing.id)}
-                                onCheckedChange={() => toggleSelectDrawing(drawing.id)}
-                                onClick={(e) => e.stopPropagation()}
-                                aria-label="Select drawing for deletion"
-                              />
-                            )}
+                            {isAdmin && <Checkbox checked={selectedDrawingIds.includes(drawing.id)} onCheckedChange={() => toggleSelectDrawing(drawing.id)} onClick={e => e.stopPropagation()} aria-label="Select drawing for deletion" />}
                             <p className="text-sm font-medium truncate flex-1">{drawing.file_name}</p>
                           </div>
                         </div>
-                        <Button
-                          size="sm"
-                          className="w-full"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleExportDrawing(drawing.file_url, drawing.file_name);
-                          }}
-                        >
+                        <Button size="sm" className="w-full" onClick={e => {
+                    e.stopPropagation();
+                    handleExportDrawing(drawing.file_url, drawing.file_name);
+                  }}>
                           Export
                         </Button>
                       </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
+                    </Card>)}
+                </div>}
             </div>
           </DialogContent>
         </Dialog>
 
         {/* Drawing Viewer - Fullscreen Only */}
-        {viewerOpen && viewerContent && (
-          <div className="fixed inset-0 z-[9999]">
-            <ZoomableImageViewer 
-              src={viewerContent.url} 
-              alt={viewerContent.name}
-              startInFullscreen={true}
-              onFullscreenClose={() => {
-                setViewerOpen(false);
-                // Reopen the drawings dialog
-                if (selectedHouseTypeForDrawings) {
-                  setDrawingsDialogOpen(true);
-                }
-              }}
-            />
-          </div>
-        )}
+        {viewerOpen && viewerContent && <div className="fixed inset-0 z-[9999]">
+            <ZoomableImageViewer src={viewerContent.url} alt={viewerContent.name} startInFullscreen={true} onFullscreenClose={() => {
+          setViewerOpen(false);
+          // Reopen the drawings dialog
+          if (selectedHouseTypeForDrawings) {
+            setDrawingsDialogOpen(true);
+          }
+        }} />
+          </div>}
 
         {/* Booking Dialog */}
         <Dialog open={bookingDialogOpen} onOpenChange={setBookingDialogOpen}>
-          <DialogContent className="max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="max-w-md" onOpenAutoFocus={e => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>Book Work</DialogTitle>
             </DialogHeader>
-            {selectedBookingPlot && (
-              <div className="space-y-4">
+            {selectedBookingPlot && <div className="space-y-4">
                 <div className="p-4 bg-muted rounded-lg">
                   <p className="text-sm text-muted-foreground">Plot {selectedBookingPlot.plot_number}</p>
                   <p className="font-semibold">{LIFT_LABELS[selectedBookingLiftType as keyof typeof LIFT_LABELS]}</p>
@@ -3290,62 +2762,46 @@ const SiteDetail = () => {
                     </p>
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-muted-foreground">Leaves:</span>
-                      {editingLeavesValue ? (
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={tempLeavesValue}
-                          onChange={(e) => setTempLeavesValue(e.target.value)}
-                          onBlur={() => {
-                            const val = parseFloat(tempLeavesValue);
-                            const total = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType);
-                            const alreadyPct = getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
-                            const availableMoney = total * ((100 - alreadyPct) / 100);
-                            if (!isNaN(val) && val >= 0) {
-                              const clampedLeaves = Math.min(Math.max(val, 0), availableMoney);
-                              const bookedAmount = parseFloat((availableMoney - clampedLeaves).toFixed(2));
-                              if (bookedAmount > 0) {
-                                setOverrideBookedValue(bookedAmount);
-                                const perc = Math.round((bookedAmount / total) * 100);
-                                const maxPerc = 100 - alreadyPct;
-                                setBookingPercentage(Math.min(perc, maxPerc));
-                              } else {
-                                toast.error("Enter an amount smaller than available to leave after booking");
-                              }
-                            }
-                            setEditingLeavesValue(false);
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              (e.currentTarget as HTMLInputElement).blur();
-                            }
-                          }}
-                          className="w-28 h-7 text-lg font-bold text-primary text-right"
-                          autoFocus
-                        />
-                      ) : (
-                        <button
-                          onClick={() => {
-                            const total = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType);
-                            const alreadyPct = getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
-                            const availableMoney = total * ((100 - alreadyPct) / 100);
-                            const currentBooked = overrideBookedValue ?? (total * (bookingPercentage / 100));
-                            const leaves = Math.max(availableMoney - currentBooked, 0);
-                            setTempLeavesValue(leaves.toFixed(2));
-                            setEditingLeavesValue(true);
-                          }}
-                          className="text-lg font-bold text-primary hover:text-primary/80 transition-colors cursor-pointer"
-                        >
+                      {editingLeavesValue ? <Input type="number" step="0.01" value={tempLeavesValue} onChange={e => setTempLeavesValue(e.target.value)} onBlur={() => {
+                    const val = parseFloat(tempLeavesValue);
+                    const total = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType);
+                    const alreadyPct = getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
+                    const availableMoney = total * ((100 - alreadyPct) / 100);
+                    if (!isNaN(val) && val >= 0) {
+                      const clampedLeaves = Math.min(Math.max(val, 0), availableMoney);
+                      const bookedAmount = parseFloat((availableMoney - clampedLeaves).toFixed(2));
+                      if (bookedAmount > 0) {
+                        setOverrideBookedValue(bookedAmount);
+                        const perc = Math.round(bookedAmount / total * 100);
+                        const maxPerc = 100 - alreadyPct;
+                        setBookingPercentage(Math.min(perc, maxPerc));
+                      } else {
+                        toast.error("Enter an amount smaller than available to leave after booking");
+                      }
+                    }
+                    setEditingLeavesValue(false);
+                  }} onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      (e.currentTarget as HTMLInputElement).blur();
+                    }
+                  }} className="w-28 h-7 text-lg font-bold text-primary text-right" autoFocus /> : <button onClick={() => {
+                    const total = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType);
+                    const alreadyPct = getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
+                    const availableMoney = total * ((100 - alreadyPct) / 100);
+                    const currentBooked = overrideBookedValue ?? total * (bookingPercentage / 100);
+                    const leaves = Math.max(availableMoney - currentBooked, 0);
+                    setTempLeavesValue(leaves.toFixed(2));
+                    setEditingLeavesValue(true);
+                  }} className="text-lg font-bold text-primary hover:text-primary/80 transition-colors cursor-pointer">
                           £{(() => {
-                            const total = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType);
-                            const alreadyPct = getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
-                            const availableMoney = total * ((100 - alreadyPct) / 100);
-                            const currentBooked = overrideBookedValue ?? (total * (bookingPercentage / 100));
-                            const leaves = Math.max(availableMoney - currentBooked, 0);
-                            return leaves.toFixed(2);
-                          })()}
-                        </button>
-                      )}
+                      const total = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType);
+                      const alreadyPct = getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
+                      const availableMoney = total * ((100 - alreadyPct) / 100);
+                      const currentBooked = overrideBookedValue ?? total * (bookingPercentage / 100);
+                      const leaves = Math.max(availableMoney - currentBooked, 0);
+                      return leaves.toFixed(2);
+                    })()}
+                        </button>}
                     </div>
                   </div>
                 </div>
@@ -3365,114 +2821,77 @@ const SiteDetail = () => {
 
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    {editingBookingPercentage ? (
-                      <Input
-                        type="number"
-                        value={tempBookingPercentage}
-                        onChange={(e) => setTempBookingPercentage(e.target.value)}
-                        onBlur={() => {
-                          const val = parseInt(tempBookingPercentage);
-                          const maxVal = 100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
-                          if (!isNaN(val) && val >= 1 && val <= maxVal) {
-                            setOverrideBookedValue(null);
-                            setBookingPercentage(val);
-                          }
-                          setEditingBookingPercentage(false);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            const val = parseInt(tempBookingPercentage);
-                            const maxVal = 100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
-                            if (!isNaN(val) && val >= 1 && val <= maxVal) {
-                              setOverrideBookedValue(null);
-                              setBookingPercentage(val);
-                            }
-                            setEditingBookingPercentage(false);
-                          }
-                        }}
-                        className="w-32"
-                        autoFocus={false}
-                        step="1"
-                        min="1"
-                      />
-                    ) : (
-                      <Label 
-                        className="cursor-pointer hover:text-primary transition-colors"
-                        onClick={() => {
-                          setTempBookingPercentage(bookingPercentage.toString());
-                          setEditingBookingPercentage(true);
-                        }}
-                      >
+                    {editingBookingPercentage ? <Input type="number" value={tempBookingPercentage} onChange={e => setTempBookingPercentage(e.target.value)} onBlur={() => {
+                  const val = parseInt(tempBookingPercentage);
+                  const maxVal = 100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
+                  if (!isNaN(val) && val >= 1 && val <= maxVal) {
+                    setOverrideBookedValue(null);
+                    setBookingPercentage(val);
+                  }
+                  setEditingBookingPercentage(false);
+                }} onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    const val = parseInt(tempBookingPercentage);
+                    const maxVal = 100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
+                    if (!isNaN(val) && val >= 1 && val <= maxVal) {
+                      setOverrideBookedValue(null);
+                      setBookingPercentage(val);
+                    }
+                    setEditingBookingPercentage(false);
+                  }
+                }} className="w-32" autoFocus={false} step="1" min="1" /> : <Label className="cursor-pointer hover:text-primary transition-colors" onClick={() => {
+                  setTempBookingPercentage(bookingPercentage.toString());
+                  setEditingBookingPercentage(true);
+                }}>
                         Percentage: {bookingPercentage}%
-                      </Label>
-                    )}
+                      </Label>}
                   </div>
-                  <Slider
-                    value={[bookingPercentage]}
-                    onValueChange={(value) => { setOverrideBookedValue(null); setBookingPercentage(value[0]); }}
-                    min={1}
-                    max={100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType)}
-                    step={1}
-                  />
+                  <Slider value={[bookingPercentage]} onValueChange={value => {
+                setOverrideBookedValue(null);
+                setBookingPercentage(value[0]);
+              }} min={1} max={100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType)} step={1} />
                 </div>
 
                 <div className="p-4 bg-primary/10 rounded-lg">
                   <div className="flex justify-between items-center">
                     <span className="font-medium">Booking Value:</span>
-                    {editingBookingValue ? (
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={tempBookingValue}
-                        onChange={(e) => setTempBookingValue(e.target.value)}
-                        onBlur={() => {
-                          const val = parseFloat(tempBookingValue);
-                          const totalLiftValue = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType);
-                          const alreadyPct = getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
-                          const maxValue = totalLiftValue * (100 - alreadyPct) / 100;
-                          if (!isNaN(val) && val > 0 && val <= maxValue) {
-                            setOverrideBookedValue(val);
-                            const newPerc = Math.round((val / totalLiftValue) * 100);
-                            setBookingPercentage(newPerc);
-                          } else if (val > maxValue) {
-                            toast.error(`Max available: £${maxValue.toFixed(2)}`);
-                          }
-                          setEditingBookingValue(false);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            (e.currentTarget as HTMLInputElement).blur();
-                          }
-                        }}
-                        className="w-36 h-8 text-xl font-bold text-primary text-right"
-                        autoFocus
-                      />
-                    ) : (
-                      <button
-                        className="text-xl font-bold text-primary hover:text-primary/80 transition-colors cursor-pointer"
-                        onClick={() => {
-                          const currentValue = overrideBookedValue ?? ((getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * bookingPercentage) / 100);
-                          setTempBookingValue(currentValue.toFixed(2));
-                          setEditingBookingValue(true);
-                        }}
-                      >
-                        £{overrideBookedValue?.toFixed(2) ?? ((getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * bookingPercentage) / 100).toFixed(2)}
-                      </button>
-                    )}
+                    {editingBookingValue ? <Input type="number" step="0.01" value={tempBookingValue} onChange={e => setTempBookingValue(e.target.value)} onBlur={() => {
+                  const val = parseFloat(tempBookingValue);
+                  const totalLiftValue = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType);
+                  const alreadyPct = getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
+                  const maxValue = totalLiftValue * (100 - alreadyPct) / 100;
+                  if (!isNaN(val) && val > 0 && val <= maxValue) {
+                    setOverrideBookedValue(val);
+                    const newPerc = Math.round(val / totalLiftValue * 100);
+                    setBookingPercentage(newPerc);
+                  } else if (val > maxValue) {
+                    toast.error(`Max available: £${maxValue.toFixed(2)}`);
+                  }
+                  setEditingBookingValue(false);
+                }} onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    (e.currentTarget as HTMLInputElement).blur();
+                  }
+                }} className="w-36 h-8 text-xl font-bold text-primary text-right" autoFocus /> : <button className="text-xl font-bold text-primary hover:text-primary/80 transition-colors cursor-pointer" onClick={() => {
+                  const currentValue = overrideBookedValue ?? getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * bookingPercentage / 100;
+                  setTempBookingValue(currentValue.toFixed(2));
+                  setEditingBookingValue(true);
+                }}>
+                        £{overrideBookedValue?.toFixed(2) ?? (getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * bookingPercentage / 100).toFixed(2)}
+                      </button>}
                   </div>
                 </div>
 
                 <Button onClick={handleAddToInvoice} className="w-full">
                   Add to Invoice
                 </Button>
-              </div>
-            )}
+              </div>}
           </DialogContent>
         </Dialog>
 
         {/* Invoice Dialog */}
         <Dialog open={invoiceDialogOpen} onOpenChange={setInvoiceDialogOpen}>
-          <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto" onOpenAutoFocus={e => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
@@ -3487,21 +2906,16 @@ const SiteDetail = () => {
                   <CardTitle>Items</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {invoiceItems.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-4">No items added</p>
-                  ) : (
-                    <div className="space-y-2">
+                  {invoiceItems.length === 0 ? <p className="text-center text-muted-foreground py-4">No items added</p> : <div className="space-y-2">
                       {invoiceItems.map((item, index) => {
-                        let itemLabel = LIFT_LABELS[item.liftType as keyof typeof LIFT_LABELS];
-                        if (item.garageId && item.garageLiftType) {
-                          const garage = garages.find(g => g.id === item.garageId);
-                          if (garage) {
-                            itemLabel = `${getGarageLabel(garage.garage_type)} - ${LIFT_LABELS[item.garageLiftType as keyof typeof LIFT_LABELS]}`;
-                          }
-                        }
-                        
-                        return (
-                          <div key={index} className="flex justify-between items-start p-3 bg-muted rounded-lg">
+                    let itemLabel = LIFT_LABELS[item.liftType as keyof typeof LIFT_LABELS];
+                    if (item.garageId && item.garageLiftType) {
+                      const garage = garages.find(g => g.id === item.garageId);
+                      if (garage) {
+                        itemLabel = `${getGarageLabel(garage.garage_type)} - ${LIFT_LABELS[item.garageLiftType as keyof typeof LIFT_LABELS]}`;
+                      }
+                    }
+                    return <div key={index} className="flex justify-between items-start p-3 bg-muted rounded-lg">
                             <div className="flex-1">
                               <p className="font-medium">
                                 Plot {item.plot.plot_number} - {itemLabel}
@@ -3512,17 +2926,12 @@ const SiteDetail = () => {
                             </div>
                             <div className="flex items-center gap-2">
                               <span className="font-bold text-primary">£{item.bookedValue.toFixed(2)}</span>
-                              <Button
-                                variant="ghost"
-                              size="sm"
-                              onClick={() => handleRemoveFromInvoice(index)}
-                            >
+                              <Button variant="ghost" size="sm" onClick={() => handleRemoveFromInvoice(index)}>
                               <X className="h-4 w-4" />
                             </Button>
                           </div>
-                        </div>
-                        );
-                      })}
+                        </div>;
+                  })}
                       
                       <div className="flex justify-between items-center pt-4 border-t">
                         <span className="font-semibold text-lg">Total:</span>
@@ -3530,78 +2939,46 @@ const SiteDetail = () => {
                           £{totalInvoiceValue.toFixed(2)}
                         </span>
                       </div>
-                    </div>
-                  )}
+                    </div>}
                 </CardContent>
               </Card>
 
               {/* Notes Section */}
-              {invoiceItems.length > 0 && (
-                <Card>
+              {invoiceItems.length > 0 && <Card>
                   <CardHeader>
                     <CardTitle>Notes & Additional Amount</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <textarea
-                        className="w-full min-h-[100px] p-3 rounded-md border border-input bg-background resize-y focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                        placeholder="Add any notes or comments about this invoice..."
-                        value={invoiceNotes}
-                        onChange={(e) => setInvoiceNotes(e.target.value)}
-                        maxLength={500}
-                      />
+                      <textarea className="w-full min-h-[100px] p-3 rounded-md border border-input bg-background resize-y focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2" placeholder="Add any notes or comments about this invoice..." value={invoiceNotes} onChange={e => setInvoiceNotes(e.target.value)} maxLength={500} />
                       <p className="text-xs text-muted-foreground mt-1">
                         {invoiceNotes.length}/500 characters
                       </p>
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
-                        {editingNotesAmount ? (
-                          <Input
-                            type="number"
-                            value={tempNotesAmount}
-                            onChange={(e) => setTempNotesAmount(e.target.value)}
-                            onBlur={() => {
-                              const val = parseFloat(tempNotesAmount);
-                              if (!isNaN(val) && val >= 0 && val <= 5000) {
-                                setNotesAmount(val);
-                              }
-                              setEditingNotesAmount(false);
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                const val = parseFloat(tempNotesAmount);
-                                if (!isNaN(val) && val >= 0 && val <= 5000) {
-                                  setNotesAmount(val);
-                                }
-                                setEditingNotesAmount(false);
-                              }
-                            }}
-                            className="w-40"
-                            autoFocus={false}
-                            step="10"
-                            min="0"
-                            max="5000"
-                          />
-                        ) : (
-                          <Label 
-                            className="cursor-pointer hover:text-primary transition-colors"
-                            onClick={() => {
-                              setTempNotesAmount(notesAmount.toFixed(2));
-                              setEditingNotesAmount(true);
-                            }}
-                          >
+                        {editingNotesAmount ? <Input type="number" value={tempNotesAmount} onChange={e => setTempNotesAmount(e.target.value)} onBlur={() => {
+                      const val = parseFloat(tempNotesAmount);
+                      if (!isNaN(val) && val >= 0 && val <= 5000) {
+                        setNotesAmount(val);
+                      }
+                      setEditingNotesAmount(false);
+                    }} onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        const val = parseFloat(tempNotesAmount);
+                        if (!isNaN(val) && val >= 0 && val <= 5000) {
+                          setNotesAmount(val);
+                        }
+                        setEditingNotesAmount(false);
+                      }
+                    }} className="w-40" autoFocus={false} step="10" min="0" max="5000" /> : <Label className="cursor-pointer hover:text-primary transition-colors" onClick={() => {
+                      setTempNotesAmount(notesAmount.toFixed(2));
+                      setEditingNotesAmount(true);
+                    }}>
                             Add Additional Amount: £{notesAmount.toFixed(2)}
-                          </Label>
-                        )}
+                          </Label>}
                       </div>
-                      <Slider
-                        value={[notesAmount]}
-                        onValueChange={(value) => setNotesAmount(value[0])}
-                        min={0}
-                        max={5000}
-                        step={10}
-                      />
+                      <Slider value={[notesAmount]} onValueChange={value => setNotesAmount(value[0])} min={0} max={5000} step={10} />
                       <p className="text-xs text-muted-foreground">
                         Use this slider to add extra charges like materials, travel, etc.
                       </p>
@@ -3611,112 +2988,54 @@ const SiteDetail = () => {
                     <div className="space-y-2">
                       <Label>Attach Image (Optional)</Label>
                       
-                      {!invoiceImagePreviewUrl ? (
-                        <div className="border-2 border-dashed border-muted rounded-lg p-4 hover:border-primary/50 transition-colors">
+                      {!invoiceImagePreviewUrl ? <div className="border-2 border-dashed border-muted rounded-lg p-4 hover:border-primary/50 transition-colors">
                           <label htmlFor="invoice-image-upload" className="cursor-pointer flex flex-col items-center gap-2">
                             <Upload className="h-8 w-8 text-muted-foreground" />
                             <span className="text-sm text-muted-foreground">Click to upload image</span>
                             <span className="text-xs text-muted-foreground">JPEG, PNG or WebP (max 5MB)</span>
                           </label>
-                          <input
-                            id="invoice-image-upload"
-                            type="file"
-                            accept="image/jpeg,image/jpg,image/png,image/webp"
-                            onChange={handleInvoiceImageUpload}
-                            className="hidden"
-                          />
-                        </div>
-                      ) : (
-                        <div className="relative border rounded-lg overflow-hidden">
-                          <img 
-                            src={invoiceImagePreviewUrl} 
-                            alt="Invoice attachment" 
-                            className="w-full h-auto max-h-64 object-contain bg-muted"
-                          />
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="icon"
-                            className="absolute top-2 right-2"
-                            onClick={handleRemoveInvoiceImage}
-                          >
+                          <input id="invoice-image-upload" type="file" accept="image/jpeg,image/jpg,image/png,image/webp" onChange={handleInvoiceImageUpload} className="hidden" />
+                        </div> : <div className="relative border rounded-lg overflow-hidden">
+                          <img src={invoiceImagePreviewUrl} alt="Invoice attachment" className="w-full h-auto max-h-64 object-contain bg-muted" />
+                          <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2" onClick={handleRemoveInvoiceImage}>
                             <X className="h-4 w-4" />
                           </Button>
-                        </div>
-                      )}
+                        </div>}
                     </div>
                   </CardContent>
-                </Card>
-              )}
+                </Card>}
 
               {/* Gang Division */}
-              {invoiceItems.length > 0 && (
-                <GangDivisionCard
-                  gangMembers={gangMembers}
-                  totalValue={totalInvoiceValue}
-                  totalAllocated={totalGangAllocated}
-                  remainingToAllocate={remainingToAllocate}
-                  onAddMemberClick={() => setGangDialogOpen(true)}
-                  onRemoveMember={handleRemoveGangMember}
-                  onDeletePermanently={handleDeletePermanently}
-                  onUpdateMemberAmount={handleUpdateMemberAmount}
-                  onStartEditing={handleStartEditing}
-                  onStopEditing={handleStopEditing}
-                  savedMembers={savedMembers}
-                  onAddExistingMember={handleAddExistingMember}
-                  totalValueLabel="Invoice Total"
-                />
-              )}
+              {invoiceItems.length > 0 && <GangDivisionCard gangMembers={gangMembers} totalValue={totalInvoiceValue} totalAllocated={totalGangAllocated} remainingToAllocate={remainingToAllocate} onAddMemberClick={() => setGangDialogOpen(true)} onRemoveMember={handleRemoveGangMember} onDeletePermanently={handleDeletePermanently} onUpdateMemberAmount={handleUpdateMemberAmount} onStartEditing={handleStartEditing} onStopEditing={handleStopEditing} savedMembers={savedMembers} onAddExistingMember={handleAddExistingMember} totalValueLabel="Invoice Total" />}
 
               {/* Actions */}
-              {invoiceItems.length > 0 && (
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={handleExportPDF} 
-                    variant="outline"
-                    className="flex-1"
-                  >
+              {invoiceItems.length > 0 && <div className="flex gap-2">
+                  <Button onClick={handleExportPDF} variant="outline" className="flex-1">
                     <FileText className="mr-2 h-4 w-4" />
                     Export PDF
                   </Button>
-                  <Button 
-                    onClick={handleConfirmInvoice} 
-                    className="flex-1"
-                    disabled={gangMembers.length === 0 || Math.abs(remainingToAllocate) > 0.01 || uploadingInvoiceImage}
-                  >
+                  <Button onClick={handleConfirmInvoice} className="flex-1" disabled={gangMembers.length === 0 || Math.abs(remainingToAllocate) > 0.01 || uploadingInvoiceImage}>
                     {uploadingInvoiceImage ? "Uploading..." : "Send to Admin"}
                   </Button>
-                </div>
-              )}
+                </div>}
             </div>
           </DialogContent>
         </Dialog>
 
         {/* Add Gang Member Dialog */}
         <Dialog open={gangDialogOpen} onOpenChange={setGangDialogOpen}>
-          <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent onOpenAutoFocus={e => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>Add New Gang Member</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label>Name *</Label>
-                <Input
-                  value={memberName}
-                  onChange={(e) => setMemberName(e.target.value)}
-                  placeholder="Enter name"
-                  autoFocus={false}
-                />
+                <Input value={memberName} onChange={e => setMemberName(e.target.value)} placeholder="Enter name" autoFocus={false} />
               </div>
               <div className="space-y-2">
                 <Label>Email (Optional)</Label>
-                <Input
-                  type="email"
-                  value={memberEmail}
-                  onChange={(e) => setMemberEmail(e.target.value)}
-                  placeholder="Enter email address"
-                  autoFocus={false}
-                />
+                <Input type="email" value={memberEmail} onChange={e => setMemberEmail(e.target.value)} placeholder="Enter email address" autoFocus={false} />
               </div>
               <div className="space-y-2">
                 <Label>Type *</Label>
@@ -3740,13 +3059,12 @@ const SiteDetail = () => {
 
         {/* Plot Summary Dialog */}
         <Dialog open={plotSummaryDialogOpen} onOpenChange={setPlotSummaryDialogOpen}>
-          <DialogContent className="max-w-lg max-h-[80vh]" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogContent className="max-w-lg max-h-[80vh]" onOpenAutoFocus={e => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>Plot {selectedPlotForSummary?.plot_number} Summary</DialogTitle>
             </DialogHeader>
             <div className="overflow-y-auto max-h-[calc(80vh-8rem)] pr-2">
-              {selectedPlotForSummary && (
-                <div className="space-y-4">
+              {selectedPlotForSummary && <div className="space-y-4">
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">House Type</p>
                     <p className="font-semibold text-lg">
@@ -3754,16 +3072,10 @@ const SiteDetail = () => {
                     </p>
                   </div>
 
-                  {isAdmin && (
-                    <div className="border-t pt-4">
+                  {isAdmin && <div className="border-t pt-4">
                       <p className="text-sm text-muted-foreground mb-3">Assignment History</p>
-                      {plotAssignmentHistory.length > 0 ? (
-                        <div className="space-y-2">
-                          {plotAssignmentHistory.map((history) => (
-                            <div 
-                              key={history.id} 
-                              className={`p-3 rounded-lg ${history.removed_at ? 'bg-muted/50' : 'bg-muted'}`}
-                            >
+                      {plotAssignmentHistory.length > 0 ? <div className="space-y-2">
+                          {plotAssignmentHistory.map(history => <div key={history.id} className={`p-3 rounded-lg ${history.removed_at ? 'bg-muted/50' : 'bg-muted'}`}>
                               <div className="flex items-start justify-between">
                                 <div className="flex-1">
                                   <p className="font-semibold">
@@ -3771,70 +3083,46 @@ const SiteDetail = () => {
                                   </p>
                                   <div className="mt-1 text-xs text-muted-foreground">
                                     <p>Assigned: {new Date(history.assigned_at).toLocaleDateString()}</p>
-                                    {history.removed_at && (
-                                      <p>Removed: {new Date(history.removed_at).toLocaleDateString()}</p>
-                                    )}
+                                    {history.removed_at && <p>Removed: {new Date(history.removed_at).toLocaleDateString()}</p>}
                                   </div>
                                 </div>
-                                 {!history.removed_at && (
-                                   <div className="flex items-center gap-2 ml-2">
+                                 {!history.removed_at && <div className="flex items-center gap-2 ml-2">
                                      <Badge variant="default">Current</Badge>
-                                     {isAdmin && (
-                                       <Button
-                                         variant="ghost"
-                                         size="sm"
-                                         onClick={async (e) => {
-                                           e.stopPropagation();
-                                           if (!confirm(`Remove ${history.profiles?.full_name} from this plot?`)) return;
-                                           try {
-                                             await supabase
-                                               .from("plots")
-                                               .update({ assigned_to: null })
-                                               .eq("id", selectedPlotForSummary?.id);
-                                             toast.success("Bricklayer removed");
-                                             setPlotSummaryDialogOpen(false);
-                                             fetchSiteData();
-                                           } catch (error) {
-                                             toast.error("Failed to remove bricklayer");
-                                           }
-                                         }}
-                                         className="h-6 w-6 p-0"
-                                       >
+                                     {isAdmin && <Button variant="ghost" size="sm" onClick={async e => {
+                          e.stopPropagation();
+                          if (!confirm(`Remove ${history.profiles?.full_name} from this plot?`)) return;
+                          try {
+                            await supabase.from("plots").update({
+                              assigned_to: null
+                            }).eq("id", selectedPlotForSummary?.id);
+                            toast.success("Bricklayer removed");
+                            setPlotSummaryDialogOpen(false);
+                            fetchSiteData();
+                          } catch (error) {
+                            toast.error("Failed to remove bricklayer");
+                          }
+                        }} className="h-6 w-6 p-0">
                                          <X className="h-4 w-4" />
-                                       </Button>
-                                     )}
-                                   </div>
-                                 )}
-                                {history.removed_at && (
-                                  <Badge variant="secondary" className="ml-2">Past</Badge>
-                                )}
+                                       </Button>}
+                                   </div>}
+                                {history.removed_at && <Badge variant="secondary" className="ml-2">Past</Badge>}
                               </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">No bricklayer has been assigned to this plot yet</p>
-                      )}
-                    </div>
-                  )}
+                            </div>)}
+                        </div> : <p className="text-sm text-muted-foreground">No bricklayer has been assigned to this plot yet</p>}
+                    </div>}
 
-                  {selectedPlotForSummary.house_types && (
-                    <>
+                  {selectedPlotForSummary.house_types && <>
                       <div className="border-t pt-4">
                         <p className="font-semibold mb-3">Lift Values</p>
                         <div className="space-y-2">
-                          {Object.keys(LIFT_LABELS).map((liftType) => {
-                            const liftValue = selectedPlotForSummary.house_types!.lift_values.find(
-                              lv => lv.lift_type === liftType
-                            );
-                            const value = liftValue ? liftValue.value : 0;
-                            return (
-                              <div key={liftType} className="flex justify-between items-center p-2 bg-muted rounded">
+                          {Object.keys(LIFT_LABELS).map(liftType => {
+                      const liftValue = selectedPlotForSummary.house_types!.lift_values.find(lv => lv.lift_type === liftType);
+                      const value = liftValue ? liftValue.value : 0;
+                      return <div key={liftType} className="flex justify-between items-center p-2 bg-muted rounded">
                                 <LiftTypeLabel liftType={liftType} className="text-sm" />
                                 <span className="font-medium">£{value.toFixed(2)}</span>
-                              </div>
-                            );
-                          })}
+                              </div>;
+                    })}
                         </div>
                       </div>
 
@@ -3846,99 +3134,71 @@ const SiteDetail = () => {
                           </span>
                         </div>
                       </div>
-                    </>
-                  )}
+                    </>}
                   
                   {/* Garage Prices Section */}
                   {(() => {
-                    const plotGarage = garages.find(g => g.plot_id === selectedPlotForSummary?.id);
-                    const garageTypeConfig = plotGarage?.garage_type_id 
-                      ? garageTypes.find(gt => gt.id === plotGarage.garage_type_id)
-                      : null;
-                    
-                    if (garageTypeConfig) {
-                      return (
-                        <div className="border-t pt-4">
+                const plotGarage = garages.find(g => g.plot_id === selectedPlotForSummary?.id);
+                const garageTypeConfig = plotGarage?.garage_type_id ? garageTypes.find(gt => gt.id === plotGarage.garage_type_id) : null;
+                if (garageTypeConfig) {
+                  return <div className="border-t pt-4">
                           <p className="font-semibold mb-3">Garage Prices - {getGarageLabel(garageTypeConfig.garage_type)}</p>
                           <div className="space-y-2">
-                            {[
-                              { label: "Lift 1", value: garageTypeConfig.lift_1_value },
-                              { label: "Lift 2", value: garageTypeConfig.lift_2_value },
-                              { label: "Cut-Ups", value: garageTypeConfig.cut_ups_value },
-                              { label: "Snag/Patch Int", value: garageTypeConfig.snag_patch_int_value },
-                              { label: "Snag/Patch Ext", value: garageTypeConfig.snag_patch_ext_value },
-                            ].map(({ label, value }) => (
-                              <div key={label} className="flex justify-between items-center p-2 bg-muted rounded">
+                            {[{
+                        label: "Lift 1",
+                        value: garageTypeConfig.lift_1_value
+                      }, {
+                        label: "Lift 2",
+                        value: garageTypeConfig.lift_2_value
+                      }, {
+                        label: "Cut-Ups",
+                        value: garageTypeConfig.cut_ups_value
+                      }, {
+                        label: "Snag/Patch Int",
+                        value: garageTypeConfig.snag_patch_int_value
+                      }, {
+                        label: "Snag/Patch Ext",
+                        value: garageTypeConfig.snag_patch_ext_value
+                      }].map(({
+                        label,
+                        value
+                      }) => <div key={label} className="flex justify-between items-center p-2 bg-muted rounded">
                                 <span className="text-sm">{label}</span>
                                 <span className="font-medium">£{value.toFixed(2)}</span>
-                              </div>
-                            ))}
+                              </div>)}
                           </div>
-                        </div>
-                      );
-                    }
-                    return null;
-                  })()}
-                </div>
-              )}
+                        </div>;
+                }
+                return null;
+              })()}
+                </div>}
             </div>
           </DialogContent>
         </Dialog>
 
         {/* Back to Top Button */}
-        {showBackToTop && (
-          <Button
-            onClick={scrollToTop}
-            size="icon"
-            className="fixed bottom-6 right-6 z-50 rounded-full shadow-lg"
-          >
+        {showBackToTop && <Button onClick={scrollToTop} size="icon" className="fixed bottom-6 right-6 z-50 rounded-full shadow-lg">
             <ArrowUp className="h-5 w-5" />
-          </Button>
-        )}
+          </Button>}
 
         {/* Non-Plot Invoice Dialog */}
-        <NonPlotInvoiceDialog
-          open={nonPlotInvoiceDialogOpen}
-          onOpenChange={setNonPlotInvoiceDialogOpen}
-        />
+        <NonPlotInvoiceDialog open={nonPlotInvoiceDialogOpen} onOpenChange={setNonPlotInvoiceDialogOpen} />
 
         {/* Plot Settings Dialog */}
-        <PlotSettingsDialog
-          open={plotSettingsDialogOpen}
-          onOpenChange={setPlotSettingsDialogOpen}
-          plotId={selectedPlotForSettings?.id || ""}
-          plotNumber={selectedPlotForSettings?.plot_number || 0}
-          siteId={id || ""}
-          currentlyAssignedTo={selectedPlotForSettings?.assigned_to || null}
-          existingGarage={selectedPlotForSettings ? garages.find(g => g.plot_id === selectedPlotForSettings.id) || null : null}
-          onSuccess={fetchSiteData}
-        />
+        <PlotSettingsDialog open={plotSettingsDialogOpen} onOpenChange={setPlotSettingsDialogOpen} plotId={selectedPlotForSettings?.id || ""} plotNumber={selectedPlotForSettings?.plot_number || 0} siteId={id || ""} currentlyAssignedTo={selectedPlotForSettings?.assigned_to || null} existingGarage={selectedPlotForSettings ? garages.find(g => g.plot_id === selectedPlotForSettings.id) || null : null} onSuccess={fetchSiteData} />
 
         {/* Add Type Selection Dialog */}
-        <AddTypeSelectionDialog
-          open={typeSelectionDialogOpen}
-          onOpenChange={setTypeSelectionDialogOpen}
-          onSelectHouseType={() => openHouseTypeDialog()}
-          onSelectGarageType={() => {
-            setEditingGarageType(null);
-            setAddGarageTypeDialogOpen(true);
-          }}
-        />
+        <AddTypeSelectionDialog open={typeSelectionDialogOpen} onOpenChange={setTypeSelectionDialogOpen} onSelectHouseType={() => openHouseTypeDialog()} onSelectGarageType={() => {
+        setEditingGarageType(null);
+        setAddGarageTypeDialogOpen(true);
+      }} />
 
         {/* Add Garage Type Dialog */}
-        <AddGarageTypeDialog
-          open={addGarageTypeDialogOpen}
-          onOpenChange={(open) => {
-            setAddGarageTypeDialogOpen(open);
-            if (!open) setEditingGarageType(null);
-          }}
-          siteId={id || ""}
-          existingGarageType={editingGarageType}
-          onSuccess={fetchSiteData}
-        />
+        <AddGarageTypeDialog open={addGarageTypeDialogOpen} onOpenChange={open => {
+        setAddGarageTypeDialogOpen(open);
+        if (!open) setEditingGarageType(null);
+      }} siteId={id || ""} existingGarageType={editingGarageType} onSuccess={fetchSiteData} />
       </main>
-    </div>
-  );
+    </div>;
 };
-
 export default SiteDetail;
