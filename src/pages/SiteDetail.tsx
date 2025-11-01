@@ -2630,7 +2630,7 @@ const SiteDetail = () => {
                         {isAdmin && (
                           <td className="p-2 text-center">
                             <Button
-                              size="sm"
+                              size="icon"
                               variant="outline"
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -2638,8 +2638,7 @@ const SiteDetail = () => {
                                 setGarageDialogOpen(true);
                               }}
                             >
-                              <Settings className="h-4 w-4 mr-1" />
-                              <span className="text-xs">Plot Settings</span>
+                              <Settings className="h-4 w-4" />
                             </Button>
                           </td>
                         )}
