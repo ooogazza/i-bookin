@@ -1,6 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Building2, Car } from "lucide-react";
+import { Home } from "lucide-react";
+import garageSingleIcon from "@/assets/garage-single.png";
 
 interface AddTypeSelectionDialogProps {
   open: boolean;
@@ -30,7 +31,7 @@ export function AddTypeSelectionDialog({
             className="w-full h-20 text-lg justify-start gap-4"
             variant="outline"
           >
-            <Building2 className="h-8 w-8" />
+            <Home className="h-8 w-8" />
             Add House Type
           </Button>
           <Button
@@ -41,7 +42,7 @@ export function AddTypeSelectionDialog({
             className="w-full h-20 text-lg justify-start gap-4"
             variant="outline"
           >
-            <Car className="h-8 w-8" />
+            <img src={garageSingleIcon} alt="Garage" className="h-8 w-8 object-contain" />
             Add Garage Type
           </Button>
         </div>
