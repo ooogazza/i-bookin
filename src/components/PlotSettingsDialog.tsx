@@ -162,12 +162,11 @@ export function PlotSettingsDialog({
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Assign Bricklayer</Label>
-            <Select value={selectedBricklayer} onValueChange={setSelectedBricklayer}>
+            <Select value={selectedBricklayer || undefined} onValueChange={(val) => setSelectedBricklayer(val || "")}>
               <SelectTrigger>
                 <SelectValue placeholder="No assignment" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No assignment</SelectItem>
                 {bricklayers.map((user) => (
                   <SelectItem key={user.id} value={user.id}>
                     {user.full_name}
@@ -175,16 +174,20 @@ export function PlotSettingsDialog({
                 ))}
               </SelectContent>
             </Select>
+            {selectedBricklayer && (
+              <Button variant="ghost" size="sm" onClick={() => setSelectedBricklayer("")}>
+                Clear assignment
+              </Button>
+            )}
           </div>
 
           <div className="space-y-2">
             <Label>Assign Garage</Label>
-            <Select value={selectedGarageType} onValueChange={setSelectedGarageType}>
+            <Select value={selectedGarageType || undefined} onValueChange={(val) => setSelectedGarageType(val || "")}>
               <SelectTrigger>
                 <SelectValue placeholder="No garage" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No garage</SelectItem>
                 {garageTypes.map((type) => (
                   <SelectItem key={type.id} value={type.id}>
                     {type.garage_type === "single" ? "Single Garage" : "Double Garage"}
@@ -192,6 +195,11 @@ export function PlotSettingsDialog({
                 ))}
               </SelectContent>
             </Select>
+            {selectedGarageType && (
+              <Button variant="ghost" size="sm" onClick={() => setSelectedGarageType("")}>
+                Clear garage
+              </Button>
+            )}
           </div>
 
           <div className="flex gap-2 pt-2">
