@@ -1,6 +1,9 @@
+import garageSingleIcon from "@/assets/garage-single.png";
+import garageDoubleIcon from "@/assets/garage-double.png";
+
 export const GARAGE_TYPES = [
-  { value: "single", label: "Single Garage", icon: "🚗" },
-  { value: "double", label: "Double Garage", icon: "🚙🚗" },
+  { value: "single", label: "Single Garage", icon: garageSingleIcon },
+  { value: "double", label: "Double Garage", icon: garageDoubleIcon },
 ] as const;
 
 export const GARAGE_LIFT_TYPES = {
@@ -18,5 +21,5 @@ export const getGarageLabel = (type: string): string => {
 
 export const getGarageIcon = (type: string): string => {
   const garage = GARAGE_TYPES.find((g) => g.value === type);
-  return garage ? garage.icon : "🚗";
+  return garage ? garage.icon : garageSingleIcon;
 };

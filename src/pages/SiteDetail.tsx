@@ -112,10 +112,12 @@ interface AvailableUser {
 interface InvoiceItem {
   plot: Plot;
   liftType: string;
-  liftValueId: string;
+  liftValueId?: string;
   liftValue: number;
   percentage: number;
   bookedValue: number;
+  garageId?: string;
+  garageLiftType?: string;
 }
 
 interface GangMember {
@@ -1125,36 +1127,109 @@ const SiteDetail = () => {
     setBookingDialogOpen(true);
   };
 
-  const handleAddToInvoice = () => {
-    if (!selectedBookingPlot || !selectedBookingLiftType) return;
+  const handleGarageCellClick = (plot: Plot, garage: Garage, liftType: string) => {
+    // Map lift_1, lift_2, cut_ups to their values
+    let garageValue = 0;
+    if (liftType === 'lift_1') garageValue = garage.lift_1_value;
+    else if (liftType === 'lift_2') garageValue = garage.lift_2_value;
+    else if (liftType === 'cut_ups') garageValue = garage.cut_ups_value;
 
-    const totalBooked = getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
-    const remaining = 100 - totalBooked;
-
-    if (bookingPercentage > remaining) {
-      toast.error(`Only ${remaining}% remaining for this lift`);
+    if (garageValue === 0) {
+      toast.error("No price set for this garage lift");
       return;
     }
 
-    const liftValue = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType);
-    const liftValueId = selectedBookingPlot.house_types!.lift_values.find(
-      lv => lv.lift_type === selectedBookingLiftType
-    )?.id || "";
+    // Calculate total booked for this specific garage lift
+    const liftBookings = bookings.filter(b => b.garage_id === garage.id && b.garage_lift_type === liftType);
+    const totalBooked = liftBookings.reduce((sum, b) => sum + b.percentage, 0);
 
-    const bookedValue = (liftValue * bookingPercentage) / 100;
+    // Store garage info in states (reuse existing booking dialog states)
+    setSelectedBookingPlot(plot);
+    setSelectedBookingLiftType(`garage_${garage.id}_${liftType}`); // Encode garage info
+    const remaining = 100 - totalBooked;
+    setBookingPercentage(Math.min(100, remaining));
+    setBookingDialogOpen(true);
+  };
 
-    const newItem: InvoiceItem = {
-      plot: selectedBookingPlot,
-      liftType: selectedBookingLiftType,
-      liftValueId,
-      liftValue,
-      percentage: bookingPercentage,
-      bookedValue
-    };
+  const handleAddToInvoice = () => {
+    if (!selectedBookingPlot || !selectedBookingLiftType) return;
 
-    setInvoiceItems([...invoiceItems, newItem]);
-    toast.success("Added to invoice");
-    setBookingDialogOpen(false);
+    // Check if this is a garage booking
+    const isGarageBooking = selectedBookingLiftType.startsWith('garage_');
+    
+    if (isGarageBooking) {
+      // Parse garage info from encoded lift type
+      const parts = selectedBookingLiftType.split('_');
+      const garageId = parts[1];
+      const garageLiftType = parts[2];
+      
+      const garage = garages.find(g => g.id === garageId);
+      if (!garage) {
+        toast.error("Garage not found");
+        return;
+      }
+
+      // Get garage value
+      let garageValue = 0;
+      if (garageLiftType === 'lift_1') garageValue = garage.lift_1_value;
+      else if (garageLiftType === 'lift_2') garageValue = garage.lift_2_value;
+      else if (garageLiftType === 'cut_ups') garageValue = garage.cut_ups_value;
+
+      // Check remaining percentage
+      const liftBookings = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === garageLiftType);
+      const totalBooked = liftBookings.reduce((sum, b) => sum + b.percentage, 0);
+      const remaining = 100 - totalBooked;
+
+      if (bookingPercentage > remaining) {
+        toast.error(`Only ${remaining}% remaining for this garage lift`);
+        return;
+      }
+
+      const bookedValue = (garageValue * bookingPercentage) / 100;
+
+      const newItem: InvoiceItem = {
+        plot: selectedBookingPlot,
+        liftType: garageLiftType,
+        liftValue: garageValue,
+        percentage: bookingPercentage,
+        bookedValue,
+        garageId,
+        garageLiftType
+      };
+
+      setInvoiceItems([...invoiceItems, newItem]);
+      toast.success("Added to invoice");
+      setBookingDialogOpen(false);
+    } else {
+      // Regular plot lift booking
+      const totalBooked = getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
+      const remaining = 100 - totalBooked;
+
+      if (bookingPercentage > remaining) {
+        toast.error(`Only ${remaining}% remaining for this lift`);
+        return;
+      }
+
+      const liftValue = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType);
+      const liftValueId = selectedBookingPlot.house_types!.lift_values.find(
+        lv => lv.lift_type === selectedBookingLiftType
+      )?.id || "";
+
+      const bookedValue = (liftValue * bookingPercentage) / 100;
+
+      const newItem: InvoiceItem = {
+        plot: selectedBookingPlot,
+        liftType: selectedBookingLiftType,
+        liftValueId,
+        liftValue,
+        percentage: bookingPercentage,
+        bookedValue
+      };
+
+      setInvoiceItems([...invoiceItems, newItem]);
+      toast.success("Added to invoice");
+      setBookingDialogOpen(false);
+    }
   };
 
   const handleRemoveFromInvoice = (index: number) => {
@@ -1753,7 +1828,14 @@ const SiteDetail = () => {
           doc.addPage();
           yPos = 20;
         }
-        const text = `Plot ${item.plot.plot_number} - ${LIFT_LABELS[item.liftType as keyof typeof LIFT_LABELS]}: ${item.percentage}% = £${item.bookedValue.toFixed(2)}`;
+        let itemLabel = LIFT_LABELS[item.liftType as keyof typeof LIFT_LABELS];
+        if (item.garageId && item.garageLiftType) {
+          const garage = garages.find(g => g.id === item.garageId);
+          if (garage) {
+            itemLabel = `${getGarageLabel(garage.garage_type)} - ${LIFT_LABELS[item.garageLiftType as keyof typeof LIFT_LABELS]}`;
+          }
+        }
+        const text = `Plot ${item.plot.plot_number} - ${itemLabel}: ${item.percentage}% = £${item.bookedValue.toFixed(2)}`;
         doc.text(text, 15, yPos);
         yPos += 6;
       });
@@ -2012,7 +2094,14 @@ const SiteDetail = () => {
         doc.addPage();
         yPos = 20;
       }
-      const text = `Plot ${item.plot.plot_number} - ${LIFT_LABELS[item.liftType as keyof typeof LIFT_LABELS]}: ${item.percentage}% = £${item.bookedValue.toFixed(2)}`;
+      let itemLabel = LIFT_LABELS[item.liftType as keyof typeof LIFT_LABELS];
+      if (item.garageId && item.garageLiftType) {
+        const garage = garages.find(g => g.id === item.garageId);
+        if (garage) {
+          itemLabel = `${getGarageLabel(garage.garage_type)} - ${LIFT_LABELS[item.garageLiftType as keyof typeof LIFT_LABELS]}`;
+        }
+      }
+      const text = `Plot ${item.plot.plot_number} - ${itemLabel}: ${item.percentage}% = £${item.bookedValue.toFixed(2)}`;
       doc.text(text, 15, yPos);
       yPos += 6;
     });
@@ -2459,7 +2548,6 @@ const SiteDetail = () => {
                 <tr className="border-b bg-muted/50">
                   <th className="p-2 text-left font-medium w-20 sticky left-0 bg-muted z-20 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Plot</th>
                   <th className="p-2 text-left font-medium w-32">House Type</th>
-                  <th className="p-2 text-center font-medium whitespace-nowrap text-sm min-w-[100px]">Garage</th>
                   {Object.keys(LIFT_LABELS).map(liftType => (
                     <th key={liftType} className="p-2 text-center font-medium whitespace-nowrap text-sm min-w-[80px]">
                       <LiftTypeLabel liftType={liftType} />
@@ -2471,134 +2559,153 @@ const SiteDetail = () => {
               <tbody>
                 {plots.map(plot => {
                   const isHighlighted = highlightedPlotId === plot.id || highlightedPlots.includes(plot.plot_number);
+                  const garage = garages.find(g => g.plot_id === plot.id);
+                  
+                  // Helper function to get garage booking percentage for a specific lift type
+                  const getGarageLiftBooked = (garageId: string, liftType: string) => {
+                    const liftBookings = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === liftType);
+                    return liftBookings.reduce((sum, b) => sum + b.percentage, 0);
+                  };
+                  
+                  // Helper function to check if garage lift is pending in invoice
+                  const isGarageLiftPendingInInvoice = (garageId: string, liftType: string) => {
+                    return invoiceItems.some(
+                      item => item.garageId === garageId && item.garageLiftType === liftType
+                    );
+                  };
+                  
                   return (
-                    <tr 
-                      key={plot.id} 
-                      className={`border-b transition-colors ${isHighlighted ? 'bg-primary/20' : ''}`}
-                      data-plot-number={plot.plot_number}
-                      data-plot-id={plot.id}
-                      onClick={() => {
-                        if (isHighlighted) {
-                          setHighlightedPlotId(null);
-                          searchParams.delete('plot');
-                          setSearchParams(searchParams);
-                        }
-                      }}
-                    >
-                      <td 
-                        className={`p-2 font-medium cursor-pointer hover:bg-primary/10 sticky left-0 z-20 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${isHighlighted ? 'bg-primary/20' : 'bg-card'}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handlePlotNumberClick(plot);
+                    <React.Fragment key={plot.id}>
+                      {/* Plot Row */}
+                      <tr 
+                        className={`border-b transition-colors ${isHighlighted ? 'bg-primary/20' : ''}`}
+                        data-plot-number={plot.plot_number}
+                        data-plot-id={plot.id}
+                        onClick={() => {
+                          if (isHighlighted) {
+                            setHighlightedPlotId(null);
+                            searchParams.delete('plot');
+                            setSearchParams(searchParams);
+                          }
                         }}
                       >
-                        {plot.plot_number}
-                      </td>
-                    <td 
-                      className={`p-2 ${(isAdmin || plot.house_types) ? 'cursor-pointer hover:bg-primary/10' : ''}`}
-                      onClick={() => {
-                        if (isAdmin) {
-                          handlePlotClick(plot);
-                        } else if (plot.house_types) {
-                          openDrawingsDialog(plot.house_types);
-                        }
-                      }}
-                    >
-                      {plot.house_types?.name || "-"}
-                    </td>
-                    <td 
-                      className={`p-2 text-center ${isAdmin ? 'cursor-pointer hover:bg-primary/10' : ''}`}
-                      onClick={() => {
-                        if (isAdmin) {
-                          setSelectedPlotForGarage(plot);
-                          setGarageDialogOpen(true);
-                        }
-                      }}
-                    >
-                      {(() => {
-                        const garage = garages.find(g => g.plot_id === plot.id);
-                        
-                        if (!garage) {
-                          return isAdmin ? (
-                            <span className="text-muted-foreground text-sm">+ Add</span>
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          );
-                        }
-                        
-                        // Calculate total booking across all garage lift types
-                        const lift1Bookings = bookings.filter(b => b.garage_id === garage.id && b.garage_lift_type === 'lift_1');
-                        const lift2Bookings = bookings.filter(b => b.garage_id === garage.id && b.garage_lift_type === 'lift_2');
-                        const cutUpsBookings = bookings.filter(b => b.garage_id === garage.id && b.garage_lift_type === 'cut_ups');
-                        
-                        const lift1Total = lift1Bookings.reduce((sum, b) => sum + b.percentage, 0);
-                        const lift2Total = lift2Bookings.reduce((sum, b) => sum + b.percentage, 0);
-                        const cutUpsTotal = cutUpsBookings.reduce((sum, b) => sum + b.percentage, 0);
-                        
-                        // Count how many lifts have any work
-                        let totalLifts = 0;
-                        let completedLifts = 0;
-                        
-                        if (garage.lift_1_value > 0) {
-                          totalLifts++;
-                          if (lift1Total === 100) completedLifts++;
-                        }
-                        if (garage.lift_2_value > 0) {
-                          totalLifts++;
-                          if (lift2Total === 100) completedLifts++;
-                        }
-                        if (garage.cut_ups_value > 0) {
-                          totalLifts++;
-                          if (cutUpsTotal === 100) completedLifts++;
-                        }
-                        
-                        const allComplete = totalLifts > 0 && completedLifts === totalLifts;
-                        const someBooked = lift1Total > 0 || lift2Total > 0 || cutUpsTotal > 0;
-                        
-                        return (
-                          <div className="flex flex-col items-center gap-1">
-                            <div className="text-lg">{getGarageIcon(garage.garage_type)}</div>
-                            <div className="text-xs text-muted-foreground">{getGarageLabel(garage.garage_type)}</div>
-                            <div className={`text-sm font-bold ${allComplete ? 'text-green-600' : someBooked ? 'text-yellow-600' : 'text-red-600'}`}>
-                              {completedLifts}/{totalLifts}
-                            </div>
-                          </div>
-                        );
-                      })()}
-                    </td>
-                    {Object.keys(LIFT_LABELS).map(liftType => {
-                      const totalBooked = getTotalBooked(plot, liftType);
-                      const isPending = isPendingInInvoice(plot, liftType);
-                      
-                      return (
                         <td 
-                          key={liftType}
-                          data-lift-type={liftType}
-                          className={`p-4 text-center transition-all ${getCellColor(totalBooked, isPending)}`}
-                          onClick={() => handleLiftCellClick(plot, liftType)}
-                        >
-                          <div className="flex items-center justify-center min-h-[50px]">
-                            <span className="text-xl font-bold text-foreground">{totalBooked}%</span>
-                          </div>
-                        </td>
-                      );
-                    })}
-                    {isAdmin && (
-                      <td className="p-2 text-center">
-                        <Button
-                          size="sm"
-                          variant="outline"
+                          className={`p-2 font-medium cursor-pointer hover:bg-primary/10 sticky left-0 z-20 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${isHighlighted ? 'bg-primary/20' : 'bg-card'}`}
                           onClick={(e) => {
                             e.stopPropagation();
-                            setSelectedPlot(plot);
-                            setUserAssignDialogOpen(true);
+                            handlePlotNumberClick(plot);
                           }}
                         >
-                          <Settings className="h-4 w-4" />
-                        </Button>
-                       </td>
-                     )}
-                   </tr>
+                          {plot.plot_number}
+                        </td>
+                        <td 
+                          className={`p-2 ${(isAdmin || plot.house_types) ? 'cursor-pointer hover:bg-primary/10' : ''}`}
+                          onClick={() => {
+                            if (isAdmin) {
+                              handlePlotClick(plot);
+                            } else if (plot.house_types) {
+                              openDrawingsDialog(plot.house_types);
+                            }
+                          }}
+                        >
+                          {plot.house_types?.name || "-"}
+                        </td>
+                        {Object.keys(LIFT_LABELS).map(liftType => {
+                          const totalBooked = getTotalBooked(plot, liftType);
+                          const isPending = isPendingInInvoice(plot, liftType);
+                          
+                          return (
+                            <td 
+                              key={liftType}
+                              data-lift-type={liftType}
+                              className={`p-4 text-center transition-all ${getCellColor(totalBooked, isPending)}`}
+                              onClick={() => handleLiftCellClick(plot, liftType)}
+                            >
+                              <div className="flex items-center justify-center min-h-[50px]">
+                                <span className="text-xl font-bold text-foreground">{totalBooked}%</span>
+                              </div>
+                            </td>
+                          );
+                        })}
+                        {isAdmin && (
+                          <td className="p-2 text-center">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedPlotForGarage(plot);
+                                setGarageDialogOpen(true);
+                              }}
+                            >
+                              <Settings className="h-4 w-4 mr-1" />
+                              <span className="text-xs">Plot Settings</span>
+                            </Button>
+                          </td>
+                        )}
+                      </tr>
+                      
+                      {/* Garage Row (if exists) */}
+                      {garage && (
+                        <tr className={`border-b transition-colors bg-muted/30 ${isHighlighted ? 'bg-primary/10' : ''}`}>
+                          <td 
+                            className={`p-2 sticky left-0 z-20 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${isHighlighted ? 'bg-primary/10' : 'bg-muted/30'}`}
+                          >
+                            <div className="flex items-center justify-center">
+                              <img src={getGarageIcon(garage.garage_type)} alt={garage.garage_type} className="w-6 h-6" />
+                            </div>
+                          </td>
+                          <td className="p-2 text-sm text-muted-foreground">
+                            {getGarageLabel(garage.garage_type)}
+                          </td>
+                          {Object.entries(LIFT_LABELS).map(([liftType]) => {
+                            // Map lift types to garage columns
+                            let garageValue = 0;
+                            let garageLiftType = '';
+                            
+                            if (liftType === 'lift_1') {
+                              garageValue = garage.lift_1_value;
+                              garageLiftType = 'lift_1';
+                            } else if (liftType === 'lift_2') {
+                              garageValue = garage.lift_2_value;
+                              garageLiftType = 'lift_2';
+                            } else if (liftType === 'cut_ups') {
+                              garageValue = garage.cut_ups_value;
+                              garageLiftType = 'cut_ups';
+                            }
+                            
+                            const totalBooked = garageValue > 0 ? getGarageLiftBooked(garage.id, garageLiftType) : 0;
+                            const isPending = garageValue > 0 ? isGarageLiftPendingInInvoice(garage.id, garageLiftType) : false;
+                            
+                            return (
+                              <td 
+                                key={liftType}
+                                className={`p-4 text-center transition-all ${garageValue > 0 ? getCellColor(totalBooked, isPending) : 'bg-muted/50'}`}
+                                onClick={() => {
+                                  if (garageValue > 0) {
+                                    handleGarageCellClick(plot, garage, garageLiftType);
+                                  }
+                                }}
+                              >
+                                {garageValue > 0 ? (
+                                  <div className="flex items-center justify-center min-h-[50px]">
+                                    <span className="text-xl font-bold text-foreground">{totalBooked}%</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center justify-center min-h-[50px]">
+                                    <span className="text-sm text-muted-foreground">-</span>
+                                  </div>
+                                )}
+                              </td>
+                            );
+                          })}
+                          {isAdmin && (
+                            <td className="p-2 text-center">
+                            </td>
+                          )}
+                        </tr>
+                      )}
+                    </React.Fragment>
                   );
                 })}
               </tbody>
@@ -3308,20 +3415,29 @@ const SiteDetail = () => {
                     <p className="text-center text-muted-foreground py-4">No items added</p>
                   ) : (
                     <div className="space-y-2">
-                      {invoiceItems.map((item, index) => (
-                        <div key={index} className="flex justify-between items-start p-3 bg-muted rounded-lg">
-                          <div className="flex-1">
-                            <p className="font-medium">
-                              Plot {item.plot.plot_number} - {LIFT_LABELS[item.liftType as keyof typeof LIFT_LABELS]}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {item.percentage}% of £{item.liftValue.toFixed(2)}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-primary">£{item.bookedValue.toFixed(2)}</span>
-                            <Button
-                              variant="ghost"
+                      {invoiceItems.map((item, index) => {
+                        let itemLabel = LIFT_LABELS[item.liftType as keyof typeof LIFT_LABELS];
+                        if (item.garageId && item.garageLiftType) {
+                          const garage = garages.find(g => g.id === item.garageId);
+                          if (garage) {
+                            itemLabel = `${getGarageLabel(garage.garage_type)} - ${LIFT_LABELS[item.garageLiftType as keyof typeof LIFT_LABELS]}`;
+                          }
+                        }
+                        
+                        return (
+                          <div key={index} className="flex justify-between items-start p-3 bg-muted rounded-lg">
+                            <div className="flex-1">
+                              <p className="font-medium">
+                                Plot {item.plot.plot_number} - {itemLabel}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {item.percentage}% of £{item.liftValue.toFixed(2)}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-primary">£{item.bookedValue.toFixed(2)}</span>
+                              <Button
+                                variant="ghost"
                               size="sm"
                               onClick={() => handleRemoveFromInvoice(index)}
                             >
@@ -3329,7 +3445,8 @@ const SiteDetail = () => {
                             </Button>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                       
                       <div className="flex justify-between items-center pt-4 border-t">
                         <span className="font-semibold text-lg">Total:</span>
