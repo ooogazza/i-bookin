@@ -260,7 +260,7 @@ const SiteDetail = () => {
   });
   useEffect(() => {
     const handleScroll = () => {
-      const shouldShow = window.scrollY > 300;
+      const shouldShow = window.scrollY > 600;
       setShowBackToTop(shouldShow);
       setShowStickyHeader(shouldShow);
     };
@@ -2381,7 +2381,7 @@ const SiteDetail = () => {
                           e.stopPropagation();
                           handlePlotNumberClick(plot);
                         }}>
-                            <div className="flex items-center justify-center">
+                            <div className="flex items-center justify-center min-h-[50px]">
                               <img src={getGarageIcon(garageTypeConfig?.garage_type || garage.garage_type)} alt={garage.garage_type} className="w-8 h-8 object-contain" />
                             </div>
                           </td>
@@ -3141,31 +3141,42 @@ const SiteDetail = () => {
                 const plotGarage = garages.find(g => g.plot_id === selectedPlotForSummary?.id);
                 const garageTypeConfig = plotGarage?.garage_type_id ? garageTypes.find(gt => gt.id === plotGarage.garage_type_id) : null;
                 if (garageTypeConfig) {
+                  const garagePrices = [{
+                    label: "Lift 1",
+                    value: garageTypeConfig.lift_1_value
+                  }, {
+                    label: "Lift 2",
+                    value: garageTypeConfig.lift_2_value
+                  }, {
+                    label: "Cut-Ups",
+                    value: garageTypeConfig.cut_ups_value
+                  }, {
+                    label: "Snag/Patch Int",
+                    value: garageTypeConfig.snag_patch_int_value
+                  }, {
+                    label: "Snag/Patch Ext",
+                    value: garageTypeConfig.snag_patch_ext_value
+                  }];
+                  const garageTotal = garagePrices.reduce((sum, item) => sum + item.value, 0);
+                  
                   return <div className="border-t pt-4">
                           <p className="font-semibold mb-3">Garage Prices - {getGarageLabel(garageTypeConfig.garage_type)}</p>
                           <div className="space-y-2">
-                            {[{
-                        label: "Lift 1",
-                        value: garageTypeConfig.lift_1_value
-                      }, {
-                        label: "Lift 2",
-                        value: garageTypeConfig.lift_2_value
-                      }, {
-                        label: "Cut-Ups",
-                        value: garageTypeConfig.cut_ups_value
-                      }, {
-                        label: "Snag/Patch Int",
-                        value: garageTypeConfig.snag_patch_int_value
-                      }, {
-                        label: "Snag/Patch Ext",
-                        value: garageTypeConfig.snag_patch_ext_value
-                      }].map(({
+                            {garagePrices.map(({
                         label,
                         value
                       }) => <div key={label} className="flex justify-between items-center p-2 bg-muted rounded">
                                 <span className="text-sm">{label}</span>
                                 <span className="font-medium">£{value.toFixed(2)}</span>
                               </div>)}
+                          </div>
+                          <div className="mt-3 pt-3 border-t">
+                            <div className="flex justify-between items-center">
+                              <span className="font-bold text-lg">Garage Total Value:</span>
+                              <span className="font-bold text-2xl text-primary">
+                                £{garageTotal.toFixed(2)}
+                              </span>
+                            </div>
                           </div>
                         </div>;
                 }
