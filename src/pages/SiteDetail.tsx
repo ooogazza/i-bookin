@@ -2596,16 +2596,16 @@ const SiteDetail = () => {
                 onMouseLeave={handleTableMouseLeave}
               >
                 <table className="w-full border-collapse min-w-[800px]">
-              <thead>
+              <thead className="sticky top-0 z-30">
                 <tr className="border-b bg-muted/50">
-                  <th className="p-2 text-left font-medium w-20 sticky left-0 bg-muted z-20 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Plot</th>
-                  <th className="p-2 text-left font-medium w-32">House Type</th>
+                  <th className="p-2 text-left font-medium w-20 sticky left-0 bg-muted z-40 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Plot</th>
+                  <th className="p-2 text-left font-medium w-32 bg-muted/50">House Type</th>
                   {Object.keys(LIFT_LABELS).map(liftType => (
-                    <th key={liftType} className="p-2 text-center font-medium whitespace-nowrap text-sm min-w-[80px]">
+                    <th key={liftType} className="p-2 text-center font-medium whitespace-nowrap text-sm min-w-[80px] bg-muted/50">
                       <LiftTypeLabel liftType={liftType} />
                     </th>
                   ))}
-                  {isAdmin && <th className="p-2 text-center font-medium w-24">Actions</th>}
+                  {isAdmin && <th className="p-2 text-center font-medium w-24 bg-muted/50">Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -2706,13 +2706,13 @@ const SiteDetail = () => {
                         return (
                         <tr className={`border-b transition-colors bg-muted/30 ${isHighlighted ? 'bg-primary/10' : ''}`}>
                           <td 
-                            className={`p-2 sticky left-0 z-20 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${isHighlighted ? 'bg-primary/10' : 'bg-muted/30'}`}
+                            className={`p-2 sticky left-0 z-20 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${isHighlighted ? 'bg-primary/10' : 'bg-card'}`}
                           >
                             <div className="flex items-center justify-center">
-                              <img src={getGarageIcon(garageTypeConfig?.garage_type || garage.garage_type)} alt={garage.garage_type} className="w-6 h-6" />
+                              <img src={getGarageIcon(garageTypeConfig?.garage_type || garage.garage_type)} alt={garage.garage_type} className="w-6 h-6 object-contain mix-blend-multiply dark:mix-blend-screen" />
                             </div>
                           </td>
-                          <td className="p-2 text-sm text-muted-foreground">
+                          <td className="p-2">
                             {getGarageLabel(garageTypeConfig?.garage_type || garage.garage_type)}
                           </td>
                           {Object.entries(LIFT_LABELS).map(([liftType]) => {
