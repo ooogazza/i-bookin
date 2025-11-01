@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Home } from "lucide-react";
+import houseIcon from "@/assets/house-icon.png";
 import garageSingleIcon from "@/assets/garage-single.png";
 
 interface AddTypeSelectionDialogProps {
@@ -31,7 +31,7 @@ export function AddTypeSelectionDialog({
             className="w-full h-20 text-lg justify-start gap-4"
             variant="outline"
           >
-            <Home className="h-8 w-8" />
+            <img src={houseIcon} alt="House" className="h-8 w-8 object-contain" />
             Add House Type
           </Button>
           <Button

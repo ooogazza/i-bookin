@@ -12,7 +12,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Settings, Plus, Users, Trash2, Ruler, FileText, X, ArrowUp, ChevronDown, Send, Upload, Image as ImageIcon, Home } from "lucide-react";
+import { Settings, Plus, Users, Trash2, Ruler, FileText, X, ArrowUp, ChevronDown, Send, Upload, Image as ImageIcon } from "lucide-react";
+import houseIcon from "@/assets/house-icon.png";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import jsPDF from "jspdf";
@@ -2221,7 +2222,7 @@ const SiteDetail = () => {
               {houseTypes.map(ht => <Button key={ht.id} variant="outline" size="lg" className="h-auto py-4 justify-start hover:bg-primary/10 hover:border-primary transition-all" onClick={() => openHouseTypeDialog(ht)}>
                   <div className="flex items-center gap-2">
                     <div className="p-2 rounded-lg bg-primary/10">
-                      <Home className="h-4 w-4 text-primary" />
+                      <img src={houseIcon} alt="House" className="h-4 w-4 object-contain" />
                     </div>
                     <span className="font-semibold">{ht.name}</span>
                   </div>
@@ -2291,7 +2292,7 @@ const SiteDetail = () => {
           {plots.length === 0 ? <Card className="border-2 border-dashed">
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <div className="p-4 rounded-full bg-muted mb-4">
-                  <Home className="h-12 w-12 text-muted-foreground" />
+                  <img src={houseIcon} alt="House" className="h-12 w-12 object-contain" />
                 </div>
                 <p className="text-xl font-semibold mb-2">
                   {isAdmin ? "No plots created yet" : "No plots assigned to you"}

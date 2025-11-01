@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Building2, Home, MapPin, User } from "lucide-react";
+import { Search, Building2, MapPin, User } from "lucide-react";
+import houseIcon from "@/assets/house-icon.png";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -169,7 +170,7 @@ export const DashboardSearch = () => {
       case "plot":
         return <MapPin className="h-4 w-4" />;
       case "house_type":
-        return <Home className="h-4 w-4" />;
+        return <img src={houseIcon} alt="House" className="h-4 w-4 object-contain" />;
       case "site":
         return <Building2 className="h-4 w-4" />;
       case "bricklayer":
