@@ -2506,8 +2506,8 @@ const SiteDetail = () => {
                   }}
                 >
                   <div className="flex items-center gap-2">
-                    <div className="p-2 rounded-lg bg-primary/10">
-                      <img src={getGarageIcon(gt.garage_type)} alt={gt.garage_type} className="h-12 w-12 object-contain mix-blend-multiply dark:mix-blend-screen" />
+                    <div className="p-1 rounded-lg bg-primary/10">
+                      <img src={getGarageIcon(gt.garage_type)} alt={gt.garage_type} className="h-8 w-8 object-contain brightness-0 saturate-100 invert-[0.4] sepia-[1] saturate-[5] hue-rotate-[200deg]" />
                     </div>
                     <span className="font-semibold">{getGarageLabel(gt.garage_type)}</span>
                   </div>
@@ -2709,7 +2709,7 @@ const SiteDetail = () => {
                             className={`p-2 sticky left-0 z-20 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${isHighlighted ? 'bg-primary/10' : 'bg-card'}`}
                           >
                             <div className="flex items-center justify-center">
-                              <img src={getGarageIcon(garageTypeConfig?.garage_type || garage.garage_type)} alt={garage.garage_type} className="w-10 h-10 object-contain mix-blend-multiply dark:mix-blend-screen" />
+                              <img src={getGarageIcon(garageTypeConfig?.garage_type || garage.garage_type)} alt={garage.garage_type} className="w-8 h-8 object-contain brightness-0 saturate-100 invert-[0.4] sepia-[1] saturate-[5] hue-rotate-[200deg]" />
                             </div>
                           </td>
                           <td className="p-2">
