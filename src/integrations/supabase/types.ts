@@ -158,6 +158,8 @@ export type Database = {
           lift_1_value: number
           lift_2_value: number
           site_id: string
+          snag_patch_ext_value: number
+          snag_patch_int_value: number
           updated_at: string
         }
         Insert: {
@@ -168,6 +170,8 @@ export type Database = {
           lift_1_value?: number
           lift_2_value?: number
           site_id: string
+          snag_patch_ext_value?: number
+          snag_patch_int_value?: number
           updated_at?: string
         }
         Update: {
@@ -178,6 +182,8 @@ export type Database = {
           lift_1_value?: number
           lift_2_value?: number
           site_id?: string
+          snag_patch_ext_value?: number
+          snag_patch_int_value?: number
           updated_at?: string
         }
         Relationships: [
@@ -200,6 +206,8 @@ export type Database = {
           lift_1_value: number
           lift_2_value: number
           plot_id: string
+          snag_patch_ext_value: number
+          snag_patch_int_value: number
           updated_at: string
         }
         Insert: {
@@ -211,6 +219,8 @@ export type Database = {
           lift_1_value?: number
           lift_2_value?: number
           plot_id: string
+          snag_patch_ext_value?: number
+          snag_patch_int_value?: number
           updated_at?: string
         }
         Update: {
@@ -222,6 +232,8 @@ export type Database = {
           lift_1_value?: number
           lift_2_value?: number
           plot_id?: string
+          snag_patch_ext_value?: number
+          snag_patch_int_value?: number
           updated_at?: string
         }
         Relationships: [

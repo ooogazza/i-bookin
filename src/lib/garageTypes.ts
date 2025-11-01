@@ -10,6 +10,8 @@ export const GARAGE_LIFT_TYPES = {
   lift_1: "Lift 1",
   lift_2: "Lift 2",
   cut_ups: "Cut-Ups",
+  snag_patch_int: "Snag/Patch Int",
+  snag_patch_ext: "Snag/Patch Ext",
 } as const;
 
 export type GarageType = typeof GARAGE_TYPES[number]["value"];
