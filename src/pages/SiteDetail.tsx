@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Settings, Plus, Users, Trash2, Ruler, FileText, X, ArrowUp, ChevronDown, Send, Upload, Image as ImageIcon, Building2 } from "lucide-react";
+import { Settings, Plus, Users, Trash2, Ruler, FileText, X, ArrowUp, ChevronDown, Send, Upload, Image as ImageIcon, Home } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import jsPDF from "jspdf";
@@ -2221,7 +2221,7 @@ const SiteDetail = () => {
               {houseTypes.map(ht => <Button key={ht.id} variant="outline" size="lg" className="h-auto py-4 justify-start hover:bg-primary/10 hover:border-primary transition-all" onClick={() => openHouseTypeDialog(ht)}>
                   <div className="flex items-center gap-2">
                     <div className="p-2 rounded-lg bg-primary/10">
-                      <Building2 className="h-4 w-4 text-primary" />
+                      <Home className="h-4 w-4 text-primary" />
                     </div>
                     <span className="font-semibold">{ht.name}</span>
                   </div>
@@ -2291,7 +2291,7 @@ const SiteDetail = () => {
           {plots.length === 0 ? <Card className="border-2 border-dashed">
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <div className="p-4 rounded-full bg-muted mb-4">
-                  <Building2 className="h-12 w-12 text-muted-foreground" />
+                  <Home className="h-12 w-12 text-muted-foreground" />
                 </div>
                 <p className="text-xl font-semibold mb-2">
                   {isAdmin ? "No plots created yet" : "No plots assigned to you"}
@@ -2341,7 +2341,9 @@ const SiteDetail = () => {
                         e.stopPropagation();
                         handlePlotNumberClick(plot);
                       }}>
-                          {plot.plot_number}
+                          <div className="flex items-center justify-center min-h-[50px]">
+                            {plot.plot_number}
+                          </div>
                         </td>
                         <td className={`p-2 ${isAdmin || plot.house_types ? 'cursor-pointer hover:bg-primary/10' : ''}`} onClick={() => {
                         if (isAdmin) {
