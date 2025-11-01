@@ -30,7 +30,9 @@ import { NonPlotInvoiceDialog } from "@/components/NonPlotInvoiceDialog";
 import { playSuccessSound } from "@/lib/soundUtils";
 import { saveBlobToDevice } from "@/lib/utils";
 import { isOnline } from "@/lib/offlineStorage";
-import { GarageManagementDialog } from "@/components/GarageManagementDialog";
+import { PlotSettingsDialog } from "@/components/PlotSettingsDialog";
+import { AddTypeSelectionDialog } from "@/components/AddTypeSelectionDialog";
+import { AddGarageTypeDialog } from "@/components/AddGarageTypeDialog";
 import { getGarageLabel, getGarageIcon } from "@/lib/garageTypes";
 
 interface Site {
@@ -78,6 +80,15 @@ interface Booking {
 interface Garage {
   id: string;
   plot_id: string;
+  garage_type: string;
+  garage_type_id: string | null;
+  lift_1_value: number;
+  lift_2_value: number;
+  cut_ups_value: number;
+}
+
+interface GarageType {
+  id: string;
   garage_type: string;
   lift_1_value: number;
   lift_2_value: number;
@@ -232,8 +243,12 @@ const SiteDetail = () => {
   const [uploadedInvoiceImage, setUploadedInvoiceImage] = useState<File | null>(null);
   const [invoiceImagePreviewUrl, setInvoiceImagePreviewUrl] = useState<string | null>(null);
   const [uploadingInvoiceImage, setUploadingInvoiceImage] = useState(false);
-  const [garageDialogOpen, setGarageDialogOpen] = useState(false);
-  const [selectedPlotForGarage, setSelectedPlotForGarage] = useState<Plot | null>(null);
+  const [plotSettingsDialogOpen, setPlotSettingsDialogOpen] = useState(false);
+  const [selectedPlotForSettings, setSelectedPlotForSettings] = useState<Plot | null>(null);
+  const [typeSelectionDialogOpen, setTypeSelectionDialogOpen] = useState(false);
+  const [addGarageTypeDialogOpen, setAddGarageTypeDialogOpen] = useState(false);
+  const [editingGarageType, setEditingGarageType] = useState<GarageType | null>(null);
+  const [garageTypes, setGarageTypes] = useState<GarageType[]>([]);
   
   const stickyScrollRef = useRef<HTMLDivElement>(null);
   const mainScrollRef = useRef<HTMLDivElement>(null);
@@ -407,6 +422,15 @@ const SiteDetail = () => {
 
       if (garagesError) throw garagesError;
       setGarages(garagesData || []);
+
+      // Fetch garage types for the site
+      const { data: garageTypesData, error: garageTypesError } = await supabase
+        .from("garage_types")
+        .select("*")
+        .eq("site_id", id);
+
+      if (garageTypesError) throw garageTypesError;
+      setGarageTypes(garageTypesData || []);
 
       if (isAdmin) {
         const { data: usersData, error: usersError } = await supabase
@@ -2386,7 +2410,7 @@ const SiteDetail = () => {
             )}
             {isAdmin && (
               <>
-                <Button onClick={() => openHouseTypeDialog()} size="sm" title="Add House Type">
+                <Button onClick={() => setTypeSelectionDialogOpen(true)} size="sm" title="Add Type">
                   <Plus className="h-4 w-4" />
                   <span className="hidden lg:inline ml-2">Add House Type</span>
                 </Button>
@@ -2455,9 +2479,37 @@ const SiteDetail = () => {
                 >
                   <div className="flex items-center gap-2">
                     <div className="p-2 rounded-lg bg-primary/10">
-                      <Settings className="h-4 w-4 text-primary" />
+                      <Building2 className="h-4 w-4 text-primary" />
                     </div>
                     <span className="font-semibold">{ht.name}</span>
+                  </div>
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Garage Types Section */}
+        {garageTypes.length > 0 && isAdmin && (
+          <div>
+            <h3 className="text-2xl font-bold mb-4">Garage Types</h3>
+            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              {garageTypes.map(gt => (
+                <Button
+                  key={gt.id}
+                  variant="outline"
+                  size="lg"
+                  className="h-auto py-4 justify-start hover:bg-primary/10 hover:border-primary transition-all"
+                  onClick={() => {
+                    setEditingGarageType(gt);
+                    setAddGarageTypeDialogOpen(true);
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <img src={getGarageIcon(gt.garage_type)} alt={gt.garage_type} className="h-4 w-4" />
+                    </div>
+                    <span className="font-semibold">{getGarageLabel(gt.garage_type)}</span>
                   </div>
                 </Button>
               ))}
@@ -2634,8 +2686,8 @@ const SiteDetail = () => {
                               variant="outline"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setSelectedPlotForGarage(plot);
-                                setGarageDialogOpen(true);
+                                setSelectedPlotForSettings(plot);
+                                setPlotSettingsDialogOpen(true);
                               }}
                             >
                               <Settings className="h-4 w-4" />
@@ -2645,32 +2697,40 @@ const SiteDetail = () => {
                       </tr>
                       
                       {/* Garage Row (if exists) */}
-                      {garage && (
+                      {garage && (() => {
+                        // Find the garage type configuration
+                        const garageTypeConfig = garage.garage_type_id 
+                          ? garageTypes.find(gt => gt.id === garage.garage_type_id)
+                          : null;
+                        
+                        return (
                         <tr className={`border-b transition-colors bg-muted/30 ${isHighlighted ? 'bg-primary/10' : ''}`}>
                           <td 
                             className={`p-2 sticky left-0 z-20 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${isHighlighted ? 'bg-primary/10' : 'bg-muted/30'}`}
                           >
                             <div className="flex items-center justify-center">
-                              <img src={getGarageIcon(garage.garage_type)} alt={garage.garage_type} className="w-6 h-6" />
+                              <img src={getGarageIcon(garageTypeConfig?.garage_type || garage.garage_type)} alt={garage.garage_type} className="w-6 h-6" />
                             </div>
                           </td>
                           <td className="p-2 text-sm text-muted-foreground">
-                            {getGarageLabel(garage.garage_type)}
+                            {getGarageLabel(garageTypeConfig?.garage_type || garage.garage_type)}
                           </td>
                           {Object.entries(LIFT_LABELS).map(([liftType]) => {
-                            // Map lift types to garage columns
+                            // Map lift types to garage columns using garage type configuration
                             let garageValue = 0;
                             let garageLiftType = '';
                             
-                            if (liftType === 'lift_1') {
-                              garageValue = garage.lift_1_value;
-                              garageLiftType = 'lift_1';
-                            } else if (liftType === 'lift_2') {
-                              garageValue = garage.lift_2_value;
-                              garageLiftType = 'lift_2';
-                            } else if (liftType === 'cut_ups') {
-                              garageValue = garage.cut_ups_value;
-                              garageLiftType = 'cut_ups';
+                            if (garageTypeConfig) {
+                              if (liftType === 'lift_1') {
+                                garageValue = garageTypeConfig.lift_1_value;
+                                garageLiftType = 'lift_1';
+                              } else if (liftType === 'lift_2') {
+                                garageValue = garageTypeConfig.lift_2_value;
+                                garageLiftType = 'lift_2';
+                              } else if (liftType === 'cut_ups') {
+                                garageValue = garageTypeConfig.cut_ups_value;
+                                garageLiftType = 'cut_ups';
+                              }
                             }
                             
                             const totalBooked = garageValue > 0 ? getGarageLiftBooked(garage.id, garageLiftType) : 0;
@@ -2703,7 +2763,8 @@ const SiteDetail = () => {
                             </td>
                           )}
                         </tr>
-                      )}
+                        );
+                      })()}
                     </React.Fragment>
                   );
                 })}
@@ -3794,13 +3855,38 @@ const SiteDetail = () => {
           onOpenChange={setNonPlotInvoiceDialogOpen}
         />
 
-        {/* Garage Management Dialog */}
-        <GarageManagementDialog
-          open={garageDialogOpen}
-          onOpenChange={setGarageDialogOpen}
-          plotId={selectedPlotForGarage?.id || ""}
-          plotNumber={selectedPlotForGarage?.plot_number || 0}
-          existingGarage={selectedPlotForGarage ? garages.find(g => g.plot_id === selectedPlotForGarage.id) || null : null}
+        {/* Plot Settings Dialog */}
+        <PlotSettingsDialog
+          open={plotSettingsDialogOpen}
+          onOpenChange={setPlotSettingsDialogOpen}
+          plotId={selectedPlotForSettings?.id || ""}
+          plotNumber={selectedPlotForSettings?.plot_number || 0}
+          siteId={id || ""}
+          currentlyAssignedTo={selectedPlotForSettings?.assigned_to || null}
+          existingGarage={selectedPlotForSettings ? garages.find(g => g.plot_id === selectedPlotForSettings.id) || null : null}
+          onSuccess={fetchSiteData}
+        />
+
+        {/* Add Type Selection Dialog */}
+        <AddTypeSelectionDialog
+          open={typeSelectionDialogOpen}
+          onOpenChange={setTypeSelectionDialogOpen}
+          onSelectHouseType={() => openHouseTypeDialog()}
+          onSelectGarageType={() => {
+            setEditingGarageType(null);
+            setAddGarageTypeDialogOpen(true);
+          }}
+        />
+
+        {/* Add Garage Type Dialog */}
+        <AddGarageTypeDialog
+          open={addGarageTypeDialogOpen}
+          onOpenChange={(open) => {
+            setAddGarageTypeDialogOpen(open);
+            if (!open) setEditingGarageType(null);
+          }}
+          siteId={id || ""}
+          existingGarageType={editingGarageType}
           onSuccess={fetchSiteData}
         />
       </main>

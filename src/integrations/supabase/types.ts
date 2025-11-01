@@ -149,11 +149,53 @@ export type Database = {
           },
         ]
       }
+      garage_types: {
+        Row: {
+          created_at: string
+          cut_ups_value: number
+          garage_type: string
+          id: string
+          lift_1_value: number
+          lift_2_value: number
+          site_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          cut_ups_value?: number
+          garage_type: string
+          id?: string
+          lift_1_value?: number
+          lift_2_value?: number
+          site_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          cut_ups_value?: number
+          garage_type?: string
+          id?: string
+          lift_1_value?: number
+          lift_2_value?: number
+          site_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "garage_types_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       garages: {
         Row: {
           created_at: string
           cut_ups_value: number
           garage_type: string
+          garage_type_id: string | null
           id: string
           lift_1_value: number
           lift_2_value: number
@@ -164,6 +206,7 @@ export type Database = {
           created_at?: string
           cut_ups_value?: number
           garage_type: string
+          garage_type_id?: string | null
           id?: string
           lift_1_value?: number
           lift_2_value?: number
@@ -174,6 +217,7 @@ export type Database = {
           created_at?: string
           cut_ups_value?: number
           garage_type?: string
+          garage_type_id?: string | null
           id?: string
           lift_1_value?: number
           lift_2_value?: number
@@ -181,6 +225,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "garages_garage_type_id_fkey"
+            columns: ["garage_type_id"]
+            isOneToOne: false
+            referencedRelation: "garage_types"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "garages_plot_id_fkey"
             columns: ["plot_id"]
