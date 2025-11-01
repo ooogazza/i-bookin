@@ -15,6 +15,7 @@ import logo from "@/assets/logo.png";
 import { handleExportPDF as exportInvoicePDF, handleSendToAdmin as sendInvoiceToAdmin } from "@/lib/invoiceUtils";
 import { LiftTypeLabel } from "@/components/LiftTypeLabel";
 import { getLiftFullLabel } from "@/lib/liftTypeLabels";
+import { getGarageLabel, getGarageIcon } from "@/lib/garageTypes";
 import { playSuccessSound } from "@/lib/soundUtils";
 interface BookingData {
   id: string;
@@ -41,6 +42,10 @@ interface BookingData {
   };
   lift_values?: {
     lift_type: string;
+  };
+  garages?: {
+    garage_type: string;
+    price: number;
   };
   gang_divisions: {
     member_name: string;
@@ -166,6 +171,10 @@ const BookingIn = () => {
           ),
           lift_values (
             lift_type
+          ),
+          garages (
+            garage_type,
+            price
           ),
           gang_divisions (
             member_name,
@@ -624,7 +633,13 @@ const BookingIn = () => {
           fontSize: "13px",
           marginBottom: "5px"
         }}>
-                {item.is_non_plot ? `Non-Plot Work: £${item.booked_value.toFixed(2)}` : item.plots && item.lift_values ? `Plot ${item.plots.plot_number} - ${getLiftFullLabel(item.lift_values.lift_type)}: ${item.percentage}% = £${item.booked_value.toFixed(2)}` : ""}
+                {item.is_non_plot 
+                  ? `Non-Plot Work: £${item.booked_value.toFixed(2)}` 
+                  : item.plots && item.lift_values 
+                    ? `Plot ${item.plots.plot_number} - ${getLiftFullLabel(item.lift_values.lift_type)}: ${item.percentage}% = £${item.booked_value.toFixed(2)}` 
+                    : item.plots && item.garages
+                      ? `Plot ${item.plots.plot_number} - ${getGarageIcon(item.garages.garage_type)} ${getGarageLabel(item.garages.garage_type)}: ${item.percentage}% = £${item.booked_value.toFixed(2)}`
+                      : ""}
               </p>)}
           </div>
 
@@ -1042,6 +1057,9 @@ const BookingIn = () => {
                             <div className="text-xs md:text-sm flex items-center gap-1">
                               <span className="font-medium">
                                 {item.lift_values && <LiftTypeLabel liftType={item.lift_values.lift_type} />}
+                                {item.garages && (
+                                  <span>{getGarageIcon(item.garages.garage_type)} {getGarageLabel(item.garages.garage_type)}</span>
+                                )}
                               </span>
                               {" - "}
                               <span className="text-muted-foreground">{item.percentage}%</span>

@@ -30,6 +30,8 @@ import { NonPlotInvoiceDialog } from "@/components/NonPlotInvoiceDialog";
 import { playSuccessSound } from "@/lib/soundUtils";
 import { saveBlobToDevice } from "@/lib/utils";
 import { isOnline } from "@/lib/offlineStorage";
+import { GarageManagementDialog } from "@/components/GarageManagementDialog";
+import { getGarageLabel, getGarageIcon } from "@/lib/garageTypes";
 
 interface Site {
   id: string;
@@ -69,6 +71,14 @@ interface Booking {
   lift_value_id: string;
   plot_id: string;
   percentage: number;
+  garage_id?: string | null;
+}
+
+interface Garage {
+  id: string;
+  plot_id: string;
+  garage_type: string;
+  price: number;
 }
 
 interface User {
@@ -135,6 +145,7 @@ const SiteDetail = () => {
   const [houseTypes, setHouseTypes] = useState<HouseType[]>([]);
   const [plots, setPlots] = useState<Plot[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [garages, setGarages] = useState<Garage[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [availableUsers, setAvailableUsers] = useState<AvailableUser[]>([]);
   const [pendingInvitations, setPendingInvitations] = useState<any[]>([]);
@@ -216,6 +227,8 @@ const SiteDetail = () => {
   const [uploadedInvoiceImage, setUploadedInvoiceImage] = useState<File | null>(null);
   const [invoiceImagePreviewUrl, setInvoiceImagePreviewUrl] = useState<string | null>(null);
   const [uploadingInvoiceImage, setUploadingInvoiceImage] = useState(false);
+  const [garageDialogOpen, setGarageDialogOpen] = useState(false);
+  const [selectedPlotForGarage, setSelectedPlotForGarage] = useState<Plot | null>(null);
   
   const stickyScrollRef = useRef<HTMLDivElement>(null);
   const mainScrollRef = useRef<HTMLDivElement>(null);
@@ -375,11 +388,20 @@ const SiteDetail = () => {
       // Fetch bookings for the site
       const { data: bookingsData, error: bookingsError } = await supabase
         .from("bookings")
-        .select("id, lift_value_id, plot_id, percentage")
+        .select("id, lift_value_id, plot_id, percentage, garage_id")
         .in("plot_id", (plotsData || []).map(p => p.id));
 
       if (bookingsError) throw bookingsError;
       setBookings(bookingsData || []);
+
+      // Fetch garages for the site
+      const { data: garagesData, error: garagesError } = await supabase
+        .from("garages")
+        .select("*")
+        .in("plot_id", (plotsData || []).map(p => p.id));
+
+      if (garagesError) throw garagesError;
+      setGarages(garagesData || []);
 
       if (isAdmin) {
         const { data: usersData, error: usersError } = await supabase
@@ -2434,6 +2456,7 @@ const SiteDetail = () => {
                 <tr className="border-b bg-muted/50">
                   <th className="p-2 text-left font-medium w-20 sticky left-0 bg-muted z-20 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Plot</th>
                   <th className="p-2 text-left font-medium w-32">House Type</th>
+                  <th className="p-2 text-center font-medium whitespace-nowrap text-sm min-w-[100px]">Garage</th>
                   {Object.keys(LIFT_LABELS).map(liftType => (
                     <th key={liftType} className="p-2 text-center font-medium whitespace-nowrap text-sm min-w-[80px]">
                       <LiftTypeLabel liftType={liftType} />
@@ -2479,6 +2502,39 @@ const SiteDetail = () => {
                       }}
                     >
                       {plot.house_types?.name || "-"}
+                    </td>
+                    <td 
+                      className={`p-2 text-center ${isAdmin ? 'cursor-pointer hover:bg-primary/10' : ''}`}
+                      onClick={() => {
+                        if (isAdmin) {
+                          setSelectedPlotForGarage(plot);
+                          setGarageDialogOpen(true);
+                        }
+                      }}
+                    >
+                      {(() => {
+                        const garage = garages.find(g => g.plot_id === plot.id);
+                        const garageBookings = bookings.filter(b => b.garage_id === garage?.id);
+                        const totalBooked = garageBookings.reduce((sum, b) => sum + b.percentage, 0);
+                        
+                        if (!garage) {
+                          return isAdmin ? (
+                            <span className="text-muted-foreground text-sm">+ Add</span>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          );
+                        }
+                        
+                        return (
+                          <div className="flex flex-col items-center gap-1">
+                            <div className="text-lg">{getGarageIcon(garage.garage_type)}</div>
+                            <div className="text-xs text-muted-foreground">{getGarageLabel(garage.garage_type)}</div>
+                            <div className={`text-sm font-bold ${totalBooked === 100 ? 'text-green-600' : totalBooked > 0 ? 'text-yellow-600' : 'text-red-600'}`}>
+                              {totalBooked}%
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </td>
                     {Object.keys(LIFT_LABELS).map(liftType => {
                       const totalBooked = getTotalBooked(plot, liftType);
@@ -3590,6 +3646,16 @@ const SiteDetail = () => {
         <NonPlotInvoiceDialog
           open={nonPlotInvoiceDialogOpen}
           onOpenChange={setNonPlotInvoiceDialogOpen}
+        />
+
+        {/* Garage Management Dialog */}
+        <GarageManagementDialog
+          open={garageDialogOpen}
+          onOpenChange={setGarageDialogOpen}
+          plotId={selectedPlotForGarage?.id || ""}
+          plotNumber={selectedPlotForGarage?.plot_number || 0}
+          existingGarage={selectedPlotForGarage ? garages.find(g => g.plot_id === selectedPlotForGarage.id) : null}
+          onSuccess={fetchSiteData}
         />
       </main>
     </div>

@@ -20,6 +20,7 @@ export type Database = {
           booked_value: number
           confirmed_by_admin: boolean | null
           created_at: string
+          garage_id: string | null
           id: string
           image_url: string | null
           invoice_number: string | null
@@ -34,6 +35,7 @@ export type Database = {
           booked_value: number
           confirmed_by_admin?: boolean | null
           created_at?: string
+          garage_id?: string | null
           id?: string
           image_url?: string | null
           invoice_number?: string | null
@@ -48,6 +50,7 @@ export type Database = {
           booked_value?: number
           confirmed_by_admin?: boolean | null
           created_at?: string
+          garage_id?: string | null
           id?: string
           image_url?: string | null
           invoice_number?: string | null
@@ -63,6 +66,13 @@ export type Database = {
             columns: ["booked_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
             referencedColumns: ["id"]
           },
           {
@@ -139,6 +149,41 @@ export type Database = {
             columns: ["booking_id"]
             isOneToOne: false
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      garages: {
+        Row: {
+          created_at: string
+          garage_type: string
+          id: string
+          plot_id: string
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          garage_type: string
+          id?: string
+          plot_id: string
+          price?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          garage_type?: string
+          id?: string
+          plot_id?: string
+          price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "garages_plot_id_fkey"
+            columns: ["plot_id"]
+            isOneToOne: true
+            referencedRelation: "plots"
             referencedColumns: ["id"]
           },
         ]

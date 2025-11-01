@@ -17,6 +17,7 @@ import { useGangDivision } from "@/hooks/useGangDivision";
 import { useSavedGangMembers } from "@/hooks/useSavedGangMembers";
 import { LiftTypeLabel } from "@/components/LiftTypeLabel";
 import { getLiftFullLabel } from "@/lib/liftTypeLabels";
+import { getGarageLabel, getGarageIcon } from "@/lib/garageTypes";
 
 const PlotBooking = () => {
   const { id } = useParams();
@@ -25,9 +26,11 @@ const PlotBooking = () => {
 
   const [plot, setPlot] = useState<any>(null);
   const [bookings, setBookings] = useState<any[]>([]);
+  const [garages, setGarages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [selectedLiftId, setSelectedLiftId] = useState("");
+  const [selectedGarageId, setSelectedGarageId] = useState("");
   const [percentage, setPercentage] = useState(100);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [memberName, setMemberName] = useState("");
@@ -42,9 +45,16 @@ const PlotBooking = () => {
     return lift ? lift.value : 0;
   }, [plot, selectedLiftId]);
 
+  const selectedGarageValue = useMemo(() => {
+    if (!garages || !selectedGarageId) return 0;
+    const garage = garages.find((g) => g.id === selectedGarageId);
+    return garage ? garage.price : 0;
+  }, [garages, selectedGarageId]);
+
   const bookingValue = useMemo(() => {
-    return (selectedLiftValue * percentage) / 100;
-  }, [selectedLiftValue, percentage]);
+    const baseValue = selectedLiftId ? selectedLiftValue : selectedGarageValue;
+    return (baseValue * percentage) / 100;
+  }, [selectedLiftValue, selectedGarageValue, percentage, selectedLiftId]);
 
   const {
     gangMembers,
@@ -72,20 +82,36 @@ const PlotBooking = () => {
 
     const { data: bookingsData } = await supabase
       .from("bookings")
-      .select("id, lift_value_id, percentage")
+      .select("id, lift_value_id, garage_id, percentage")
       .eq("plot_id", id);
     setBookings(bookingsData || []);
+
+    const { data: garagesData } = await supabase
+      .from("garages")
+      .select("*")
+      .eq("plot_id", id);
+    setGarages(garagesData || []);
+
     setLoading(false);
   };
 
   const getTotalBooked = (liftValueId: string): number =>
     bookings.filter((b) => b.lift_value_id === liftValueId).reduce((sum, b) => sum + b.percentage, 0);
 
+  const getGarageTotalBooked = (garageId: string): number =>
+    bookings.filter((b) => b.garage_id === garageId).reduce((sum, b) => sum + b.percentage, 0);
+
   const getRemainingPercentage = (liftValueId: string): number => 100 - getTotalBooked(liftValueId);
+
+  const getGarageRemainingPercentage = (garageId: string): number => 100 - getGarageTotalBooked(garageId);
 
   const getAvailableLifts = () => {
     if (!plot) return [];
     return plot.house_types.lift_values.filter((lv) => getRemainingPercentage(lv.id) > 0);
+  };
+
+  const getAvailableGarages = () => {
+    return garages.filter((g) => getGarageRemainingPercentage(g.id) > 0);
   };
 
   const handleAddExistingMember = (member) => {
@@ -151,7 +177,12 @@ const PlotBooking = () => {
   };
 
   const handleCreateBooking = async () => {
-    if (!user || !plot || !selectedLiftId) return;
+    if (!user || !plot) return;
+
+    if (!selectedLiftId && !selectedGarageId) {
+      toast.error("Please select a lift or garage to book");
+      return;
+    }
 
     if (gangMembers.length === 0) {
       toast.error("Please add at least one gang member");
@@ -168,7 +199,8 @@ const PlotBooking = () => {
     const { data: booking, error: bookingError } = await supabase
       .from("bookings")
       .insert({
-        lift_value_id: selectedLiftId,
+        lift_value_id: selectedLiftId || null,
+        garage_id: selectedGarageId || null,
         plot_id: plot.id,
         booked_by: user.id,
         percentage,
@@ -241,24 +273,53 @@ const PlotBooking = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Select Lift</CardTitle>
+            <CardTitle>Select Work Type</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Label>Lift Type</Label>
-            <Select value={selectedLiftId} onValueChange={setSelectedLiftId}>
+            <Label>Work Type</Label>
+            <Select 
+              value={selectedLiftId || selectedGarageId} 
+              onValueChange={(value) => {
+                if (value.startsWith("garage-")) {
+                  setSelectedGarageId(value);
+                  setSelectedLiftId("");
+                } else {
+                  setSelectedLiftId(value);
+                  setSelectedGarageId("");
+                }
+              }}
+            >
               <SelectTrigger>
-                <SelectValue placeholder="Select lift" />
+                <SelectValue placeholder="Select lift or garage" />
               </SelectTrigger>
               <SelectContent>
-                {getAvailableLifts().map((lv) => (
-                  <SelectItem key={lv.id} value={lv.id}>
-                    {getLiftFullLabel(lv.lift_type)} – £{lv.value.toFixed(2)} ({getRemainingPercentage(lv.id)}% available)
-                  </SelectItem>
-                ))}
+                {getAvailableLifts().length > 0 && (
+                  <>
+                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">House Lifts</div>
+                    {getAvailableLifts().map((lv) => (
+                      <SelectItem key={lv.id} value={lv.id}>
+                        {getLiftFullLabel(lv.lift_type)} – £{lv.value.toFixed(2)} ({getRemainingPercentage(lv.id)}% available)
+                      </SelectItem>
+                    ))}
+                  </>
+                )}
+                {getAvailableGarages().length > 0 && (
+                  <>
+                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Garages</div>
+                    {getAvailableGarages().map((g) => (
+                      <SelectItem key={g.id} value={g.id}>
+                        {getGarageIcon(g.garage_type)} {getGarageLabel(g.garage_type)} – £{g.price.toFixed(2)} ({getGarageRemainingPercentage(g.id)}% available)
+                      </SelectItem>
+                    ))}
+                  </>
+                )}
+                {getAvailableLifts().length === 0 && getAvailableGarages().length === 0 && (
+                  <SelectItem value="none" disabled>No work available to book</SelectItem>
+                )}
               </SelectContent>
             </Select>
 
-            {selectedLiftId && (
+            {(selectedLiftId || selectedGarageId) && (
               <>
                 <div className="flex items-center gap-2">
                   <Label>Percentage:</Label>
@@ -267,14 +328,16 @@ const PlotBooking = () => {
                     value={percentage}
                     onChange={(e) => {
                       const val = parseInt(e.target.value);
-                      const max = getRemainingPercentage(selectedLiftId);
+                      const max = selectedLiftId 
+                        ? getRemainingPercentage(selectedLiftId) 
+                        : getGarageRemainingPercentage(selectedGarageId);
                       if (!isNaN(val) && val >= 1 && val <= max) {
                         setPercentage(val);
                       }
                     }}
                     className="w-24"
                     min="1"
-                    max={getRemainingPercentage(selectedLiftId)}
+                    max={selectedLiftId ? getRemainingPercentage(selectedLiftId) : getGarageRemainingPercentage(selectedGarageId)}
                   />
                   <span>%</span>
                 </div>
@@ -282,14 +345,14 @@ const PlotBooking = () => {
                   value={[percentage]}
                   onValueChange={(value) => setPercentage(value[0])}
                   min={1}
-                  max={getRemainingPercentage(selectedLiftId)}
+                  max={selectedLiftId ? getRemainingPercentage(selectedLiftId) : getGarageRemainingPercentage(selectedGarageId)}
                   step={1}
                 />
 
                 <div className="p-4 bg-muted rounded-lg">
                   <div className="flex justify-between mb-2">
                     <span className="text-muted-foreground">Total Value:</span>
-                    <span className="font-semibold">£{selectedLiftValue.toFixed(2)}</span>
+                    <span className="font-semibold">£{(selectedLiftId ? selectedLiftValue : selectedGarageValue).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Booking Value ({percentage}%):</span>
@@ -301,7 +364,7 @@ const PlotBooking = () => {
           </CardContent>
         </Card>
 
-        {selectedLiftId && (
+        {(selectedLiftId || selectedGarageId) && (
           <>
             <GangDivisionCard
               gangMembers={gangMembers}
