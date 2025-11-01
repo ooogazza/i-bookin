@@ -85,6 +85,8 @@ interface Garage {
   lift_1_value: number;
   lift_2_value: number;
   cut_ups_value: number;
+  snag_patch_int_value: number;
+  snag_patch_ext_value: number;
 }
 
 interface GarageType {
@@ -93,6 +95,8 @@ interface GarageType {
   lift_1_value: number;
   lift_2_value: number;
   cut_ups_value: number;
+  snag_patch_int_value: number;
+  snag_patch_ext_value: number;
 }
 
 interface User {
@@ -1198,6 +1202,8 @@ const SiteDetail = () => {
       if (garageLiftType === 'lift_1') garageValue = garage.lift_1_value;
       else if (garageLiftType === 'lift_2') garageValue = garage.lift_2_value;
       else if (garageLiftType === 'cut_ups') garageValue = garage.cut_ups_value;
+      else if (garageLiftType === 'snag_patch_int') garageValue = garage.snag_patch_int_value;
+      else if (garageLiftType === 'snag_patch_ext') garageValue = garage.snag_patch_ext_value;
 
       // Check remaining percentage
       const liftBookings = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === garageLiftType);
@@ -2706,7 +2712,11 @@ const SiteDetail = () => {
                         return (
                         <tr className={`border-b transition-colors bg-muted/30 ${isHighlighted ? 'bg-primary/10' : ''}`}>
                           <td 
-                            className={`p-2 sticky left-0 z-20 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${isHighlighted ? 'bg-primary/10' : 'bg-card'}`}
+                            className={`p-2 cursor-pointer hover:bg-primary/10 sticky left-0 z-20 border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${isHighlighted ? 'bg-primary/10' : 'bg-card'}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePlotNumberClick(plot);
+                            }}
                           >
                             <div className="flex items-center justify-center">
                               <img src={getGarageIcon(garageTypeConfig?.garage_type || garage.garage_type)} alt={garage.garage_type} className="w-8 h-8 object-contain" />
@@ -2730,6 +2740,12 @@ const SiteDetail = () => {
                               } else if (liftType === 'cut_ups') {
                                 garageValue = garageTypeConfig.cut_ups_value;
                                 garageLiftType = 'cut_ups';
+                              } else if (liftType === 'snag_patch_int') {
+                                garageValue = garageTypeConfig.snag_patch_int_value;
+                                garageLiftType = 'snag_patch_int';
+                              } else if (liftType === 'snag_patch_ext') {
+                                garageValue = garageTypeConfig.snag_patch_ext_value;
+                                garageLiftType = 'snag_patch_ext';
                               }
                             }
                             
@@ -3832,6 +3848,37 @@ const SiteDetail = () => {
                       </div>
                     </>
                   )}
+                  
+                  {/* Garage Prices Section */}
+                  {(() => {
+                    const plotGarage = garages.find(g => g.plot_id === selectedPlotForSummary?.id);
+                    const garageTypeConfig = plotGarage?.garage_type_id 
+                      ? garageTypes.find(gt => gt.id === plotGarage.garage_type_id)
+                      : null;
+                    
+                    if (garageTypeConfig) {
+                      return (
+                        <div className="border-t pt-4">
+                          <p className="font-semibold mb-3">Garage Prices - {getGarageLabel(garageTypeConfig.garage_type)}</p>
+                          <div className="space-y-2">
+                            {[
+                              { label: "Lift 1", value: garageTypeConfig.lift_1_value },
+                              { label: "Lift 2", value: garageTypeConfig.lift_2_value },
+                              { label: "Cut-Ups", value: garageTypeConfig.cut_ups_value },
+                              { label: "Snag/Patch Int", value: garageTypeConfig.snag_patch_int_value },
+                              { label: "Snag/Patch Ext", value: garageTypeConfig.snag_patch_ext_value },
+                            ].map(({ label, value }) => (
+                              <div key={label} className="flex justify-between items-center p-2 bg-muted rounded">
+                                <span className="text-sm">{label}</span>
+                                <span className="font-medium">£{value.toFixed(2)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
               )}
             </div>

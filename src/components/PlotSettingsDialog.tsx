@@ -113,7 +113,9 @@ export function PlotSettingsDialog({
               garage_type: "", // Will be populated from garage_types
               lift_1_value: 0,
               lift_2_value: 0,
-              cut_ups_value: 0
+              cut_ups_value: 0,
+              snag_patch_int_value: 0,
+              snag_patch_ext_value: 0
             });
           if (garageError) throw garageError;
         }

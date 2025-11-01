@@ -19,6 +19,8 @@ interface AddGarageTypeDialogProps {
     lift_1_value: number;
     lift_2_value: number;
     cut_ups_value: number;
+    snag_patch_int_value: number;
+    snag_patch_ext_value: number;
   } | null;
   onSuccess: () => void;
 }
@@ -35,6 +37,8 @@ export function AddGarageTypeDialog({
     lift_1: "",
     lift_2: "",
     cut_ups: "",
+    snag_patch_int: "",
+    snag_patch_ext: "",
   });
   const [loading, setLoading] = useState(false);
 
@@ -45,10 +49,12 @@ export function AddGarageTypeDialog({
         lift_1: existingGarageType.lift_1_value.toString(),
         lift_2: existingGarageType.lift_2_value.toString(),
         cut_ups: existingGarageType.cut_ups_value.toString(),
+        snag_patch_int: existingGarageType.snag_patch_int_value.toString(),
+        snag_patch_ext: existingGarageType.snag_patch_ext_value.toString(),
       });
     } else {
       setGarageType("");
-      setLiftValues({ lift_1: "", lift_2: "", cut_ups: "" });
+      setLiftValues({ lift_1: "", lift_2: "", cut_ups: "", snag_patch_int: "", snag_patch_ext: "" });
     }
   }, [existingGarageType, open]);
 
@@ -66,6 +72,8 @@ export function AddGarageTypeDialog({
         lift_1_value: parseFloat(liftValues.lift_1) || 0,
         lift_2_value: parseFloat(liftValues.lift_2) || 0,
         cut_ups_value: parseFloat(liftValues.cut_ups) || 0,
+        snag_patch_int_value: parseFloat(liftValues.snag_patch_int) || 0,
+        snag_patch_ext_value: parseFloat(liftValues.snag_patch_ext) || 0,
       };
 
       if (existingGarageType) {
@@ -165,6 +173,28 @@ export function AddGarageTypeDialog({
                 min="0"
                 value={liftValues.cut_ups}
                 onChange={(e) => setLiftValues({ ...liftValues, cut_ups: e.target.value })}
+                placeholder="0.00"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-sm">Snag/Patch Int (£)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={liftValues.snag_patch_int}
+                onChange={(e) => setLiftValues({ ...liftValues, snag_patch_int: e.target.value })}
+                placeholder="0.00"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-sm">Snag/Patch Ext (£)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={liftValues.snag_patch_ext}
+                onChange={(e) => setLiftValues({ ...liftValues, snag_patch_ext: e.target.value })}
                 placeholder="0.00"
               />
             </div>
