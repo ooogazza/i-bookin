@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { GARAGE_TYPES, getGarageIcon } from "@/lib/garageTypes";
+import { GARAGE_TYPES, GARAGE_LIFT_TYPES, getGarageIcon } from "@/lib/garageTypes";
 import { Trash2 } from "lucide-react";
 
 interface GarageManagementDialogProps {
@@ -17,7 +17,9 @@ interface GarageManagementDialogProps {
   existingGarage?: {
     id: string;
     garage_type: string;
-    price: number;
+    lift_1_value: number;
+    lift_2_value: number;
+    cut_ups_value: number;
   } | null;
   onSuccess: () => void;
 }
@@ -31,57 +33,60 @@ export function GarageManagementDialog({
   onSuccess,
 }: GarageManagementDialogProps) {
   const [garageType, setGarageType] = useState("");
-  const [price, setPrice] = useState("");
+  const [liftValues, setLiftValues] = useState({
+    lift_1: "",
+    lift_2: "",
+    cut_ups: "",
+  });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (existingGarage) {
       setGarageType(existingGarage.garage_type);
-      setPrice(existingGarage.price.toString());
+      setLiftValues({
+        lift_1: existingGarage.lift_1_value.toString(),
+        lift_2: existingGarage.lift_2_value.toString(),
+        cut_ups: existingGarage.cut_ups_value.toString(),
+      });
     } else {
       setGarageType("");
-      setPrice("");
+      setLiftValues({ lift_1: "", lift_2: "", cut_ups: "" });
     }
   }, [existingGarage, open]);
 
   const handleSave = async () => {
-    if (!garageType || !price || parseFloat(price) <= 0) {
-      toast.error("Please fill in all fields with valid values");
+    if (!garageType) {
+      toast.error("Please select a garage type");
       return;
     }
 
     setLoading(true);
     try {
+      const data = {
+        garage_type: garageType,
+        lift_1_value: parseFloat(liftValues.lift_1) || 0,
+        lift_2_value: parseFloat(liftValues.lift_2) || 0,
+        cut_ups_value: parseFloat(liftValues.cut_ups) || 0,
+      };
+
       if (existingGarage) {
-        // Update existing garage
         const { error } = await supabase
           .from("garages")
-          .update({
-            garage_type: garageType,
-            price: parseFloat(price),
-          })
+          .update(data)
           .eq("id", existingGarage.id);
-
         if (error) throw error;
-        toast.success("Garage updated successfully");
+        toast.success("Garage updated");
       } else {
-        // Create new garage
         const { error } = await supabase
           .from("garages")
-          .insert({
-            plot_id: plotId,
-            garage_type: garageType,
-            price: parseFloat(price),
-          });
-
+          .insert({ ...data, plot_id: plotId });
         if (error) throw error;
-        toast.success("Garage added successfully");
+        toast.success("Garage added");
       }
 
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
-      console.error("Error saving garage:", error);
       toast.error(error.message || "Failed to save garage");
     } finally {
       setLoading(false);
@@ -89,22 +94,16 @@ export function GarageManagementDialog({
   };
 
   const handleDelete = async () => {
-    if (!existingGarage) return;
-    if (!confirm("Are you sure you want to delete this garage?")) return;
+    if (!existingGarage || !confirm("Delete this garage?")) return;
 
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from("garages")
-        .delete()
-        .eq("id", existingGarage.id);
-
+      const { error } = await supabase.from("garages").delete().eq("id", existingGarage.id);
       if (error) throw error;
-      toast.success("Garage deleted successfully");
+      toast.success("Garage deleted");
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
-      console.error("Error deleting garage:", error);
       toast.error("Failed to delete garage");
     } finally {
       setLoading(false);
@@ -116,15 +115,15 @@ export function GarageManagementDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {existingGarage ? "Edit" : "Add"} Garage for Plot {plotNumber}
+            {existingGarage ? "Edit" : "Add"} Garage - Plot {plotNumber}
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="garageType">Garage Type</Label>
+            <Label>Garage Type</Label>
             <Select value={garageType} onValueChange={setGarageType}>
-              <SelectTrigger id="garageType">
-                <SelectValue placeholder="Select garage type" />
+              <SelectTrigger>
+                <SelectValue placeholder="Select type" />
               </SelectTrigger>
               <SelectContent>
                 {GARAGE_TYPES.map((type) => (
@@ -136,33 +135,28 @@ export function GarageManagementDialog({
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="price">Price (£)</Label>
-            <Input
-              id="price"
-              type="number"
-              step="0.01"
-              min="0"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              placeholder="Enter garage price"
-            />
+          <div className="space-y-3">
+            {Object.entries(GARAGE_LIFT_TYPES).map(([key, label]) => (
+              <div key={key} className="space-y-1">
+                <Label className="text-sm">{label} (£)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={liftValues[key as keyof typeof liftValues]}
+                  onChange={(e) => setLiftValues({ ...liftValues, [key]: e.target.value })}
+                  placeholder="0.00"
+                />
+              </div>
+            ))}
           </div>
 
-          <div className="flex gap-2">
-            <Button
-              onClick={handleSave}
-              disabled={loading}
-              className="flex-1"
-            >
-              {existingGarage ? "Update" : "Add"} Garage
+          <div className="flex gap-2 pt-2">
+            <Button onClick={handleSave} disabled={loading} className="flex-1">
+              {existingGarage ? "Update" : "Add"}
             </Button>
             {existingGarage && (
-              <Button
-                onClick={handleDelete}
-                disabled={loading}
-                variant="destructive"
-              >
+              <Button onClick={handleDelete} disabled={loading} variant="destructive">
                 <Trash2 className="h-4 w-4" />
               </Button>
             )}

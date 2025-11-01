@@ -21,6 +21,7 @@ export type Database = {
           confirmed_by_admin: boolean | null
           created_at: string
           garage_id: string | null
+          garage_lift_type: string | null
           id: string
           image_url: string | null
           invoice_number: string | null
@@ -36,6 +37,7 @@ export type Database = {
           confirmed_by_admin?: boolean | null
           created_at?: string
           garage_id?: string | null
+          garage_lift_type?: string | null
           id?: string
           image_url?: string | null
           invoice_number?: string | null
@@ -51,6 +53,7 @@ export type Database = {
           confirmed_by_admin?: boolean | null
           created_at?: string
           garage_id?: string | null
+          garage_lift_type?: string | null
           id?: string
           image_url?: string | null
           invoice_number?: string | null
@@ -66,13 +69,6 @@ export type Database = {
             columns: ["booked_by"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bookings_garage_id_fkey"
-            columns: ["garage_id"]
-            isOneToOne: false
-            referencedRelation: "garages"
             referencedColumns: ["id"]
           },
           {
@@ -156,26 +152,32 @@ export type Database = {
       garages: {
         Row: {
           created_at: string
+          cut_ups_value: number
           garage_type: string
           id: string
+          lift_1_value: number
+          lift_2_value: number
           plot_id: string
-          price: number
           updated_at: string
         }
         Insert: {
           created_at?: string
+          cut_ups_value?: number
           garage_type: string
           id?: string
+          lift_1_value?: number
+          lift_2_value?: number
           plot_id: string
-          price?: number
           updated_at?: string
         }
         Update: {
           created_at?: string
+          cut_ups_value?: number
           garage_type?: string
           id?: string
+          lift_1_value?: number
+          lift_2_value?: number
           plot_id?: string
-          price?: number
           updated_at?: string
         }
         Relationships: [

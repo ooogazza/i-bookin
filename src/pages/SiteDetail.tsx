@@ -72,13 +72,16 @@ interface Booking {
   plot_id: string;
   percentage: number;
   garage_id?: string | null;
+  garage_lift_type?: string | null;
 }
 
 interface Garage {
   id: string;
   plot_id: string;
   garage_type: string;
-  price: number;
+  lift_1_value: number;
+  lift_2_value: number;
+  cut_ups_value: number;
 }
 
 interface User {
@@ -388,7 +391,7 @@ const SiteDetail = () => {
       // Fetch bookings for the site
       const { data: bookingsData, error: bookingsError } = await supabase
         .from("bookings")
-        .select("id, lift_value_id, plot_id, percentage, garage_id")
+        .select("id, lift_value_id, plot_id, percentage, garage_id, garage_lift_type")
         .in("plot_id", (plotsData || []).map(p => p.id));
 
       if (bookingsError) throw bookingsError;
@@ -2514,8 +2517,6 @@ const SiteDetail = () => {
                     >
                       {(() => {
                         const garage = garages.find(g => g.plot_id === plot.id);
-                        const garageBookings = bookings.filter(b => b.garage_id === garage?.id);
-                        const totalBooked = garageBookings.reduce((sum, b) => sum + b.percentage, 0);
                         
                         if (!garage) {
                           return isAdmin ? (
@@ -2525,12 +2526,41 @@ const SiteDetail = () => {
                           );
                         }
                         
+                        // Calculate total booking across all garage lift types
+                        const lift1Bookings = bookings.filter(b => b.garage_id === garage.id && b.garage_lift_type === 'lift_1');
+                        const lift2Bookings = bookings.filter(b => b.garage_id === garage.id && b.garage_lift_type === 'lift_2');
+                        const cutUpsBookings = bookings.filter(b => b.garage_id === garage.id && b.garage_lift_type === 'cut_ups');
+                        
+                        const lift1Total = lift1Bookings.reduce((sum, b) => sum + b.percentage, 0);
+                        const lift2Total = lift2Bookings.reduce((sum, b) => sum + b.percentage, 0);
+                        const cutUpsTotal = cutUpsBookings.reduce((sum, b) => sum + b.percentage, 0);
+                        
+                        // Count how many lifts have any work
+                        let totalLifts = 0;
+                        let completedLifts = 0;
+                        
+                        if (garage.lift_1_value > 0) {
+                          totalLifts++;
+                          if (lift1Total === 100) completedLifts++;
+                        }
+                        if (garage.lift_2_value > 0) {
+                          totalLifts++;
+                          if (lift2Total === 100) completedLifts++;
+                        }
+                        if (garage.cut_ups_value > 0) {
+                          totalLifts++;
+                          if (cutUpsTotal === 100) completedLifts++;
+                        }
+                        
+                        const allComplete = totalLifts > 0 && completedLifts === totalLifts;
+                        const someBooked = lift1Total > 0 || lift2Total > 0 || cutUpsTotal > 0;
+                        
                         return (
                           <div className="flex flex-col items-center gap-1">
                             <div className="text-lg">{getGarageIcon(garage.garage_type)}</div>
                             <div className="text-xs text-muted-foreground">{getGarageLabel(garage.garage_type)}</div>
-                            <div className={`text-sm font-bold ${totalBooked === 100 ? 'text-green-600' : totalBooked > 0 ? 'text-yellow-600' : 'text-red-600'}`}>
-                              {totalBooked}%
+                            <div className={`text-sm font-bold ${allComplete ? 'text-green-600' : someBooked ? 'text-yellow-600' : 'text-red-600'}`}>
+                              {completedLifts}/{totalLifts}
                             </div>
                           </div>
                         );
@@ -3654,7 +3684,7 @@ const SiteDetail = () => {
           onOpenChange={setGarageDialogOpen}
           plotId={selectedPlotForGarage?.id || ""}
           plotNumber={selectedPlotForGarage?.plot_number || 0}
-          existingGarage={selectedPlotForGarage ? garages.find(g => g.plot_id === selectedPlotForGarage.id) : null}
+          existingGarage={selectedPlotForGarage ? garages.find(g => g.plot_id === selectedPlotForGarage.id) || null : null}
           onSuccess={fetchSiteData}
         />
       </main>

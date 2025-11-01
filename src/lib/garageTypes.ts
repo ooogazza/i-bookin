@@ -1,10 +1,13 @@
 export const GARAGE_TYPES = [
   { value: "single", label: "Single Garage", icon: "🚗" },
   { value: "double", label: "Double Garage", icon: "🚙🚗" },
-  { value: "tandem", label: "Tandem Garage", icon: "🚗➡️🚗" },
-  { value: "block", label: "Garage Block", icon: "🏢" },
-  { value: "carport", label: "Carport", icon: "⛱️" },
 ] as const;
+
+export const GARAGE_LIFT_TYPES = {
+  lift_1: "Lift 1",
+  lift_2: "Lift 2",
+  cut_ups: "Cut-Ups",
+} as const;
 
 export type GarageType = typeof GARAGE_TYPES[number]["value"];
 

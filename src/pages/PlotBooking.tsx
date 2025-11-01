@@ -48,7 +48,14 @@ const PlotBooking = () => {
   const selectedGarageValue = useMemo(() => {
     if (!garages || !selectedGarageId) return 0;
     const garage = garages.find((g) => g.id === selectedGarageId);
-    return garage ? garage.price : 0;
+    if (!garage) return 0;
+    
+    // Calculate value based on selected lift type
+    const liftType = selectedGarageId.split('-').pop(); // Extract lift type from ID
+    if (liftType === 'lift_1') return garage.lift_1_value;
+    if (liftType === 'lift_2') return garage.lift_2_value;
+    if (liftType === 'cut_ups') return garage.cut_ups_value;
+    return 0;
   }, [garages, selectedGarageId]);
 
   const bookingValue = useMemo(() => {
@@ -98,12 +105,14 @@ const PlotBooking = () => {
   const getTotalBooked = (liftValueId: string): number =>
     bookings.filter((b) => b.lift_value_id === liftValueId).reduce((sum, b) => sum + b.percentage, 0);
 
-  const getGarageTotalBooked = (garageId: string): number =>
-    bookings.filter((b) => b.garage_id === garageId).reduce((sum, b) => sum + b.percentage, 0);
+  const getGarageTotalBooked = (garageIdWithLift: string): number =>
+    bookings.filter((b) => b.garage_id && `${b.garage_id}-${b.garage_lift_type}` === garageIdWithLift)
+      .reduce((sum, b) => sum + b.percentage, 0);
 
   const getRemainingPercentage = (liftValueId: string): number => 100 - getTotalBooked(liftValueId);
 
-  const getGarageRemainingPercentage = (garageId: string): number => 100 - getGarageTotalBooked(garageId);
+  const getGarageRemainingPercentage = (garageIdWithLift: string): number => 
+    100 - getGarageTotalBooked(garageIdWithLift);
 
   const getAvailableLifts = () => {
     if (!plot) return [];
@@ -111,7 +120,39 @@ const PlotBooking = () => {
   };
 
   const getAvailableGarages = () => {
-    return garages.filter((g) => getGarageRemainingPercentage(g.id) > 0);
+    const available: Array<{ id: string; label: string; value: number; garageId: string; liftType: string }> = [];
+    
+    garages.forEach((g) => {
+      if (g.lift_1_value > 0 && getGarageRemainingPercentage(`${g.id}-lift_1`) > 0) {
+        available.push({
+          id: `${g.id}-lift_1`,
+          label: `${getGarageLabel(g.garage_type)} - Lift 1`,
+          value: g.lift_1_value,
+          garageId: g.id,
+          liftType: 'lift_1'
+        });
+      }
+      if (g.lift_2_value > 0 && getGarageRemainingPercentage(`${g.id}-lift_2`) > 0) {
+        available.push({
+          id: `${g.id}-lift_2`,
+          label: `${getGarageLabel(g.garage_type)} - Lift 2`,
+          value: g.lift_2_value,
+          garageId: g.id,
+          liftType: 'lift_2'
+        });
+      }
+      if (g.cut_ups_value > 0 && getGarageRemainingPercentage(`${g.id}-cut_ups`) > 0) {
+        available.push({
+          id: `${g.id}-cut_ups`,
+          label: `${getGarageLabel(g.garage_type)} - Cut-Ups`,
+          value: g.cut_ups_value,
+          garageId: g.id,
+          liftType: 'cut_ups'
+        });
+      }
+    });
+    
+    return available;
   };
 
   const handleAddExistingMember = (member) => {
@@ -195,12 +236,22 @@ const PlotBooking = () => {
     }
 
     const invoiceNumber = `INV-${Date.now()}`;
+    
+    // Extract garage ID and lift type if garage is selected
+    let garageId = null;
+    let garageLiftType = null;
+    if (selectedGarageId) {
+      const parts = selectedGarageId.split('-');
+      garageLiftType = parts.pop();
+      garageId = parts.join('-');
+    }
 
     const { data: booking, error: bookingError } = await supabase
       .from("bookings")
       .insert({
         lift_value_id: selectedLiftId || null,
-        garage_id: selectedGarageId || null,
+        garage_id: garageId,
+        garage_lift_type: garageLiftType,
         plot_id: plot.id,
         booked_by: user.id,
         percentage,
@@ -280,7 +331,7 @@ const PlotBooking = () => {
             <Select 
               value={selectedLiftId || selectedGarageId} 
               onValueChange={(value) => {
-                if (value.startsWith("garage-")) {
+                if (value.includes('-lift_') || value.includes('-cut_ups')) {
                   setSelectedGarageId(value);
                   setSelectedLiftId("");
                 } else {
@@ -308,7 +359,7 @@ const PlotBooking = () => {
                     <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Garages</div>
                     {getAvailableGarages().map((g) => (
                       <SelectItem key={g.id} value={g.id}>
-                        {getGarageIcon(g.garage_type)} {getGarageLabel(g.garage_type)} – £{g.price.toFixed(2)} ({getGarageRemainingPercentage(g.id)}% available)
+                        {getGarageIcon(g.garageId.split('-')[0])} {g.label} – £{g.value.toFixed(2)} ({getGarageRemainingPercentage(g.id)}% available)
                       </SelectItem>
                     ))}
                   </>

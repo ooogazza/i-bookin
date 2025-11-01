@@ -45,8 +45,11 @@ interface BookingData {
   };
   garages?: {
     garage_type: string;
-    price: number;
+    lift_1_value: number;
+    lift_2_value: number;
+    cut_ups_value: number;
   };
+  garage_lift_type?: string;
   gang_divisions: {
     member_name: string;
     member_type: string;
@@ -174,8 +177,11 @@ const BookingIn = () => {
           ),
           garages (
             garage_type,
-            price
+            lift_1_value,
+            lift_2_value,
+            cut_ups_value
           ),
+          garage_lift_type,
           gang_divisions (
             member_name,
             member_type,
@@ -637,8 +643,8 @@ const BookingIn = () => {
                   ? `Non-Plot Work: £${item.booked_value.toFixed(2)}` 
                   : item.plots && item.lift_values 
                     ? `Plot ${item.plots.plot_number} - ${getLiftFullLabel(item.lift_values.lift_type)}: ${item.percentage}% = £${item.booked_value.toFixed(2)}` 
-                    : item.plots && item.garages
-                      ? `Plot ${item.plots.plot_number} - ${getGarageIcon(item.garages.garage_type)} ${getGarageLabel(item.garages.garage_type)}: ${item.percentage}% = £${item.booked_value.toFixed(2)}`
+                    : item.plots && item.garages && item.garage_lift_type
+                      ? `Plot ${item.plots.plot_number} - ${getGarageIcon(item.garages.garage_type)} ${getGarageLabel(item.garages.garage_type)} ${item.garage_lift_type.replace('_', ' ').toUpperCase()}: ${item.percentage}% = £${item.booked_value.toFixed(2)}`
                       : ""}
               </p>)}
           </div>
@@ -1057,8 +1063,8 @@ const BookingIn = () => {
                             <div className="text-xs md:text-sm flex items-center gap-1">
                               <span className="font-medium">
                                 {item.lift_values && <LiftTypeLabel liftType={item.lift_values.lift_type} />}
-                                {item.garages && (
-                                  <span>{getGarageIcon(item.garages.garage_type)} {getGarageLabel(item.garages.garage_type)}</span>
+                                {item.garages && item.garage_lift_type && (
+                                  <span>{getGarageIcon(item.garages.garage_type)} {getGarageLabel(item.garages.garage_type)} - {item.garage_lift_type.replace('_', ' ').toUpperCase()}</span>
                                 )}
                               </span>
                               {" - "}
