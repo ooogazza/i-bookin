@@ -654,7 +654,7 @@ const BookingIn = () => {
                   : item.plots && item.lift_values 
                     ? `Plot ${item.plots.plot_number} - ${getLiftFullLabel(item.lift_values.lift_type)}: ${item.percentage}% = £${item.booked_value.toFixed(2)}` 
                     : item.plots && item.garages && item.garage_lift_type
-                      ? `Plot ${item.plots.plot_number} - ${getGarageIcon(item.garages.garage_type)} ${getGarageLabel(item.garages.garage_type)} ${item.garage_lift_type.replace('_', ' ').toUpperCase()}: ${item.percentage}% = £${item.booked_value.toFixed(2)}`
+                      ? `Plot ${item.plots.plot_number} - ${getGarageLabel(item.garages.garage_type)} ${item.garage_lift_type.replace('_', ' ').toUpperCase()}: ${item.percentage}% = £${item.booked_value.toFixed(2)}`
                       : ""}
               </p>)}
           </div>
@@ -1074,7 +1074,7 @@ const BookingIn = () => {
                               <span className="font-medium">
                                 {item.lift_values && <LiftTypeLabel liftType={item.lift_values.lift_type} />}
                                 {item.garages && item.garage_lift_type && (
-                                  <span>{getGarageIcon(item.garages.garage_type)} {getGarageLabel(item.garages.garage_type)} - {item.garage_lift_type.replace('_', ' ').toUpperCase()}</span>
+                                  <span>{getGarageLabel(item.garages.garage_type)} - {item.garage_lift_type.replace('_', ' ').toUpperCase()}</span>
                                 )}
                               </span>
                               {" - "}
