@@ -399,21 +399,48 @@ const SiteDetail = () => {
       if (bookingsError) throw bookingsError;
       setBookings(bookingsData || []);
 
-      // Fetch garages for the site
-      const {
-        data: garagesData,
-        error: garagesError
-      } = await supabase.from("garages").select("*").in("plot_id", (plotsData || []).map(p => p.id));
-      if (garagesError) throw garagesError;
-      setGarages(garagesData || []);
-
-      // Fetch garage types for the site
+      // Fetch garage types first
       const {
         data: garageTypesData,
         error: garageTypesError
       } = await supabase.from("garage_types").select("*").eq("site_id", id);
       if (garageTypesError) throw garageTypesError;
       setGarageTypes(garageTypesData || []);
+
+      // Fetch garages for the site with garage type info
+      const {
+        data: garagesData,
+        error: garagesError
+      } = await supabase.from("garages").select(`
+        *,
+        garage_types (
+          garage_type,
+          lift_1_value,
+          lift_2_value,
+          cut_ups_value,
+          snag_patch_int_value,
+          snag_patch_ext_value
+        )
+      `).in("plot_id", (plotsData || []).map(p => p.id));
+      if (garagesError) throw garagesError;
+      const normalizedGarages = (garagesData || []).map((g: any) => {
+        const gtJoin = g.garage_types;
+        const gtById = g.garage_type_id ? (garageTypesData || []).find((t: any) => t.id === g.garage_type_id) : null;
+        const gtByName = (garageTypesData || []).find((t: any) => t.garage_type === g.garage_type);
+        const src = gtJoin || gtById || gtByName;
+        if (src) {
+          return {
+            ...g,
+            lift_1_value: Number(src.lift_1_value) || 0,
+            lift_2_value: Number(src.lift_2_value) || 0,
+            cut_ups_value: Number(src.cut_ups_value) || 0,
+            snag_patch_int_value: Number(src.snag_patch_int_value) || 0,
+            snag_patch_ext_value: Number(src.snag_patch_ext_value) || 0,
+          };
+        }
+        return g;
+      });
+      setGarages(normalizedGarages as any);
       if (isAdmin) {
         const {
           data: usersData,
@@ -1025,21 +1052,14 @@ const SiteDetail = () => {
   const getGarageLiftValue = (garageId: string, liftType: string) => {
     const garage = garages.find(g => g.id === garageId);
     if (!garage) return 0;
-    const gt = garageTypes.find(t => t.id === garage.garage_type_id);
-    const vals = gt ? {
-      lift_1: Number(gt.lift_1_value) || 0,
-      lift_2: Number(gt.lift_2_value) || 0,
-      cut_ups: Number(gt.cut_ups_value) || 0,
-      snag_patch_int: Number(gt.snag_patch_int_value) || 0,
-      snag_patch_ext: Number(gt.snag_patch_ext_value) || 0,
-    } : {
+    const vals = {
       lift_1: Number(garage.lift_1_value) || 0,
       lift_2: Number(garage.lift_2_value) || 0,
       cut_ups: Number(garage.cut_ups_value) || 0,
       snag_patch_int: Number(garage.snag_patch_int_value) || 0,
       snag_patch_ext: Number(garage.snag_patch_ext_value) || 0,
-    };
-    return (vals as any)[liftType] ?? 0;
+    } as Record<string, number>;
+    return vals[liftType] ?? 0;
   };
   const getTotalBooked = (plot: Plot, liftType: string): number => {
     if (!plot.house_types) return 0;
@@ -2796,14 +2816,7 @@ const SiteDetail = () => {
                             const parts = selectedBookingLiftType.split('_');
                             const garageId = parts[1];
                             const garageLiftType = parts[2];
-                            const garage = garages.find(g => g.id === garageId);
-                            if (!garage) return 0;
-                            if (garageLiftType === 'lift_1') return garage.lift_1_value;
-                            if (garageLiftType === 'lift_2') return garage.lift_2_value;
-                            if (garageLiftType === 'cut_ups') return garage.cut_ups_value;
-                            if (garageLiftType === 'snag_patch_int') return garage.snag_patch_int_value;
-                            if (garageLiftType === 'snag_patch_ext') return garage.snag_patch_ext_value;
-                            return 0;
+                            return getGarageLiftValue(garageId, garageLiftType);
                           })().toFixed(2)
                         : getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType).toFixed(2)
                       }
