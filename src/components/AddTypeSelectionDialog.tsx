@@ -31,7 +31,9 @@ export function AddTypeSelectionDialog({
             className="w-full h-20 text-lg justify-start gap-4"
             variant="outline"
           >
-            <img src={houseIcon} alt="House" className="h-8 w-8 object-contain" />
+            <div className="flex items-center justify-center w-8 h-8">
+              <img src={houseIcon} alt="House" className="w-full h-full object-contain" />
+            </div>
             Add House Type
           </Button>
           <Button
@@ -42,7 +44,9 @@ export function AddTypeSelectionDialog({
             className="w-full h-20 text-lg justify-start gap-4"
             variant="outline"
           >
-            <img src={garageSingleIcon} alt="Garage" className="h-8 w-8 object-contain" />
+            <div className="flex items-center justify-center w-8 h-8">
+              <img src={garageSingleIcon} alt="Garage" className="w-full h-full object-contain" />
+            </div>
             Add Garage Type
           </Button>
         </div>
