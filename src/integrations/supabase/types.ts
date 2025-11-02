@@ -149,6 +149,44 @@ export type Database = {
           },
         ]
       }
+      garage_type_price_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          garage_type_id: string
+          id: string
+          lift_type: string
+          new_value: number
+          old_value: number | null
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          garage_type_id: string
+          id?: string
+          lift_type: string
+          new_value: number
+          old_value?: number | null
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          garage_type_id?: string
+          id?: string
+          lift_type?: string
+          new_value?: number
+          old_value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "garage_type_price_history_garage_type_id_fkey"
+            columns: ["garage_type_id"]
+            isOneToOne: false
+            referencedRelation: "garage_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       garage_types: {
         Row: {
           created_at: string

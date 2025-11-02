@@ -1020,6 +1020,27 @@ const SiteDetail = () => {
     const lift = houseType.lift_values.find(lv => lv.lift_type === liftType);
     return lift ? lift.value : 0;
   };
+
+  // Prefer values from garage_types; fall back to garages snapshot
+  const getGarageLiftValue = (garageId: string, liftType: string) => {
+    const garage = garages.find(g => g.id === garageId);
+    if (!garage) return 0;
+    const gt = garageTypes.find(t => t.id === garage.garage_type_id);
+    const vals = gt ? {
+      lift_1: Number(gt.lift_1_value) || 0,
+      lift_2: Number(gt.lift_2_value) || 0,
+      cut_ups: Number(gt.cut_ups_value) || 0,
+      snag_patch_int: Number(gt.snag_patch_int_value) || 0,
+      snag_patch_ext: Number(gt.snag_patch_ext_value) || 0,
+    } : {
+      lift_1: Number(garage.lift_1_value) || 0,
+      lift_2: Number(garage.lift_2_value) || 0,
+      cut_ups: Number(garage.cut_ups_value) || 0,
+      snag_patch_int: Number(garage.snag_patch_int_value) || 0,
+      snag_patch_ext: Number(garage.snag_patch_ext_value) || 0,
+    };
+    return (vals as any)[liftType] ?? 0;
+  };
   const getTotalBooked = (plot: Plot, liftType: string): number => {
     if (!plot.house_types) return 0;
     const liftValue = plot.house_types.lift_values.find(lv => lv.lift_type === liftType);
@@ -1067,8 +1088,7 @@ const SiteDetail = () => {
   };
   const handleGarageCellClick = (plot: Plot, garage: Garage, liftType: string) => {
     // Map lift_1, lift_2, cut_ups to their values
-    let garageValue = 0;
-    if (liftType === 'lift_1') garageValue = garage.lift_1_value;else if (liftType === 'lift_2') garageValue = garage.lift_2_value;else if (liftType === 'cut_ups') garageValue = garage.cut_ups_value;
+    const garageValue = getGarageLiftValue(garage.id, liftType);
     if (garageValue === 0) {
       toast.error("No price set for this garage lift");
       return;
@@ -1102,8 +1122,7 @@ const SiteDetail = () => {
       }
 
       // Get garage value
-      let garageValue = 0;
-      if (garageLiftType === 'lift_1') garageValue = garage.lift_1_value;else if (garageLiftType === 'lift_2') garageValue = garage.lift_2_value;else if (garageLiftType === 'cut_ups') garageValue = garage.cut_ups_value;else if (garageLiftType === 'snag_patch_int') garageValue = garage.snag_patch_int_value;else if (garageLiftType === 'snag_patch_ext') garageValue = garage.snag_patch_ext_value;
+      const garageValue = getGarageLiftValue(garageId, garageLiftType);
 
       // Check remaining percentage
       const liftBookings = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === garageLiftType);
