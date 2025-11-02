@@ -1778,7 +1778,12 @@ const SiteDetail = () => {
         if (item.garageId && item.garageLiftType) {
           const garage = garages.find(g => g.id === item.garageId);
           if (garage) {
-            itemLabel = `${getGarageLabel(garage.garage_type)} - ${LIFT_LABELS[item.garageLiftType as keyof typeof LIFT_LABELS]}`;
+            const garageLabel = getGarageLabel(garage.garage_type);
+            // Filter out file paths
+            const cleanLabel = garageLabel.includes('/') || garageLabel.includes('.png') || garageLabel.includes('.jpg') 
+              ? 'Garage' 
+              : garageLabel;
+            itemLabel = `${cleanLabel} - ${LIFT_LABELS[item.garageLiftType as keyof typeof LIFT_LABELS]}`;
           }
         }
         const text = `Plot ${item.plot.plot_number} - ${itemLabel}: ${item.percentage}% = £${item.bookedValue.toFixed(2)}`;
@@ -2034,7 +2039,12 @@ const SiteDetail = () => {
         if (item.garageId && item.garageLiftType) {
           const garage = garages.find(g => g.id === item.garageId);
           if (garage) {
-            itemLabel = `${getGarageLabel(garage.garage_type)} - ${LIFT_LABELS[item.garageLiftType as keyof typeof LIFT_LABELS]}`;
+            const garageLabel = getGarageLabel(garage.garage_type);
+            // Filter out file paths
+            const cleanLabel = garageLabel.includes('/') || garageLabel.includes('.png') || garageLabel.includes('.jpg') 
+              ? 'Garage' 
+              : garageLabel;
+            itemLabel = `${cleanLabel} - ${LIFT_LABELS[item.garageLiftType as keyof typeof LIFT_LABELS]}`;
           }
         }
         const text = `Plot ${item.plot.plot_number} - ${itemLabel}: ${item.percentage}% = £${item.bookedValue.toFixed(2)}`;
@@ -3184,7 +3194,12 @@ const SiteDetail = () => {
                     if (item.garageId && item.garageLiftType) {
                       const garage = garages.find(g => g.id === item.garageId);
                       if (garage) {
-                        itemLabel = `${getGarageLabel(garage.garage_type)} - ${LIFT_LABELS[item.garageLiftType as keyof typeof LIFT_LABELS]}`;
+                        const garageLabel = getGarageLabel(garage.garage_type);
+                        // Filter out file paths
+                        const cleanLabel = garageLabel.includes('/') || garageLabel.includes('.png') || garageLabel.includes('.jpg') 
+                          ? 'Garage' 
+                          : garageLabel;
+                        itemLabel = `${cleanLabel} - ${LIFT_LABELS[item.garageLiftType as keyof typeof LIFT_LABELS]}`;
                       }
                     }
                     return <div key={index} className="flex justify-between items-start p-3 bg-muted rounded-lg">
