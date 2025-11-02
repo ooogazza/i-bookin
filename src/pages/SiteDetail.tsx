@@ -1828,20 +1828,26 @@ const SiteDetail = () => {
 
       // Create bookings and send email in parallel
       for (const item of invoiceItems) {
-        const {
-          data: booking,
-          error: bookingError
-        } = await supabase.from("bookings").insert({
-          lift_value_id: item.liftValueId,
-          plot_id: item.plot.id,
+        const isGarage = !!item.garageId && !!item.garageLiftType;
+        const payload: any = {
+          plot_id: item.plot.id, // keep association to plot for permissions and context
           booked_by: user.id,
           percentage: item.percentage,
           booked_value: item.bookedValue,
           invoice_number: invoiceNumber,
           status: "confirmed",
           notes: invoiceNotes,
-          image_url: imageUrl
-        }).select().single();
+          image_url: imageUrl,
+          ...(isGarage
+            ? { lift_value_id: null, garage_id: item.garageId, garage_lift_type: item.garageLiftType }
+            : { lift_value_id: item.liftValueId, garage_id: null, garage_lift_type: null })
+        };
+
+        const { data: booking, error: bookingError } = await supabase
+          .from("bookings")
+          .insert(payload)
+          .select()
+          .single();
         if (bookingError) throw bookingError;
         const gangDivisions = gangMembers.map(m => ({
           booking_id: booking.id,
@@ -1850,9 +1856,7 @@ const SiteDetail = () => {
           email: m.email || null,
           amount: m.amount
         }));
-        const {
-          error: gangError
-        } = await supabase.from("gang_divisions").insert(gangDivisions);
+        const { error: gangError } = await supabase.from("gang_divisions").insert(gangDivisions);
         if (gangError) throw gangError;
       }
 
