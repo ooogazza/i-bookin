@@ -1088,16 +1088,18 @@ const SiteDetail = () => {
     const liftValue = plot.house_types.lift_values.find(lv => lv.lift_type === liftType);
     if (!liftValue) return 0;
 
-    // Count confirmed bookings
+    // Count confirmed bookings (plot lifts only)
     const liftBookings = bookings.filter(b => b.plot_id === plot.id && b.lift_value_id === liftValue.id);
     const confirmedTotal = liftBookings.reduce((sum, b) => sum + b.percentage, 0);
 
-    // Count pending invoice items
-    const pendingTotal = invoiceItems.filter(item => item.plot.id === plot.id && item.liftType === liftType).reduce((sum, item) => sum + item.percentage, 0);
+    // Count pending invoice items (exclude garage items)
+    const pendingTotal = invoiceItems
+      .filter(item => !item.garageId && item.plot.id === plot.id && item.liftType === liftType)
+      .reduce((sum, item) => sum + item.percentage, 0);
     return confirmedTotal + pendingTotal;
   };
   const isPendingInInvoice = (plot: Plot, liftType: string): boolean => {
-    return invoiceItems.some(item => item.plot.id === plot.id && item.liftType === liftType);
+    return invoiceItems.some(item => !item.garageId && item.plot.id === plot.id && item.liftType === liftType);
   };
   const getCellColor = (totalBooked: number, isPending: boolean): string => {
     if (isPending) return "bg-blue-200 hover:bg-blue-300 dark:bg-blue-900/40 dark:hover:bg-blue-900/50 cursor-pointer";
