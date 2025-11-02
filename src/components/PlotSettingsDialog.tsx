@@ -96,26 +96,42 @@ export function PlotSettingsDialog({
 
       // Handle garage assignment
       if (selectedGarageType) {
+        // Fetch selected garage type details (to satisfy check constraint and copy values)
+        const { data: gt, error: gtError } = await supabase
+          .from("garage_types")
+          .select("garage_type, lift_1_value, lift_2_value, cut_ups_value, snag_patch_int_value, snag_patch_ext_value")
+          .eq("id", selectedGarageType)
+          .single();
+        if (gtError || !gt) throw gtError || new Error("Garage type not found");
+
         if (existingGarage) {
-          // Update existing garage
+          // Update existing garage to match selected type
           const { error: garageError } = await supabase
             .from("garages")
-            .update({ garage_type_id: selectedGarageType })
+            .update({
+              garage_type_id: selectedGarageType,
+              garage_type: gt.garage_type,
+              lift_1_value: gt.lift_1_value,
+              lift_2_value: gt.lift_2_value,
+              cut_ups_value: gt.cut_ups_value,
+              snag_patch_int_value: gt.snag_patch_int_value,
+              snag_patch_ext_value: gt.snag_patch_ext_value,
+            })
             .eq("id", existingGarage.id);
           if (garageError) throw garageError;
         } else {
-          // Create new garage
+          // Create new garage with correct type and values
           const { error: garageError } = await supabase
             .from("garages")
             .insert({
               plot_id: plotId,
               garage_type_id: selectedGarageType,
-              garage_type: "", // Will be populated from garage_types
-              lift_1_value: 0,
-              lift_2_value: 0,
-              cut_ups_value: 0,
-              snag_patch_int_value: 0,
-              snag_patch_ext_value: 0
+              garage_type: gt.garage_type, // required by check constraint
+              lift_1_value: gt.lift_1_value,
+              lift_2_value: gt.lift_2_value,
+              cut_ups_value: gt.cut_ups_value,
+              snag_patch_int_value: gt.snag_patch_int_value,
+              snag_patch_ext_value: gt.snag_patch_ext_value,
             });
           if (garageError) throw garageError;
         }

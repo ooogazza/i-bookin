@@ -187,7 +187,7 @@ const BookingIn = () => {
             member_type,
             amount
           )
-        `).eq("status", "confirmed").order("created_at", {
+        `).in("status", ["sent", "confirmed"]).order("created_at", {
         ascending: false
       });
 

@@ -45,7 +45,7 @@ export function AddTypeSelectionDialog({
             variant="outline"
           >
             <div className="flex items-center justify-center w-8 h-8">
-              <img src={garageSingleIcon} alt="Garage" className="w-full h-full object-contain" />
+              <img src={garageSingleIcon} alt="Garage" className="w-full h-full object-contain scale-110" />
             </div>
             Add Garage Type
           </Button>
