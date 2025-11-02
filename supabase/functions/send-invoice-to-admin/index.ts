@@ -32,7 +32,7 @@ const gangMemberSchema = z.object({
   name: z.string().trim().max(100),
   type: z.string().max(50),
   amount: z.number().nonnegative().max(1000000),
-  email: z.string().email().max(255).optional()
+  email: z.string().email().max(255).optional().nullable()
 });
 
 const invoiceSchema = z.object({
