@@ -1159,7 +1159,7 @@ const SiteDetail = () => {
       // Parse garage info from encoded lift type
       const parts = selectedBookingLiftType.split('_');
       const garageId = parts[1];
-      const garageLiftType = parts[2];
+      const garageLiftType = parts.slice(2).join('_');
       const garage = garages.find(g => g.id === garageId);
       if (!garage) {
         toast.error("Garage not found");
@@ -2818,6 +2818,7 @@ const SiteDetail = () => {
           <DialogContent className="max-w-md" onOpenAutoFocus={e => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>Book Work</DialogTitle>
+              <DialogDescription className="sr-only">Select lift, percentage and optional notes</DialogDescription>
             </DialogHeader>
             {selectedBookingPlot && <div className="space-y-4">
                 <div className="p-4 bg-muted rounded-lg">
@@ -2827,7 +2828,7 @@ const SiteDetail = () => {
                       ? (() => {
                           const parts = selectedBookingLiftType.split('_');
                           const garageId = parts[1];
-                          const garageLiftType = parts[2];
+                          const garageLiftType = parts.slice(2).join('_');
                           const garage = garages.find(g => g.id === garageId);
                           const garageType = garage ? garage.garage_type : 'Unknown';
                           return garage ? `${getGarageLabel(garageType)} - ${LIFT_LABELS[garageLiftType as keyof typeof LIFT_LABELS]}` : 'Unknown garage';
@@ -2841,7 +2842,7 @@ const SiteDetail = () => {
                         ? (() => {
                             const parts = selectedBookingLiftType.split('_');
                             const garageId = parts[1];
-                            const garageLiftType = parts[2];
+                            const garageLiftType = parts.slice(2).join('_');
                             return getGarageLiftValue(garageId, garageLiftType);
                           })().toFixed(2)
                         : getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType).toFixed(2)
@@ -2855,7 +2856,7 @@ const SiteDetail = () => {
                       ? (() => {
                           const parts = selectedBookingLiftType.split('_');
                           const garageId = parts[1];
-                          const garageLiftType = parts[2];
+                          const garageLiftType = parts.slice(2).join('_');
                           const garage = garages.find(g => g.id === garageId);
                           if (!garage) return 0;
                           if (garageLiftType === 'lift_1') return garage.lift_1_value;
@@ -2870,7 +2871,7 @@ const SiteDetail = () => {
                       ? (() => {
                           const parts = selectedBookingLiftType.split('_');
                           const garageId = parts[1];
-                          const garageLiftType = parts[2];
+                          const garageLiftType = parts.slice(2).join('_');
                           const liftBookings = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === garageLiftType);
                           return liftBookings.reduce((sum, b) => sum + b.percentage, 0);
                         })()
@@ -2898,7 +2899,7 @@ const SiteDetail = () => {
                       ? (() => {
                           const parts = selectedBookingLiftType.split('_');
                           const garageId = parts[1];
-                          const garageLiftType = parts[2];
+                          const garageLiftType = parts.slice(2).join('_');
                           const garage = garages.find(g => g.id === garageId);
                           if (!garage) return 0;
                           if (garageLiftType === 'lift_1') return garage.lift_1_value;
@@ -2913,7 +2914,7 @@ const SiteDetail = () => {
                       ? (() => {
                           const parts = selectedBookingLiftType.split('_');
                           const garageId = parts[1];
-                          const garageLiftType = parts[2];
+                          const garageLiftType = parts.slice(2).join('_');
                           const liftBookings = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === garageLiftType);
                           return liftBookings.reduce((sum, b) => sum + b.percentage, 0);
                         })()
@@ -2929,7 +2930,7 @@ const SiteDetail = () => {
                         ? (() => {
                             const parts = selectedBookingLiftType.split('_');
                             const garageId = parts[1];
-                            const garageLiftType = parts[2];
+                            const garageLiftType = parts.slice(2).join('_');
                             const garage = garages.find(g => g.id === garageId);
                             if (!garage) return 0;
                             if (garageLiftType === 'lift_1') return garage.lift_1_value;
@@ -2944,7 +2945,7 @@ const SiteDetail = () => {
                         ? (() => {
                             const parts = selectedBookingLiftType.split('_');
                             const garageId = parts[1];
-                            const garageLiftType = parts[2];
+                            const garageLiftType = parts.slice(2).join('_');
                             const liftBookings = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === garageLiftType);
                             return liftBookings.reduce((sum, b) => sum + b.percentage, 0);
                           })()
@@ -2967,7 +2968,7 @@ const SiteDetail = () => {
                         ? (() => {
                             const parts = selectedBookingLiftType.split('_');
                             const garageId = parts[1];
-                            const garageLiftType = parts[2];
+                            const garageLiftType = parts.slice(2).join('_');
                             const liftBookings = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === garageLiftType);
                             return liftBookings.reduce((sum, b) => sum + b.percentage, 0);
                           })()
@@ -2982,7 +2983,7 @@ const SiteDetail = () => {
                         ? (() => {
                             const parts = selectedBookingLiftType.split('_');
                             const garageId = parts[1];
-                            const garageLiftType = parts[2];
+                            const garageLiftType = parts.slice(2).join('_');
                             const liftBookings = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === garageLiftType);
                             return liftBookings.reduce((sum, b) => sum + b.percentage, 0);
                           })()
@@ -3000,7 +3001,7 @@ const SiteDetail = () => {
                     ? (() => {
                         const parts = selectedBookingLiftType.split('_');
                         const garageId = parts[1];
-                        const garageLiftType = parts[2];
+                        const garageLiftType = parts.slice(2).join('_');
                         const liftBookings = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === garageLiftType);
                         return liftBookings.reduce((sum, b) => sum + b.percentage, 0);
                       })()
@@ -3017,7 +3018,7 @@ const SiteDetail = () => {
                       ? (() => {
                           const parts = selectedBookingLiftType.split('_');
                           const garageId = parts[1];
-                          const garageLiftType = parts[2];
+                          const garageLiftType = parts.slice(2).join('_');
                           const liftBookings = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === garageLiftType);
                           return liftBookings.reduce((sum, b) => sum + b.percentage, 0);
                         })()
@@ -3042,7 +3043,7 @@ const SiteDetail = () => {
                 ? (() => {
                     const parts = selectedBookingLiftType.split('_');
                     const garageId = parts[1];
-                    const garageLiftType = parts[2];
+                    const garageLiftType = parts.slice(2).join('_');
                     const liftBookings = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === garageLiftType);
                     return liftBookings.reduce((sum, b) => sum + b.percentage, 0);
                   })()
