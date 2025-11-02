@@ -1061,6 +1061,14 @@ const SiteDetail = () => {
     } as Record<string, number>;
     return vals[liftType] ?? 0;
   };
+
+  const sanitizeGarageLiftType = (garageId: string, liftType?: string) => {
+    const valid = ['lift_1','lift_2','cut_ups','snag_patch_int','snag_patch_ext'];
+    if (liftType && valid.includes(liftType)) return liftType;
+    // choose first non-zero
+    const first = valid.find(k => getGarageLiftValue(garageId, k) > 0) || 'lift_1';
+    return first;
+  };
   const getTotalBooked = (plot: Plot, liftType: string): number => {
     if (!plot.house_types) return 0;
     const liftValue = plot.house_types.lift_values.find(lv => lv.lift_type === liftType);
@@ -2804,7 +2812,8 @@ const SiteDetail = () => {
                           const garageId = parts[1];
                           const garageLiftType = parts[2];
                           const garage = garages.find(g => g.id === garageId);
-                          return garage ? `${getGarageLabel(garage.garage_type)} - ${LIFT_LABELS[garageLiftType as keyof typeof LIFT_LABELS]}` : 'Unknown garage';
+                          const garageType = garage ? garage.garage_type : 'Unknown';
+                          return garage ? `${getGarageLabel(garageType)} - ${LIFT_LABELS[garageLiftType as keyof typeof LIFT_LABELS]}` : 'Unknown garage';
                         })()
                       : LIFT_LABELS[selectedBookingLiftType as keyof typeof LIFT_LABELS]
                     }
