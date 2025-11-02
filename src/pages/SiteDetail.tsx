@@ -428,6 +428,13 @@ const SiteDetail = () => {
         const gtById = g.garage_type_id ? (garageTypesData || []).find((t: any) => t.id === g.garage_type_id) : null;
         const gtByName = (garageTypesData || []).find((t: any) => t.garage_type === g.garage_type);
         const src = gtJoin || gtById || gtByName;
+        console.log('Normalizing garage:', {
+          garage_id: g.id,
+          garage_type: g.garage_type,
+          garage_type_id: g.garage_type_id,
+          gtJoin, gtById, gtByName, src,
+          result_lift_1: src ? Number(src.lift_1_value) : 'NO SOURCE'
+        });
         if (src) {
           return {
             ...g,
@@ -440,6 +447,8 @@ const SiteDetail = () => {
         }
         return g;
       });
+      console.log('Normalized garages:', normalizedGarages);
+      console.log('Garage types available:', garageTypesData);
       setGarages(normalizedGarages as any);
       if (isAdmin) {
         const {
@@ -1051,7 +1060,11 @@ const SiteDetail = () => {
   // Prefer values from garage_types; fall back to garages snapshot
   const getGarageLiftValue = (garageId: string, liftType: string) => {
     const garage = garages.find(g => g.id === garageId);
-    if (!garage) return 0;
+    console.log('getGarageLiftValue:', { garageId, liftType, garage, allGarages: garages });
+    if (!garage) {
+      console.log('Garage not found!');
+      return 0;
+    }
     const vals = {
       lift_1: Number(garage.lift_1_value) || 0,
       lift_2: Number(garage.lift_2_value) || 0,
@@ -1059,6 +1072,7 @@ const SiteDetail = () => {
       snag_patch_int: Number(garage.snag_patch_int_value) || 0,
       snag_patch_ext: Number(garage.snag_patch_ext_value) || 0,
     } as Record<string, number>;
+    console.log('Garage values:', vals, 'returning:', vals[liftType]);
     return vals[liftType] ?? 0;
   };
 
@@ -1115,8 +1129,10 @@ const SiteDetail = () => {
     setBookingDialogOpen(true);
   };
   const handleGarageCellClick = (plot: Plot, garage: Garage, liftType: string) => {
+    console.log('handleGarageCellClick called:', { plot, garage, liftType });
     // Map lift_1, lift_2, cut_ups to their values
     const garageValue = getGarageLiftValue(garage.id, liftType);
+    console.log('Garage value from getGarageLiftValue:', garageValue);
     if (garageValue === 0) {
       toast.error("No price set for this garage lift");
       return;
@@ -1131,6 +1147,7 @@ const SiteDetail = () => {
     setSelectedBookingLiftType(`garage_${garage.id}_${liftType}`); // Encode garage info
     const remaining = 100 - totalBooked;
     setBookingPercentage(Math.min(100, remaining));
+    console.log('Opening booking dialog with:', { garage, liftType, garageValue, totalBooked, remaining });
     setBookingDialogOpen(true);
   };
   const handleAddToInvoice = () => {
