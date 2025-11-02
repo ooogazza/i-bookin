@@ -2758,17 +2758,65 @@ const SiteDetail = () => {
             {selectedBookingPlot && <div className="space-y-4">
                 <div className="p-4 bg-muted rounded-lg">
                   <p className="text-sm text-muted-foreground">Plot {selectedBookingPlot.plot_number}</p>
-                  <p className="font-semibold">{LIFT_LABELS[selectedBookingLiftType as keyof typeof LIFT_LABELS]}</p>
+                  <p className="font-semibold">
+                    {selectedBookingLiftType.startsWith('garage_') 
+                      ? (() => {
+                          const parts = selectedBookingLiftType.split('_');
+                          const garageId = parts[1];
+                          const garageLiftType = parts[2];
+                          const garage = garages.find(g => g.id === garageId);
+                          return garage ? `${getGarageLabel(garage.garage_type)} - ${LIFT_LABELS[garageLiftType as keyof typeof LIFT_LABELS]}` : 'Unknown garage';
+                        })()
+                      : LIFT_LABELS[selectedBookingLiftType as keyof typeof LIFT_LABELS]
+                    }
+                  </p>
                   <div className="flex items-center justify-between mt-2">
                     <p className="text-lg font-bold text-primary">
-                      £{getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType).toFixed(2)}
+                      £{selectedBookingLiftType.startsWith('garage_') 
+                        ? (() => {
+                            const parts = selectedBookingLiftType.split('_');
+                            const garageId = parts[1];
+                            const garageLiftType = parts[2];
+                            const garage = garages.find(g => g.id === garageId);
+                            if (!garage) return 0;
+                            if (garageLiftType === 'lift_1') return garage.lift_1_value;
+                            if (garageLiftType === 'lift_2') return garage.lift_2_value;
+                            if (garageLiftType === 'cut_ups') return garage.cut_ups_value;
+                            if (garageLiftType === 'snag_patch_int') return garage.snag_patch_int_value;
+                            if (garageLiftType === 'snag_patch_ext') return garage.snag_patch_ext_value;
+                            return 0;
+                          })().toFixed(2)
+                        : getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType).toFixed(2)
+                      }
                     </p>
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-muted-foreground">Leaves:</span>
                       {editingLeavesValue ? <Input type="number" step="0.01" value={tempLeavesValue} onChange={e => setTempLeavesValue(e.target.value)} onBlur={() => {
                     const val = parseFloat(tempLeavesValue);
-                    const total = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType);
-                    const alreadyPct = getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
+                    const total = selectedBookingLiftType.startsWith('garage_') 
+                      ? (() => {
+                          const parts = selectedBookingLiftType.split('_');
+                          const garageId = parts[1];
+                          const garageLiftType = parts[2];
+                          const garage = garages.find(g => g.id === garageId);
+                          if (!garage) return 0;
+                          if (garageLiftType === 'lift_1') return garage.lift_1_value;
+                          if (garageLiftType === 'lift_2') return garage.lift_2_value;
+                          if (garageLiftType === 'cut_ups') return garage.cut_ups_value;
+                          if (garageLiftType === 'snag_patch_int') return garage.snag_patch_int_value;
+                          if (garageLiftType === 'snag_patch_ext') return garage.snag_patch_ext_value;
+                          return 0;
+                        })()
+                      : getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType);
+                    const alreadyPct = selectedBookingLiftType.startsWith('garage_') 
+                      ? (() => {
+                          const parts = selectedBookingLiftType.split('_');
+                          const garageId = parts[1];
+                          const garageLiftType = parts[2];
+                          const liftBookings = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === garageLiftType);
+                          return liftBookings.reduce((sum, b) => sum + b.percentage, 0);
+                        })()
+                      : getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
                     const availableMoney = total * ((100 - alreadyPct) / 100);
                     if (!isNaN(val) && val >= 0) {
                       const clampedLeaves = Math.min(Math.max(val, 0), availableMoney);
@@ -2788,8 +2836,30 @@ const SiteDetail = () => {
                       (e.currentTarget as HTMLInputElement).blur();
                     }
                   }} className="w-28 h-7 text-lg font-bold text-primary text-right" autoFocus /> : <button onClick={() => {
-                    const total = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType);
-                    const alreadyPct = getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
+                    const total = selectedBookingLiftType.startsWith('garage_') 
+                      ? (() => {
+                          const parts = selectedBookingLiftType.split('_');
+                          const garageId = parts[1];
+                          const garageLiftType = parts[2];
+                          const garage = garages.find(g => g.id === garageId);
+                          if (!garage) return 0;
+                          if (garageLiftType === 'lift_1') return garage.lift_1_value;
+                          if (garageLiftType === 'lift_2') return garage.lift_2_value;
+                          if (garageLiftType === 'cut_ups') return garage.cut_ups_value;
+                          if (garageLiftType === 'snag_patch_int') return garage.snag_patch_int_value;
+                          if (garageLiftType === 'snag_patch_ext') return garage.snag_patch_ext_value;
+                          return 0;
+                        })()
+                      : getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType);
+                    const alreadyPct = selectedBookingLiftType.startsWith('garage_') 
+                      ? (() => {
+                          const parts = selectedBookingLiftType.split('_');
+                          const garageId = parts[1];
+                          const garageLiftType = parts[2];
+                          const liftBookings = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === garageLiftType);
+                          return liftBookings.reduce((sum, b) => sum + b.percentage, 0);
+                        })()
+                      : getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
                     const availableMoney = total * ((100 - alreadyPct) / 100);
                     const currentBooked = overrideBookedValue ?? total * (bookingPercentage / 100);
                     const leaves = Math.max(availableMoney - currentBooked, 0);
@@ -2797,8 +2867,30 @@ const SiteDetail = () => {
                     setEditingLeavesValue(true);
                   }} className="text-lg font-bold text-primary hover:text-primary/80 transition-colors cursor-pointer">
                           £{(() => {
-                      const total = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType);
-                      const alreadyPct = getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
+                      const total = selectedBookingLiftType.startsWith('garage_') 
+                        ? (() => {
+                            const parts = selectedBookingLiftType.split('_');
+                            const garageId = parts[1];
+                            const garageLiftType = parts[2];
+                            const garage = garages.find(g => g.id === garageId);
+                            if (!garage) return 0;
+                            if (garageLiftType === 'lift_1') return garage.lift_1_value;
+                            if (garageLiftType === 'lift_2') return garage.lift_2_value;
+                            if (garageLiftType === 'cut_ups') return garage.cut_ups_value;
+                            if (garageLiftType === 'snag_patch_int') return garage.snag_patch_int_value;
+                            if (garageLiftType === 'snag_patch_ext') return garage.snag_patch_ext_value;
+                            return 0;
+                          })()
+                        : getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType);
+                      const alreadyPct = selectedBookingLiftType.startsWith('garage_') 
+                        ? (() => {
+                            const parts = selectedBookingLiftType.split('_');
+                            const garageId = parts[1];
+                            const garageLiftType = parts[2];
+                            const liftBookings = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === garageLiftType);
+                            return liftBookings.reduce((sum, b) => sum + b.percentage, 0);
+                          })()
+                        : getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
                       const availableMoney = total * ((100 - alreadyPct) / 100);
                       const currentBooked = overrideBookedValue ?? total * (bookingPercentage / 100);
                       const leaves = Math.max(availableMoney - currentBooked, 0);
@@ -2812,12 +2904,32 @@ const SiteDetail = () => {
                 <div className="p-4 bg-muted rounded-lg">
                   <div className="flex justify-between mb-2">
                     <span className="text-sm text-muted-foreground">Already Booked:</span>
-                    <span className="font-semibold">{getTotalBooked(selectedBookingPlot, selectedBookingLiftType)}%</span>
+                    <span className="font-semibold">
+                      {selectedBookingLiftType.startsWith('garage_') 
+                        ? (() => {
+                            const parts = selectedBookingLiftType.split('_');
+                            const garageId = parts[1];
+                            const garageLiftType = parts[2];
+                            const liftBookings = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === garageLiftType);
+                            return liftBookings.reduce((sum, b) => sum + b.percentage, 0);
+                          })()
+                        : getTotalBooked(selectedBookingPlot, selectedBookingLiftType)
+                      }%
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Available:</span>
                     <span className="font-semibold text-primary">
-                      {100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType)}%
+                      {100 - (selectedBookingLiftType.startsWith('garage_') 
+                        ? (() => {
+                            const parts = selectedBookingLiftType.split('_');
+                            const garageId = parts[1];
+                            const garageLiftType = parts[2];
+                            const liftBookings = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === garageLiftType);
+                            return liftBookings.reduce((sum, b) => sum + b.percentage, 0);
+                          })()
+                        : getTotalBooked(selectedBookingPlot, selectedBookingLiftType)
+                      )}%
                     </span>
                   </div>
                 </div>
@@ -2826,7 +2938,15 @@ const SiteDetail = () => {
                   <div className="flex justify-between items-center">
                     {editingBookingPercentage ? <Input type="number" value={tempBookingPercentage} onChange={e => setTempBookingPercentage(e.target.value)} onBlur={() => {
                   const val = parseInt(tempBookingPercentage);
-                  const maxVal = 100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
+                  const maxVal = 100 - (selectedBookingLiftType.startsWith('garage_') 
+                    ? (() => {
+                        const parts = selectedBookingLiftType.split('_');
+                        const garageId = parts[1];
+                        const garageLiftType = parts[2];
+                        const liftBookings = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === garageLiftType);
+                        return liftBookings.reduce((sum, b) => sum + b.percentage, 0);
+                      })()
+                    : getTotalBooked(selectedBookingPlot, selectedBookingLiftType));
                   if (!isNaN(val) && val >= 1 && val <= maxVal) {
                     setOverrideBookedValue(null);
                     setBookingPercentage(val);
@@ -2835,7 +2955,15 @@ const SiteDetail = () => {
                 }} onKeyDown={e => {
                   if (e.key === 'Enter') {
                     const val = parseInt(tempBookingPercentage);
-                    const maxVal = 100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
+                    const maxVal = 100 - (selectedBookingLiftType.startsWith('garage_') 
+                      ? (() => {
+                          const parts = selectedBookingLiftType.split('_');
+                          const garageId = parts[1];
+                          const garageLiftType = parts[2];
+                          const liftBookings = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === garageLiftType);
+                          return liftBookings.reduce((sum, b) => sum + b.percentage, 0);
+                        })()
+                      : getTotalBooked(selectedBookingPlot, selectedBookingLiftType));
                     if (!isNaN(val) && val >= 1 && val <= maxVal) {
                       setOverrideBookedValue(null);
                       setBookingPercentage(val);
@@ -2852,7 +2980,15 @@ const SiteDetail = () => {
                   <Slider value={[bookingPercentage]} onValueChange={value => {
                 setOverrideBookedValue(null);
                 setBookingPercentage(value[0]);
-              }} min={1} max={100 - getTotalBooked(selectedBookingPlot, selectedBookingLiftType)} step={1} />
+              }} min={1} max={100 - (selectedBookingLiftType.startsWith('garage_') 
+                ? (() => {
+                    const parts = selectedBookingLiftType.split('_');
+                    const garageId = parts[1];
+                    const garageLiftType = parts[2];
+                    const liftBookings = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === garageLiftType);
+                    return liftBookings.reduce((sum, b) => sum + b.percentage, 0);
+                  })()
+                : getTotalBooked(selectedBookingPlot, selectedBookingLiftType))} step={1} />
                 </div>
 
                 <div className="p-4 bg-primary/10 rounded-lg">
