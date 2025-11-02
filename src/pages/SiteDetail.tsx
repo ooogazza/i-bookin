@@ -1140,9 +1140,14 @@ const SiteDetail = () => {
       return;
     }
 
-    // Calculate total booked for this specific garage lift
-    const liftBookings = bookings.filter(b => b.garage_id === garage.id && b.garage_lift_type === liftType);
-    const totalBooked = liftBookings.reduce((sum, b) => sum + b.percentage, 0);
+    // Calculate total booked for this specific garage lift (confirmed + pending)
+    const confirmedPct = bookings
+      .filter(b => b.garage_id === garage.id && b.garage_lift_type === liftType)
+      .reduce((sum, b) => sum + b.percentage, 0);
+    const pendingPct = invoiceItems
+      .filter(item => item.garageId === garage.id && item.garageLiftType === liftType)
+      .reduce((sum, item) => sum + item.percentage, 0);
+    const totalBooked = confirmedPct + pendingPct;
 
     // Store garage info in states (reuse existing booking dialog states)
     setSelectedBookingPlot(plot);
@@ -1172,9 +1177,9 @@ const SiteDetail = () => {
       const garageValue = getGarageLiftValue(garageId, garageLiftType);
 
       // Check remaining percentage
-      const liftBookings = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === garageLiftType);
-      const totalBooked = liftBookings.reduce((sum, b) => sum + b.percentage, 0);
-      const remaining = 100 - totalBooked;
+      const confirmedPct = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === garageLiftType).reduce((sum, b) => sum + b.percentage, 0);
+      const pendingPct = invoiceItems.filter(item => item.garageId === garageId && item.garageLiftType === garageLiftType).reduce((sum, item) => sum + item.percentage, 0);
+      const remaining = 100 - (confirmedPct + pendingPct);
       if (bookingPercentage > remaining) {
         toast.error(`Only ${remaining}% remaining for this garage lift`);
         return;
@@ -2392,7 +2397,11 @@ const SiteDetail = () => {
                   // Helper function to get garage booking percentage for a specific lift type
                   const getGarageLiftBooked = (garageId: string, liftType: string) => {
                     const liftBookings = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === liftType);
-                    return liftBookings.reduce((sum, b) => sum + b.percentage, 0);
+                    const confirmed = liftBookings.reduce((sum, b) => sum + b.percentage, 0);
+                    const pending = invoiceItems
+                      .filter(item => item.garageId === garageId && item.garageLiftType === liftType)
+                      .reduce((sum, item) => sum + item.percentage, 0);
+                    return confirmed + pending;
                   };
 
                   // Helper function to check if garage lift is pending in invoice
@@ -2975,8 +2984,9 @@ const SiteDetail = () => {
                             const parts = selectedBookingLiftType.split('_');
                             const garageId = parts[1];
                             const garageLiftType = parts.slice(2).join('_');
-                            const liftBookings = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === garageLiftType);
-                            return liftBookings.reduce((sum, b) => sum + b.percentage, 0);
+                            const confirmed = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === garageLiftType).reduce((sum, b) => sum + b.percentage, 0);
+                            const pending = invoiceItems.filter(item => item.garageId === garageId && item.garageLiftType === garageLiftType).reduce((sum, item) => sum + item.percentage, 0);
+                            return confirmed + pending;
                           })()
                         : getTotalBooked(selectedBookingPlot, selectedBookingLiftType)
                       }%
@@ -2990,8 +3000,9 @@ const SiteDetail = () => {
                             const parts = selectedBookingLiftType.split('_');
                             const garageId = parts[1];
                             const garageLiftType = parts.slice(2).join('_');
-                            const liftBookings = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === garageLiftType);
-                            return liftBookings.reduce((sum, b) => sum + b.percentage, 0);
+                            const confirmed = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === garageLiftType).reduce((sum, b) => sum + b.percentage, 0);
+                            const pending = invoiceItems.filter(item => item.garageId === garageId && item.garageLiftType === garageLiftType).reduce((sum, item) => sum + item.percentage, 0);
+                            return confirmed + pending;
                           })()
                         : getTotalBooked(selectedBookingPlot, selectedBookingLiftType)
                       )}%
@@ -3008,8 +3019,9 @@ const SiteDetail = () => {
                         const parts = selectedBookingLiftType.split('_');
                         const garageId = parts[1];
                         const garageLiftType = parts.slice(2).join('_');
-                        const liftBookings = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === garageLiftType);
-                        return liftBookings.reduce((sum, b) => sum + b.percentage, 0);
+                        const confirmed = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === garageLiftType).reduce((sum, b) => sum + b.percentage, 0);
+                        const pending = invoiceItems.filter(item => item.garageId === garageId && item.garageLiftType === garageLiftType).reduce((sum, item) => sum + item.percentage, 0);
+                        return confirmed + pending;
                       })()
                     : getTotalBooked(selectedBookingPlot, selectedBookingLiftType));
                   if (!isNaN(val) && val >= 1 && val <= maxVal) {
@@ -3025,8 +3037,9 @@ const SiteDetail = () => {
                           const parts = selectedBookingLiftType.split('_');
                           const garageId = parts[1];
                           const garageLiftType = parts.slice(2).join('_');
-                          const liftBookings = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === garageLiftType);
-                          return liftBookings.reduce((sum, b) => sum + b.percentage, 0);
+                          const confirmed = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === garageLiftType).reduce((sum, b) => sum + b.percentage, 0);
+                          const pending = invoiceItems.filter(item => item.garageId === garageId && item.garageLiftType === garageLiftType).reduce((sum, item) => sum + item.percentage, 0);
+                          return confirmed + pending;
                         })()
                       : getTotalBooked(selectedBookingPlot, selectedBookingLiftType));
                     if (!isNaN(val) && val >= 1 && val <= maxVal) {
@@ -3050,8 +3063,9 @@ const SiteDetail = () => {
                     const parts = selectedBookingLiftType.split('_');
                     const garageId = parts[1];
                     const garageLiftType = parts.slice(2).join('_');
-                    const liftBookings = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === garageLiftType);
-                    return liftBookings.reduce((sum, b) => sum + b.percentage, 0);
+                    const confirmed = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === garageLiftType).reduce((sum, b) => sum + b.percentage, 0);
+                    const pending = invoiceItems.filter(item => item.garageId === garageId && item.garageLiftType === garageLiftType).reduce((sum, item) => sum + item.percentage, 0);
+                    return confirmed + pending;
                   })()
                 : getTotalBooked(selectedBookingPlot, selectedBookingLiftType))} step={1} />
                 </div>
@@ -3059,30 +3073,84 @@ const SiteDetail = () => {
                 <div className="p-4 bg-primary/10 rounded-lg">
                   <div className="flex justify-between items-center">
                     <span className="font-medium">Booking Value:</span>
-                    {editingBookingValue ? <Input type="number" step="0.01" value={tempBookingValue} onChange={e => setTempBookingValue(e.target.value)} onBlur={() => {
-                  const val = parseFloat(tempBookingValue);
-                  const totalLiftValue = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType);
-                  const alreadyPct = getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
-                  const maxValue = totalLiftValue * (100 - alreadyPct) / 100;
-                  if (!isNaN(val) && val > 0 && val <= maxValue) {
-                    setOverrideBookedValue(val);
-                    const newPerc = Math.round(val / totalLiftValue * 100);
-                    setBookingPercentage(newPerc);
-                  } else if (val > maxValue) {
-                    toast.error(`Max available: £${maxValue.toFixed(2)}`);
-                  }
-                  setEditingBookingValue(false);
-                }} onKeyDown={e => {
-                  if (e.key === 'Enter') {
-                    (e.currentTarget as HTMLInputElement).blur();
-                  }
-                }} className="w-36 h-8 text-xl font-bold text-primary text-right" autoFocus /> : <button className="text-xl font-bold text-primary hover:text-primary/80 transition-colors cursor-pointer" onClick={() => {
-                  const currentValue = overrideBookedValue ?? getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * bookingPercentage / 100;
-                  setTempBookingValue(currentValue.toFixed(2));
-                  setEditingBookingValue(true);
-                }}>
-                        £{overrideBookedValue?.toFixed(2) ?? (getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType) * bookingPercentage / 100).toFixed(2)}
-                      </button>}
+                    {editingBookingValue ? (
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={tempBookingValue}
+                        onChange={e => setTempBookingValue(e.target.value)}
+                        onBlur={() => {
+                          const val = parseFloat(tempBookingValue);
+                          const isGarage = selectedBookingLiftType.startsWith('garage_');
+                          let totalLiftValue = 0;
+                          let alreadyPct = 0;
+                          if (isGarage) {
+                            const parts = selectedBookingLiftType.split('_');
+                            const garageId = parts[1];
+                            const garageLiftType = parts.slice(2).join('_');
+                            totalLiftValue = getGarageLiftValue(garageId, garageLiftType);
+                            const confirmed = bookings.filter(b => b.garage_id === garageId && b.garage_lift_type === garageLiftType).reduce((sum, b) => sum + b.percentage, 0);
+                            const pending = invoiceItems.filter(item => item.garageId === garageId && item.garageLiftType === garageLiftType).reduce((sum, item) => sum + item.percentage, 0);
+                            alreadyPct = confirmed + pending;
+                          } else {
+                            totalLiftValue = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType);
+                            alreadyPct = getTotalBooked(selectedBookingPlot, selectedBookingLiftType);
+                          }
+                          const maxValue = totalLiftValue * (100 - alreadyPct) / 100;
+                          if (!isNaN(val) && val > 0 && val <= maxValue) {
+                            setOverrideBookedValue(val);
+                            const newPerc = Math.round((val / totalLiftValue) * 100);
+                            setBookingPercentage(newPerc);
+                          } else if (val > maxValue) {
+                            toast.error(`Max available: £${maxValue.toFixed(2)}`);
+                          }
+                          setEditingBookingValue(false);
+                        }}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            (e.currentTarget as HTMLInputElement).blur();
+                          }
+                        }}
+                        className="w-36 h-8 text-xl font-bold text-primary text-right"
+                        autoFocus
+                      />
+                    ) : (
+                      <button
+                        className="text-xl font-bold text-primary hover:text-primary/80 transition-colors cursor-pointer"
+                        onClick={() => {
+                          const isGarage = selectedBookingLiftType.startsWith('garage_');
+                          let totalLiftValue = 0;
+                          if (isGarage) {
+                            const parts = selectedBookingLiftType.split('_');
+                            const garageId = parts[1];
+                            const garageLiftType = parts.slice(2).join('_');
+                            totalLiftValue = getGarageLiftValue(garageId, garageLiftType);
+                          } else {
+                            totalLiftValue = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType);
+                          }
+                          const currentValue = overrideBookedValue ?? (totalLiftValue * bookingPercentage) / 100;
+                          setTempBookingValue(currentValue.toFixed(2));
+                          setEditingBookingValue(true);
+                        }}
+                      >
+                        £{
+                          (() => {
+                            const isGarage = selectedBookingLiftType.startsWith('garage_');
+                            let totalLiftValue = 0;
+                            if (isGarage) {
+                              const parts = selectedBookingLiftType.split('_');
+                              const garageId = parts[1];
+                              const garageLiftType = parts.slice(2).join('_');
+                              totalLiftValue = getGarageLiftValue(garageId, garageLiftType);
+                            } else {
+                              totalLiftValue = getLiftValue(selectedBookingPlot.house_types, selectedBookingLiftType);
+                            }
+                            const val = overrideBookedValue ?? (totalLiftValue * bookingPercentage) / 100;
+                            return val.toFixed(2);
+                          })()
+                        }
+                      </button>
+                    )}
                   </div>
                 </div>
 
