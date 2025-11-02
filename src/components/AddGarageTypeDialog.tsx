@@ -21,6 +21,8 @@ interface AddGarageTypeDialogProps {
     cut_ups_value: number;
     snag_patch_int_value: number;
     snag_patch_ext_value: number;
+    created_at?: string;
+    updated_at?: string;
   } | null;
   onSuccess: () => void;
 }
@@ -77,12 +79,55 @@ export function AddGarageTypeDialog({
       };
 
       if (existingGarageType) {
+        // Track price changes for history
+        const changes = [];
+        if (existingGarageType.lift_1_value !== data.lift_1_value) {
+          changes.push({ lift_type: 'lift_1', old_value: existingGarageType.lift_1_value, new_value: data.lift_1_value });
+        }
+        if (existingGarageType.lift_2_value !== data.lift_2_value) {
+          changes.push({ lift_type: 'lift_2', old_value: existingGarageType.lift_2_value, new_value: data.lift_2_value });
+        }
+        if (existingGarageType.cut_ups_value !== data.cut_ups_value) {
+          changes.push({ lift_type: 'cut_ups', old_value: existingGarageType.cut_ups_value, new_value: data.cut_ups_value });
+        }
+        if (existingGarageType.snag_patch_int_value !== data.snag_patch_int_value) {
+          changes.push({ lift_type: 'snag_patch_int', old_value: existingGarageType.snag_patch_int_value, new_value: data.snag_patch_int_value });
+        }
+        if (existingGarageType.snag_patch_ext_value !== data.snag_patch_ext_value) {
+          changes.push({ lift_type: 'snag_patch_ext', old_value: existingGarageType.snag_patch_ext_value, new_value: data.snag_patch_ext_value });
+        }
+
         const { error } = await supabase
           .from("garage_types")
           .update(data)
           .eq("id", existingGarageType.id);
         if (error) throw error;
-        toast.success("Garage type updated");
+
+        // Log price history
+        if (changes.length > 0) {
+          const { data: userData } = await supabase.auth.getUser();
+          const historyRecords = changes.map(c => ({
+            garage_type_id: existingGarageType.id,
+            lift_type: c.lift_type,
+            old_value: c.old_value,
+            new_value: c.new_value,
+            changed_by: userData?.user?.id
+          }));
+          await supabase.from("garage_type_price_history").insert(historyRecords);
+
+          // Update all garages using this garage type with new prices
+          await supabase.from("garages")
+            .update({
+              lift_1_value: data.lift_1_value,
+              lift_2_value: data.lift_2_value,
+              cut_ups_value: data.cut_ups_value,
+              snag_patch_int_value: data.snag_patch_int_value,
+              snag_patch_ext_value: data.snag_patch_ext_value,
+            })
+            .eq("garage_type_id", existingGarageType.id);
+        }
+
+        toast.success("Garage type updated and prices synced to all garages");
       } else {
         const { error } = await supabase
           .from("garage_types")
@@ -124,6 +169,14 @@ export function AddGarageTypeDialog({
           <DialogTitle>
             {existingGarageType ? "Edit" : "Add"} Garage Type
           </DialogTitle>
+          {existingGarageType && existingGarageType.created_at && (
+            <div className="text-sm text-muted-foreground space-y-1 pt-2">
+              <p>Created: {new Date(existingGarageType.created_at).toLocaleDateString()}</p>
+              {existingGarageType.updated_at && (
+                <p>Last Updated: {new Date(existingGarageType.updated_at).toLocaleDateString()}</p>
+              )}
+            </div>
+          )}
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
@@ -199,6 +252,37 @@ export function AddGarageTypeDialog({
               />
             </div>
           </div>
+
+          {existingGarageType && (
+            <Button 
+              variant="outline" 
+              onClick={async () => {
+                const { data } = await supabase
+                  .from("garage_type_price_history")
+                  .select("*")
+                  .eq("garage_type_id", existingGarageType.id)
+                  .order("changed_at", { ascending: false });
+                
+                if (data && data.length > 0) {
+                  const liftLabels: Record<string, string> = {
+                    lift_1: "Lift 1",
+                    lift_2: "Lift 2",
+                    cut_ups: "Cut-Ups",
+                    snag_patch_int: "Snag/Patch Int",
+                    snag_patch_ext: "Snag/Patch Ext"
+                  };
+                  const historyMsg = data.map(h => 
+                    `${liftLabels[h.lift_type] || h.lift_type}: £${h.old_value} → £${h.new_value} (${new Date(h.changed_at).toLocaleDateString()})`
+                  ).join('\n');
+                  alert(`Price History:\n\n${historyMsg}`);
+                } else {
+                  toast.info("No price changes recorded");
+                }
+              }}
+            >
+              View Price History
+            </Button>
+          )}
 
           <div className="flex gap-2 pt-2">
             <Button onClick={handleSave} disabled={loading} className="flex-1">

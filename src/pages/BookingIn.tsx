@@ -153,7 +153,7 @@ const BookingIn = () => {
   const fetchBookings = async () => {
     if (!user) return;
     try {
-      // Fetch regular plot-based bookings
+      // Fetch regular plot-based bookings (only confirmed status exists for bookings)
       let plotQuery = supabase.from("bookings").select(`
           *,
           notes,
@@ -187,7 +187,7 @@ const BookingIn = () => {
             member_type,
             amount
           )
-        `).in("status", ["sent", "confirmed"]).order("created_at", {
+        `).eq("status", "confirmed").order("created_at", {
         ascending: false
       });
 
@@ -330,10 +330,8 @@ const BookingIn = () => {
         setUserInvoices(Object.values(userGroups));
       }
     } catch (error: any) {
-      toast.error("Failed to load bookings");
-      if (import.meta.env.DEV) {
-        console.error("Error:", error);
-      }
+      console.error("BookingIn fetch error:", error);
+      toast.error(`Failed to load bookings: ${error.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
