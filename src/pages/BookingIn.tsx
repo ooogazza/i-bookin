@@ -43,14 +43,15 @@ interface BookingData {
   lift_values?: {
     lift_type: string;
   };
-  garages?: {
-    garage_type: string;
-    lift_1_value: number;
-    lift_2_value: number;
-    cut_ups_value: number;
-  };
-  garage_lift_type?: string;
-  gang_divisions: {
+   garages?: {
+      garage_type: string;
+      lift_1_value: number;
+      lift_2_value: number;
+      cut_ups_value: number;
+    };
+    garage_lift_type?: string;
+    garage_id?: string | null;
+    gang_divisions: {
     member_name: string;
     member_type: string;
     amount: number;
@@ -175,12 +176,7 @@ const BookingIn = () => {
           lift_values (
             lift_type
           ),
-          garages (
-            garage_type,
-            lift_1_value,
-            lift_2_value,
-            cut_ups_value
-          ),
+          garage_id,
           garage_lift_type,
           gang_divisions (
             member_name,
@@ -199,8 +195,24 @@ const BookingIn = () => {
         data: plotBookings,
         error: plotError
       } = await plotQuery;
-      if (plotError) throw plotError;
-
+       if (plotError) throw plotError;
+      
+      // Attach garages via manual fetch (no FK on bookings -> garages)
+      let plotBookingsWithGarages = plotBookings || [];
+      const garageIds = (plotBookings || []).map((b: any) => b.garage_id).filter((id: string | null) => !!id);
+      if (garageIds.length > 0) {
+        const { data: garagesData, error: garagesError } = await supabase
+          .from('garages')
+          .select('id, garage_type, lift_1_value, lift_2_value, cut_ups_value')
+          .in('id', garageIds);
+        if (garagesError) throw garagesError;
+        const garagesMap = new Map((garagesData || []).map((g: any) => [g.id, g]));
+        plotBookingsWithGarages = (plotBookings || []).map((b: any) => ({
+          ...b,
+          garages: b.garage_id ? garagesMap.get(b.garage_id) : null,
+        }));
+      }
+      
       // Fetch non-plot invoices
       let nonPlotQuery = supabase.from("non_plot_invoices").select(`
           *,
@@ -254,7 +266,7 @@ const BookingIn = () => {
       }));
 
       // Combine both types
-      const allBookings = [...(plotBookings || []), ...transformedNonPlot];
+      const allBookings = [...(plotBookingsWithGarages || []), ...transformedNonPlot];
       setBookings(allBookings as any);
 
       // Group bookings by invoice number
